@@ -1,5 +1,6 @@
 [package]
 name = "app-store-server-library"
+description = "The Rust server library for the App Store Server API and App Store Server Notifications"
 version = "0.1.0"
 edition = "2021"
 license-file = "LICENSE"
