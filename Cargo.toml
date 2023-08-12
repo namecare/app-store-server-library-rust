@@ -1,0 +1,16 @@
+[package]
+name = "app-store-server-library"
+version = "0.1.0"
+edition = "2021"
+license-file = "LICENSE"
+authors = ["tkhp", "namecare"]
+repository = "https://github.com/namecare/app-store-server-library-rust"
+homepage = "https://github.com/namecare/app-store-server-library-rust"
+
+[dependencies]
+
+# Serialization
+serde = { version = "1.0.176", features = ["derive"] }
+serde_json = { version = "1.0.104" }
+uuid = { version = "1.4.0", features = ["serde", "v4"] }
+chrono = { version = "0.4.26", features = ["serde"] }
