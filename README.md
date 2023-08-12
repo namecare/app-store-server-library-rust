@@ -24,10 +24,10 @@ This software is currently in Beta testing. Therefore, it should only be used fo
 
 ## References
 
-[Apple App Store Server Python Library](https://github.com/apple/app-store-server-library-python)
-[Apple App Store Server Java Library](https://github.com/apple/app-store-server-library-java)
-[Apple App Store Server Node Library](https://github.com/apple/app-store-server-library-node)
-[Apple App Store Server Swift Library](https://github.com/apple/app-store-server-library-swift)
+- [Apple App Store Server Python Library](https://github.com/apple/app-store-server-library-python)
+- [Apple App Store Server Java Library](https://github.com/apple/app-store-server-library-java)
+- [Apple App Store Server Node Library](https://github.com/apple/app-store-server-library-node)
+- [Apple App Store Server Swift Library](https://github.com/apple/app-store-server-library-swift)
 
 
 
