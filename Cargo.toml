@@ -1,24 +1,27 @@
 [package]
 name = "app-store-server-library"
 description = "The Rust server library for the App Store Server API and App Store Server Notifications"
-version = "0.2.0"
-edition = "2021"
-license-file = "LICENSE"
-authors = ["tkhp", "namecare"]
+version = "0.2.1"
 repository = "https://github.com/namecare/app-store-server-library-rust"
 homepage = "https://github.com/namecare/app-store-server-library-rust"
+authors = ["tkhp", "namecare"]
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+documentation = "https://docs.rs/app-store-server-library"
+keywords = ["apple", "appstore"]
+edition = "2021"
 
 [dependencies]
 
 # Cryptography
 openssl = { version = "0.10.55", features = ["vendored"]}
-rustls = { version = "0.21.5" }
 
 # Serialization
 serde = { version = "1.0.176", features = ["derive"] }
 serde_json = { version = "1.0.104" }
 serde_with = { version = "3.1.0", features = ["chrono"] }
-uuid = { version = "1.4.0", features = ["serde", "v4"] }
+uuid = { version = "1.4.1", features = ["serde", "v4"] }
 chrono = { version = "0.4.26", features = ["serde"] }
 base64 = "0.21.2"
 
