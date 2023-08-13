@@ -1,5 +1,4 @@
 use openssl::x509::{X509, X509StoreContext};
-use std::time::{SystemTime, UNIX_EPOCH};
 use openssl::stack::{Stack};
 use openssl::x509::store::{X509StoreBuilder};
 use openssl::x509::verify::X509VerifyParam;
