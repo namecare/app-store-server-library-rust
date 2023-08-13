@@ -1,14 +1,16 @@
-use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use ::chrono::{DateTime, Utc};
 use crate::primitives::data::Data;
 use crate::primitives::notification_type_v2::NotificationTypeV2;
 use crate::primitives::subtype::Subtype;
 use crate::primitives::summary::Summary;
+use serde_with::TimestampMilliSeconds;
+use serde_with::formats::Flexible;
 
 /// A decoded payload containing the version 2 notification data.
 ///
 /// [responseBodyV2DecodedPayload](https://developer.apple.com/documentation/appstoreservernotifications/responsebodyv2decodedpayload)
-#[derive(Debug, Deserialize, Serialize, Hash)]
+#[serde_with::serde_as]
+#[derive(Debug, serde::Deserialize, serde::Serialize, Hash)]
 pub struct ResponseBodyV2DecodedPayload {
     /// The in-app purchase event for which the App Store sends this version 2 notification.
     ///
@@ -20,7 +22,7 @@ pub struct ResponseBodyV2DecodedPayload {
     /// The subtype field is present only for specific version 2 notifications.
     ///
     /// [subtype](https://developer.apple.com/documentation/appstoreservernotifications/subtype)
-    pub subtype: Subtype,
+    pub subtype: Option<Subtype>,
 
     /// A unique identifier for the notification.
     ///
@@ -43,11 +45,12 @@ pub struct ResponseBodyV2DecodedPayload {
     ///
     /// [signedDate](https://developer.apple.com/documentation/appstoreserverapi/signeddate)
     #[serde(rename = "signedDate")]
+    #[serde_as(as = "TimestampMilliSeconds<String, Flexible>")]
     pub signed_date: DateTime<Utc>,
 
     /// The summary data that appears when the App Store server completes your request to extend a subscription renewal date for eligible subscribers.
     /// The data and summary fields are mutually exclusive. The payload contains one of the fields, but not both.
     ///
     /// [summary](https://developer.apple.com/documentation/appstoreservernotifications/summary)
-    pub summary: Summary,
+    pub summary: Option<Summary>,
 }

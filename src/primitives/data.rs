@@ -13,26 +13,31 @@ pub struct Data {
 
     /// The unique identifier of an app in the App Store.
     ///
-    /// [app_apple_id](https://developer.apple.com/documentation/appstoreservernotifications/appappleid)
+    /// [appAppleId](https://developer.apple.com/documentation/appstoreservernotifications/appappleid)
+    #[serde(rename = "appAppleId")]
     pub app_apple_id: Option<i64>,
 
     /// The bundle identifier of an app.
     ///
-    /// [bundle_id](https://developer.apple.com/documentation/appstoreserverapi/bundleid)
+    /// [bundleId](https://developer.apple.com/documentation/appstoreserverapi/bundleid)
+    #[serde(rename = "bundleId")]
     pub bundle_id: Option<String>,
 
     /// The version of the build that identifies an iteration of the bundle.
     ///
     /// [bundleVersion](https://developer.apple.com/documentation/appstoreservernotifications/bundleversion)
+    #[serde(rename = "bundleVersion")]
     pub bundle_version: Option<String>,
 
     /// Transaction information signed by the App Store, in JSON Web Signature (JWS) format.
     ///
     /// [JWSTransaction](https://developer.apple.com/documentation/appstoreserverapi/jwstransaction)
+    #[serde(rename = "signedTransactionInfo")]
     pub signed_transaction_info: Option<String>,
 
     /// Subscription renewal information, signed by the App Store, in JSON Web Signature (JWS) format.
     ///
     /// [JWSRenewalInfo](https://developer.apple.com/documentation/appstoreserverapi/jwsrenewalinfo)
+    #[serde(rename = "signedRenewalInfo")]
     pub signed_renewal_info: Option<String>,
 }
