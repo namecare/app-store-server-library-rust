@@ -9,8 +9,7 @@ use base64::engine::general_purpose::STANDARD;
 
 // Define your VerificationStatus enum
 #[derive(Debug)]
-enum VerificationStatus {
-    OK,
+pub enum VerificationError {
     VerificationFailure,
     InvalidAppIdentifier,
     InvalidCertificate,
@@ -19,32 +18,33 @@ enum VerificationStatus {
     InvalidEnvironment,
 }
 
-struct ChainVerifier {
+pub struct ChainVerifier {
     enable_strict_checks: bool,
     root_certificates: Vec<Vec<u8>>,
 }
 
 impl ChainVerifier {
-    fn verify_chain(&self, certificates: Vec<String>, effective_date: u64) -> Result<Vec<u8>, VerificationStatus> {
+    pub fn verify_chain(&self, certificates: Vec<String>, effective_date: u64) -> Result<Vec<u8>, VerificationError> {
         if self.root_certificates.is_empty() {
-            return Err(VerificationStatus::InvalidCertificate);
+            return Err(VerificationError::InvalidCertificate);
         }
+
         if certificates.len() != 3 {
-            return Err(VerificationStatus::InvalidChainLength);
+            return Err(VerificationError::InvalidChainLength);
         }
 
         let mut trusted_store_builder = X509StoreBuilder::new().unwrap();
 
         for trusted_cert_bytes in &self.root_certificates {
             let trusted_cert = X509::from_der(&trusted_cert_bytes).expect("Expect x509");
-            trusted_store_builder.add_cert(trusted_cert).expect("Expect added");
+            trusted_store_builder.add_cert(trusted_cert).unwrap();
         }
 
         if self.enable_strict_checks {
-            trusted_store_builder.set_flags(openssl::x509::verify::X509VerifyFlags::X509_STRICT).expect("Expect added");
+            trusted_store_builder.set_flags(openssl::x509::verify::X509VerifyFlags::X509_STRICT).unwrap();
         }
 
-        let mut param = X509VerifyParam::new().expect("Expect param");
+        let mut param = X509VerifyParam::new().unwrap();
         param.set_time(effective_date.try_into().unwrap());
 
         trusted_store_builder.set_param(&param).unwrap();
@@ -61,8 +61,7 @@ impl ChainVerifier {
         cert_stack.push(intermediate_cert).unwrap();
 
         let mut ctx = X509StoreContext::new().unwrap();
-
-        ctx.init(&trusted_store, &leaf_cert, &cert_stack, |c| c.verify_cert()).expect("Expect init");
+        ctx.init(&trusted_store, &leaf_cert, &cert_stack, |c| c.verify_cert()).unwrap();
 
         let public_key = leaf_cert.public_key()
             .expect("Expect pubkey")
