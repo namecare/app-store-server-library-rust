@@ -9,7 +9,7 @@ use base64::engine::general_purpose::STANDARD;
 
 // Define your VerificationStatus enum
 #[derive(Debug)]
-enum VerificationStatus {
+pub enum VerificationStatus {
     OK,
     VerificationFailure,
     InvalidAppIdentifier,
@@ -19,13 +19,13 @@ enum VerificationStatus {
     InvalidEnvironment,
 }
 
-struct ChainVerifier {
+pub struct ChainVerifier {
     enable_strict_checks: bool,
     root_certificates: Vec<Vec<u8>>,
 }
 
 impl ChainVerifier {
-    fn verify_chain(&self, certificates: Vec<String>, effective_date: u64) -> Result<Vec<u8>, VerificationStatus> {
+    pub fn verify_chain(&self, certificates: Vec<String>, effective_date: u64) -> Result<Vec<u8>, VerificationStatus> {
         if self.root_certificates.is_empty() {
             return Err(VerificationStatus::InvalidCertificate);
         }
