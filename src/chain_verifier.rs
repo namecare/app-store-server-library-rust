@@ -9,8 +9,7 @@ use base64::engine::general_purpose::STANDARD;
 
 // Define your VerificationStatus enum
 #[derive(Debug)]
-pub enum VerificationStatus {
-    OK,
+pub enum VerificationError {
     VerificationFailure,
     InvalidAppIdentifier,
     InvalidCertificate,
@@ -25,12 +24,12 @@ pub struct ChainVerifier {
 }
 
 impl ChainVerifier {
-    pub fn verify_chain(&self, certificates: Vec<String>, effective_date: u64) -> Result<Vec<u8>, VerificationStatus> {
+    pub fn verify_chain(&self, certificates: Vec<String>, effective_date: u64) -> Result<Vec<u8>, VerificationError> {
         if self.root_certificates.is_empty() {
-            return Err(VerificationStatus::InvalidCertificate);
+            return Err(VerificationError::InvalidCertificate);
         }
         if certificates.len() != 3 {
-            return Err(VerificationStatus::InvalidChainLength);
+            return Err(VerificationError::InvalidChainLength);
         }
 
         let mut trusted_store_builder = X509StoreBuilder::new().unwrap();
