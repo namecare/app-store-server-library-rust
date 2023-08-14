@@ -9,25 +9,25 @@ pub struct Summary {
     /// The server environment that the notification applies to, either sandbox or production.
     ///
     /// [environment](https://developer.apple.com/documentation/appstoreservernotifications/environment)
-    pub environment: Environment,
+    pub environment: Option<Environment>,
 
     /// The unique identifier of an app in the App Store.
     ///
     /// [appAppleId](https://developer.apple.com/documentation/appstoreservernotifications/appappleid)
     #[serde(rename = "appAppleId")]
-    pub app_apple_id: i64,
+    pub app_apple_id: Option<i64>,
 
     /// The bundle identifier of an app.
     ///
     /// [bundleId](https://developer.apple.com/documentation/appstoreserverapi/bundleid)
     #[serde(rename = "bundleId")]
-    pub bundle_id: String,
+    pub bundle_id: Option<String>,
 
     /// The unique identifier for the product, that you create in App Store Connect.
     ///
     /// [productId](https://developer.apple.com/documentation/appstoreserverapi/productid)
     #[serde(rename = "productId")]
-    pub product_id: String,
+    pub product_id: Option<String>,
 
     /// A string that contains a unique identifier you provide to track each subscription-renewal-date extension request.
     ///
