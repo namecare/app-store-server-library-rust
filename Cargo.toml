@@ -15,6 +15,7 @@ edition = "2021"
 
 # Cryptography
 openssl = { version = "0.10.55", features = ["vendored"]}
+jsonwebtoken = "8.3.0"
 
 # Serialization
 serde = { version = "1.0.176", features = ["derive"] }
@@ -29,4 +30,4 @@ thiserror = "1.0.44"
 
 [dev-dependencies]
 dotenv = "0.15.0"
-jsonwebtoken = "8.3.0"
+
