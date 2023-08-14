@@ -1,5 +1,4 @@
 use openssl::x509::{X509, X509StoreContext};
-use std::time::{SystemTime, UNIX_EPOCH};
 use openssl::stack::{Stack};
 use openssl::x509::store::{X509StoreBuilder};
 use openssl::x509::verify::X509VerifyParam;
@@ -7,30 +6,60 @@ use openssl::x509::verify::X509VerifyParam;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
 
+use thiserror::Error;
+use crate::chain_verifier::ChainVerificationFailureReason::{InvalidCertificate, InvalidChainLength};
+
 // Define your VerificationStatus enum
-#[derive(Debug)]
-pub enum VerificationError {
-    VerificationFailure,
+#[derive(Error, Debug)]
+pub enum ChainVerifierError {
+    #[error("VerificationFailure: [{0}]")]
+    VerificationFailure(ChainVerificationFailureReason),
+
+
+    // #[error("Internal data store error")]
+    // InternalDbError(#[from] UserRepositoryError),
+}
+
+#[derive(Error, Debug)]
+pub enum ChainVerificationFailureReason {
+    #[error("InvalidAppIdentifier")]
     InvalidAppIdentifier,
+
+    #[error("InvalidCertificate")]
     InvalidCertificate,
+
+    #[error("InvalidChainLength")]
     InvalidChainLength,
+
+    #[error("InvalidChain")]
     InvalidChain,
+
+    #[error("InvalidEnvironment")]
     InvalidEnvironment,
 }
 
+#[derive(Clone, Debug)]
 pub struct ChainVerifier {
     enable_strict_checks: bool,
     root_certificates: Vec<Vec<u8>>,
 }
 
 impl ChainVerifier {
-    pub fn verify_chain(&self, certificates: Vec<String>, effective_date: u64) -> Result<Vec<u8>, VerificationError> {
+    pub fn new(enable_strict_checks: bool, root_certificates: Vec<Vec<u8>>) -> Self {
+        ChainVerifier {
+            enable_strict_checks,
+            root_certificates
+        }
+    }
+}
+impl ChainVerifier {
+    pub fn verify_chain(&self, certificates: &Vec<String>, effective_date: Option<u64>) -> Result<Vec<u8>, ChainVerifierError> {
         if self.root_certificates.is_empty() {
-            return Err(VerificationError::InvalidCertificate);
+            return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
         }
 
         if certificates.len() != 3 {
-            return Err(VerificationError::InvalidChainLength);
+            return Err(ChainVerifierError::VerificationFailure(InvalidChainLength));
         }
 
         let mut trusted_store_builder = X509StoreBuilder::new().unwrap();
@@ -44,10 +73,12 @@ impl ChainVerifier {
             trusted_store_builder.set_flags(openssl::x509::verify::X509VerifyFlags::X509_STRICT).unwrap();
         }
 
-        let mut param = X509VerifyParam::new().unwrap();
-        param.set_time(effective_date.try_into().unwrap());
+        if let Some(effective_date) = effective_date {
+            let mut param = X509VerifyParam::new().unwrap();
+            param.set_time(effective_date.try_into().unwrap());
 
-        trusted_store_builder.set_param(&param).unwrap();
+            trusted_store_builder.set_param(&param).unwrap();
+        }
 
         let trusted_store = trusted_store_builder.build();
 
@@ -78,6 +109,7 @@ mod tests {
     use base64::Engine;
     use base64::engine::general_purpose::STANDARD;
     use jsonwebtoken::{Algorithm, DecodingKey, Validation};
+    use std::time::{SystemTime, UNIX_EPOCH};
     use crate::primitives::response_body_v2_decoded_payload::ResponseBodyV2DecodedPayload;
     use super::*;
 
@@ -114,10 +146,9 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards");  // Define the effective date
 
-        let pub_key = verifier.verify_chain(x5c,  since_the_epoch.as_secs()).expect("Expect pub key");
+        let pub_key = verifier.verify_chain(&x5c,  Some(since_the_epoch.as_secs())).expect("Expect pub key");
 
         let decoding_key = DecodingKey::from_ec_pem(pub_key.as_slice()).unwrap();
-
         let claims: [&str; 0] = [];
 
         let mut validator = Validation::new(Algorithm::ES256);

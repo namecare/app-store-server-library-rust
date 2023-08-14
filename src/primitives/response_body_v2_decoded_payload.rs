@@ -34,7 +34,7 @@ pub struct ResponseBodyV2DecodedPayload {
     /// The data and summary fields are mutually exclusive. The payload contains one of the fields, but not both.
     ///
     /// [data](https://developer.apple.com/documentation/appstoreservernotifications/data)
-    pub data: Data,
+    pub data: Option<Data>,
 
     /// A string that indicates the notification’s App Store Server Notifications version number.
     ///
