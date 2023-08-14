@@ -151,8 +151,4 @@ mod tests {
     fn test_wrong_app_apple_id_for_server_notification() {
         todo!()
     }
-
-    fn test_wrong_app_apple_id_for_server_notification() {
-        todo!()
-    }
 }
