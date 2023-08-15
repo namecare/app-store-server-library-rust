@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub enum AccountTenure {
     Undeclared = 0,
     ZeroToThreeDays = 1,

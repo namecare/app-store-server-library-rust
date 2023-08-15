@@ -11,7 +11,7 @@ use crate::primitives::transaction_reason::TransactionReason;
 /// A decoded payload containing transaction information.
 ///
 /// [JWSTransactionDecodedPayload](https://developer.apple.com/documentation/appstoreserverapi/jwstransactiondecodedpayload)
-#[derive(Debug, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct JWSTransactionDecodedPayload {
     /// The original transaction identifier of a purchase.
     ///

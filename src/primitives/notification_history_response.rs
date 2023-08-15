@@ -4,7 +4,7 @@ use crate::primitives::notification_history_response_item::NotificationHistoryRe
 /// A response that contains the App Store Server Notifications history for your app.
 ///
 /// [NotificationHistoryResponse](https://developer.apple.com/documentation/appstoreserverapi/notificationhistoryresponse)
-#[derive(Debug, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct NotificationHistoryResponse {
     /// A pagination token that you return to the endpoint on a subsequent call to receive the next set of results.
     ///

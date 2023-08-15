@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 /// A response that indicates whether an individual renewal-date extension succeeded, and related details.
 ///
 /// [ExtendRenewalDateResponse](https://developer.apple.com/documentation/appstoreserverapi/extendrenewaldateresponse)
-#[derive(Debug, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct ExtendRenewalDateResponse {
     /// The original transaction identifier of a purchase.
     ///

@@ -6,7 +6,7 @@ use crate::primitives::subtype::Subtype;
 /// The request body for notification history.
 ///
 /// [NotificationHistoryRequest](https://developer.apple.com/documentation/appstoreserverapi/notificationhistoryrequest)
-#[derive(Debug, Deserialize, Serialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub struct NotificationHistoryRequest {
     /// The start date of the timespan for the requested App Store Server Notification history records.
     /// The startDate needs to precede the endDate. Choose a startDate that’s within the past 180 days from the current date.
