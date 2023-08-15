@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 /// A response that indicates the current status of a request to extend the subscription renewal date to all eligible subscribers.
 ///
 /// [MassExtendRenewalDateStatusResponse](https://developer.apple.com/documentation/appstoreserverapi/massextendrenewaldatestatusresponse)
-#[derive(Debug, Deserialize, Serialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub struct MassExtendRenewalDateStatusResponse {
     /// A string that contains a unique identifier you provide to track each subscription-renewal-date extension request.
     ///

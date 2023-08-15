@@ -4,7 +4,7 @@ use crate::primitives::last_transactions_item::LastTransactionsItem;
 /// Information for auto-renewable subscriptions, including signed transaction information and signed renewal information, for one subscription group.
 ///
 /// [SubscriptionGroupIdentifierItem](https://developer.apple.com/documentation/appstoreserverapi/subscriptiongroupidentifieritem)
-#[derive(Debug, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct SubscriptionGroupIdentifierItem {
     /// The identifier of the subscription group that the subscription belongs to.
     ///

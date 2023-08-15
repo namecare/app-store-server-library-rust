@@ -4,7 +4,7 @@ use crate::primitives::extend_reason_code::ExtendReasonCode;
 /// The request body that contains subscription-renewal-extension data for an individual subscription.
 ///
 /// [ExtendRenewalDateRequest](https://developer.apple.com/documentation/appstoreserverapi/extendrenewaldaterequest)
-#[derive(Debug, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct ExtendRenewalDateRequest {
     /// The number of days to extend the subscription renewal date.
     ///

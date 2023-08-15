@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 /// A value that indicates the amount of time that the customer used the app.
 ///
 /// [playTime](https://developer.apple.com/documentation/appstoreserverapi/playtime)
-#[derive(Debug, Deserialize, Serialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub enum PlayTime {
     Undeclared = 0,
     ZeroToFiveMinutes = 1,

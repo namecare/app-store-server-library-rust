@@ -9,7 +9,7 @@ use crate::primitives::price_increase_status::PriceIncreaseStatus;
 /// A decoded payload containing subscription renewal information for an auto-renewable subscription.
 ///
 /// [JWSRenewalInfoDecodedPayload](https://developer.apple.com/documentation/appstoreserverapi/jwsrenewalinfodecodedpayload)
-#[derive(Debug, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct JWSRenewalInfoDecodedPayload {
     /// The reason the subscription expired.
     ///

@@ -10,7 +10,7 @@ use serde_with::formats::Flexible;
 ///
 /// [responseBodyV2DecodedPayload](https://developer.apple.com/documentation/appstoreservernotifications/responsebodyv2decodedpayload)
 #[serde_with::serde_as]
-#[derive(Debug, serde::Deserialize, serde::Serialize, Hash)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, Hash)]
 pub struct ResponseBodyV2DecodedPayload {
     /// The in-app purchase event for which the App Store sends this version 2 notification.
     ///

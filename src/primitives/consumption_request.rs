@@ -12,7 +12,7 @@ use crate::primitives::user_status::UserStatus;
 /// The request body containing consumption information.
 ///
 /// [ConsumptionRequest](https://developer.apple.com/documentation/appstoreserverapi/consumptionrequest)
-#[derive(Debug, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct ConsumptionRequest {
     /// A Boolean value that indicates whether the customer consented to provide consumption data to the App Store.
     ///
