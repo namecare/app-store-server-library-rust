@@ -4,7 +4,7 @@ use crate::primitives::send_attempt_item::SendAttemptItem;
 /// The App Store server notification history record, including the signed notification payload and the result of the server’s first send attempt.
 ///
 /// [notificationHistoryResponseItem](https://developer.apple.com/documentation/appstoreserverapi/notificationhistoryresponseitem)
-#[derive(Debug, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct NotificationHistoryResponseItem {
     /// A cryptographically signed payload, in JSON Web Signature (JWS) format, containing the response body for a version 2 notification.
     ///

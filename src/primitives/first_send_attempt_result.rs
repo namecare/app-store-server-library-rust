@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 /// An error or result that the App Store server receives when attempting to send an App Store server notification to your server.
 ///
 /// [firstSendAttemptResult](https://developer.apple.com/documentation/appstoreserverapi/firstsendattemptresult)
-#[derive(Debug, Deserialize, Serialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub enum FirstSendAttemptResult {
     #[serde(rename = "SUCCESS")]
     Success,

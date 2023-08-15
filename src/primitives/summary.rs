@@ -4,7 +4,7 @@ use crate::primitives::environment::Environment;
 /// The payload data for a subscription-renewal-date extension notification.
 ///
 /// [Summary](https://developer.apple.com/documentation/appstoreservernotifications/summary)
-#[derive(Debug, Deserialize, Serialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub struct Summary {
     /// The server environment that the notification applies to, either sandbox or production.
     ///

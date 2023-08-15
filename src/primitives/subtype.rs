@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 /// A notification subtype value that App Store Server Notifications 2 uses.
 ///
 /// [Subtype](https://developer.apple.com/documentation/appstoreserverapi/notificationsubtype)
-#[derive(Debug, Deserialize, Serialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub enum Subtype {
     #[serde(rename = "INITIAL_BUY")]
     InitialBuy,

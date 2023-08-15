@@ -4,7 +4,7 @@ use crate::primitives::environment::Environment;
 /// A response that contains the customer’s transaction history for an app.
 ///
 /// [HistoryResponse](https://developer.apple.com/documentation/appstoreserverapi/historyresponse)
-#[derive(Debug, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct HistoryResponse {
     /// A token you use in a query to request the next set of transactions for the customer.
     ///

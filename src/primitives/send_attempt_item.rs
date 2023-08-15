@@ -5,7 +5,7 @@ use crate::primitives::send_attempt_result::SendAttemptResult;
 /// The success or error information and the date the App Store server records when it attempts to send a server notification to your server.
 ///
 /// [sendAttemptItem](https://developer.apple.com/documentation/appstoreserverapi/sendattemptitem)
-#[derive(Debug, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct SendAttemptItem {
     /// The date the App Store server attempts to send a notification.
     ///

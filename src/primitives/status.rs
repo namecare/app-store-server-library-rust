@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 /// The status of an auto-renewable subscription.
 ///
 /// [status](https://developer.apple.com/documentation/appstoreserverapi/status)
-#[derive(Debug, Deserialize, Serialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub enum Status {
     Active = 1,
     Expired = 2,

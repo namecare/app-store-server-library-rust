@@ -4,7 +4,7 @@ use crate::primitives::environment::Environment;
 /// The app metadata and the signed renewal and transaction information.
 ///
 /// [data](https://developer.apple.com/documentation/appstoreservernotifications/data)
-#[derive(Debug, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct Data {
     /// The server environment that the notification applies to, either sandbox or production.
     ///

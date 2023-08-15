@@ -4,7 +4,7 @@ use crate::primitives::send_attempt_item::SendAttemptItem;
 /// A response that contains the contents of the test notification sent by the App Store server and the result from your server.
 ///
 /// [CheckTestNotificationResponse](https://developer.apple.com/documentation/appstoreserverapi/checktestnotificationresponse)
-#[derive(Debug, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct CheckTestNotificationResponse {
     /// A cryptographically signed payload, in JSON Web Signature (JWS) format, containing the response body for a version 2 notification.
     ///

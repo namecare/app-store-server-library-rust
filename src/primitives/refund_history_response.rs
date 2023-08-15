@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 /// A response that contains an array of signed JSON Web Signature (JWS) refunded transactions, and paging information.
 ///
 /// [RefundHistoryResponse](https://developer.apple.com/documentation/appstoreserverapi/refundhistoryresponse)
-#[derive(Debug, Deserialize, Serialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub struct RefundHistoryResponse {
     /// A list of up to 20 JWS transactions, or an empty array if the customer hasn't received any refunds in your app. The transactions are sorted in ascending order by revocationDate.
     #[serde(rename = "signedTransactions")]

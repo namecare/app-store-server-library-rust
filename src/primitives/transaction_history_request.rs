@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use crate::primitives::in_app_ownership_type::InAppOwnershipType;
 
-#[derive(Debug, Deserialize, Serialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub struct TransactionHistoryRequest {
     /// An optional start date of the timespan for the transaction history records you’re requesting.
     #[serde(rename = "startDate")]
@@ -35,7 +35,7 @@ pub struct TransactionHistoryRequest {
     pub revoked: Option<bool>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub enum ProductType {
     #[serde(rename = "AUTO_RENEWABLE")]
     AutoRenewable,
@@ -47,7 +47,7 @@ pub enum ProductType {
     NonConsumable,
 }
 
-#[derive(Debug, Deserialize, Serialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub enum Order {
     #[serde(rename = "ASCENDING")]
     Ascending,

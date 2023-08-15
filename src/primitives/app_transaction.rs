@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::primitives::environment::Environment;
 
-#[derive(Debug, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct AppTransaction {
     /// The server environment that signs the app transaction.
     /// [environment](https://developer.apple.com/documentation/storekit/apptransaction/3963901-environment)

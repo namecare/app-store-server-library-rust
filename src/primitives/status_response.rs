@@ -5,7 +5,7 @@ use crate::primitives::subscription_group_identifier_item::SubscriptionGroupIden
 /// The response that contains status information for all of a customer’s auto-renewable subscriptions in your app.
 ///
 /// [StatusResponse](https://developer.apple.com/documentation/appstoreserverapi/statusresponse)
-#[derive(Debug, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct StatusResponse {
     /// The server environment, sandbox or production, in which the App Store generated the response.
     ///

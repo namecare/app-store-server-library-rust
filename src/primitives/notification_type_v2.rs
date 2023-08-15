@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 /// A notification type value that App Store Server Notifications V2 uses.
 ///
 /// [notificationType](https://developer.apple.com/documentation/appstoreserverapi/notificationtype)
-#[derive(Debug, Deserialize, Serialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub enum NotificationTypeV2 {
     #[serde(rename = "SUBSCRIBED")]
     Subscribed,
