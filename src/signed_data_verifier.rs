@@ -45,7 +45,7 @@ impl SignedDataVerifier {
 }
 
 impl SignedDataVerifier {
-    fn verify_and_decode_signed_transaction(&self, signed_transaction: &str) -> Result<JWSTransactionDecodedPayload, SignedDataVerifierError> {
+    pub fn verify_and_decode_signed_transaction(&self, signed_transaction: &str) -> Result<JWSTransactionDecodedPayload, SignedDataVerifierError> {
         let decoded_signed_tx: JWSTransactionDecodedPayload  = self.decode_signed_object(signed_transaction)?;
 
         if decoded_signed_tx.bundle_id.as_ref() != Some(&self.bundle_id) {
