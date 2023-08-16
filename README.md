@@ -15,7 +15,7 @@ Be sure to add the job_scheduler crate to your Cargo.toml:
 
 ```rust
 [dependencies]
-app-store-server-library = "0.3.1"
+app-store-server-library = "0.4.0"
 ```
 
 
