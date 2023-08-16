@@ -2,6 +2,7 @@ use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use serde::de::DeserializeOwned;
 use crate::chain_verifier::{ChainVerifier, ChainVerifierError};
 use crate::primitives::environment::Environment;
+use crate::primitives::jws_transaction_decoded_payload::JWSTransactionDecodedPayload;
 use crate::primitives::response_body_v2_decoded_payload::ResponseBodyV2DecodedPayload;
 
 #[derive(thiserror::Error, Debug)]
@@ -44,6 +45,19 @@ impl SignedDataVerifier {
 }
 
 impl SignedDataVerifier {
+    fn verify_and_decode_signed_transaction(&self, signed_transaction: &str) -> Result<JWSTransactionDecodedPayload, SignedDataVerifierError> {
+        let decoded_signed_tx: JWSTransactionDecodedPayload  = self.decode_signed_object(signed_transaction)?;
+
+        if decoded_signed_tx.bundle_id.as_ref() != Some(&self.bundle_id) {
+            return Err(SignedDataVerifierError::InvalidAppIdentifier)
+        }
+
+        if decoded_signed_tx.environment.as_ref() != Some(&self.environment) {
+            return Err(SignedDataVerifierError::InvalidEnvironment)
+        }
+
+        Ok(decoded_signed_tx)
+    }
     pub fn verify_and_decode_notification(&self, signed_payload: &str) -> Result<ResponseBodyV2DecodedPayload, SignedDataVerifierError> {
         let decoded_signed_notification: ResponseBodyV2DecodedPayload  = self.decode_signed_object(signed_payload)?;
 
@@ -134,6 +148,26 @@ mod tests {
         let decoded_payload = verifier.verify_and_decode_notification(payload.as_str()).unwrap();
 
         assert_eq!(decoded_payload.notification_type, NotificationTypeV2::DidRenew);
+    }
+
+    #[test]
+    fn text_verify_and_decode_transaction() {
+        dotenv::dotenv().ok();
+
+        let root_cert = apple_root_cert();
+        let root_cert_der = STANDARD.decode(root_cert).expect("Expect bytes");
+
+        let verifier = SignedDataVerifier::new(vec![root_cert_der],
+                                               Environment::Sandbox,
+                                               "app.namecare.ios".to_string(),
+                                               Some(1578773551));
+
+        let payload = signed_payload();
+        let decoded_payload = verifier.verify_and_decode_notification(payload.as_str()).unwrap();
+        let tx = decoded_payload.data.as_ref().unwrap().signed_transaction_info.as_ref().unwrap();
+        let decoded_tx = verifier.verify_and_decode_signed_transaction(tx.as_str()).unwrap();
+
+        assert_eq!(decoded_tx.bundle_id, decoded_payload.data.unwrap().bundle_id);
     }
 
     fn test_app_store_server_notification_decoding_production() {
