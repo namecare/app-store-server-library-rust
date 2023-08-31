@@ -25,8 +25,6 @@ Check
 let root_cert = "apple-root-cert-in-base-base64-format"; // https://www.apple.com/certificateauthority/AppleRootCA-G3.cer
 let root_cert_der = STANDARD.decode(root_cert).expect("Expect bytes"); // Use `base64` crate to decode base64 string into bytes 
 
-let verifier = SignedDataVerifier::new(vec![root_cert_der], Environment::Sandbox, "app.superapp.apple".to_string(), Some(123456789));
-
 let verifier = SignedDataVerifier::new(
     vec![root_cert_der], // Vector of root certificates
     Environment::Sandbox, // Environment
