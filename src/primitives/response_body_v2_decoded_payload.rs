@@ -39,14 +39,14 @@ pub struct ResponseBodyV2DecodedPayload {
     /// A string that indicates the notification’s App Store Server Notifications version number.
     ///
     /// [version](https://developer.apple.com/documentation/appstoreservernotifications/version)
-    pub version: String,
+    pub version: Option<String>,
 
     /// The UNIX time, in milliseconds, that the App Store signed the JSON Web Signature data.
     ///
     /// [signedDate](https://developer.apple.com/documentation/appstoreserverapi/signeddate)
     #[serde(rename = "signedDate")]
-    #[serde_as(as = "TimestampMilliSeconds<String, Flexible>")]
-    pub signed_date: DateTime<Utc>,
+    #[serde_as(as = "Option<TimestampMilliSeconds<String, Flexible>>")]
+    pub signed_date: Option<DateTime<Utc>>,
 
     /// The summary data that appears when the App Store server completes your request to extend a subscription renewal date for eligible subscribers.
     /// The data and summary fields are mutually exclusive. The payload contains one of the fields, but not both.
