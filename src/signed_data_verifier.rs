@@ -1,3 +1,5 @@
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use serde::de::DeserializeOwned;
 use crate::chain_verifier::{ChainVerifier, ChainVerifierError};
@@ -98,14 +100,15 @@ impl SignedDataVerifier {
         if x5c.is_empty() {
             return Err(SignedDataVerifierError::VerificationFailure);
         }
+        let x5c = x5c.iter().map(|c| STANDARD.decode(c).expect("Expect bytes")).collect();
 
         if header.alg != Algorithm::ES256 {
             return Err(SignedDataVerifierError::VerificationFailure);
         }
 
-        let pub_key = self.chain_verifier.verify_chain(&x5c,  None)?;
+        let pub_key = self.chain_verifier.verify(&x5c,  None)?;
 
-        let decoding_key = DecodingKey::from_ec_pem(pub_key.as_slice()).unwrap();
+        let decoding_key = DecodingKey::from_ec_der(pub_key.as_slice());
         let claims: [&str; 0] = [];
 
         let mut validator = Validation::new(Algorithm::ES256);
@@ -129,7 +132,7 @@ mod tests {
     }
 
     pub fn apple_root_cert() -> String {
-        std::env::var("REAL_APPLE_ROOT_BASE64_ENCODED").expect("REAL_APPLE_ROOT_BASE64_ENCODED must be set")
+        std::env::var("APPLE_ROOT_BASE64_ENCODED").expect("APPLE_ROOT_BASE64_ENCODED must be set")
     }
 
     #[test]
@@ -170,19 +173,13 @@ mod tests {
         assert_eq!(decoded_tx.bundle_id, decoded_payload.data.unwrap().bundle_id);
     }
 
-    fn test_app_store_server_notification_decoding_production() {
-        todo!()
-    }
+    fn test_app_store_server_notification_decoding_production() { todo!() }
 
-    fn test_missing_x5c_header() {
-        todo!()
-    }
+    fn test_missing_x5c_header() { todo!() }
 
     fn test_wrong_bundle_id_for_server_notification() {
         todo!()
     }
 
-    fn test_wrong_app_apple_id_for_server_notification() {
-        todo!()
-    }
+    fn test_wrong_app_apple_id_for_server_notification() { todo!() }
 }

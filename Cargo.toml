@@ -11,11 +11,16 @@ documentation = "https://docs.rs/app-store-server-library"
 keywords = ["apple", "appstore"]
 edition = "2021"
 
+[features]
+x509-parser = ["dep:x509-parser"]
+openssl = ["dep:openssl"]
+
 [dependencies]
 
 # Cryptography
-openssl = { version = "0.10.55", features = ["vendored"]}
-jsonwebtoken = "8.3.0"
+x509-parser = { version = "0.15.1", optional = true, features = ["verify", "validate"] }
+openssl = { version = "0.10.55", optional = true, features = ["vendored"]}
+jsonwebtoken = { version = "8.3.0" }
 
 # Serialization
 serde = { version = "1.0.176", features = ["derive"] }
@@ -30,4 +35,8 @@ thiserror = "1.0.44"
 
 [dev-dependencies]
 dotenv = "0.15.0"
+criterion = { version = "0.5.1", features = ["html_reports"] }
 
+[[bench]]
+name = "benchmarks"
+harness = false
