@@ -111,8 +111,9 @@ impl SignedDataVerifier {
         }
 
         let pub_key = verify_chain(&chain, &self.root_certificates, None)?;
+        let pub_key = &pub_key[pub_key.len() - 65..];
 
-        let decoding_key = DecodingKey::from_ec_der(pub_key.as_slice());
+        let decoding_key = DecodingKey::from_ec_der(pub_key);
         let claims: [&str; 0] = [];
 
         let mut validator = Validation::new(Algorithm::ES256);

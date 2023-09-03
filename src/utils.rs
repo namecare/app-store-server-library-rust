@@ -13,13 +13,6 @@ use base64::engine::general_purpose::STANDARD;
 /// This function may panic if the system time is earlier than the UNIX EPOCH,
 /// which is an invalid state for most systems.
 ///
-/// # Examples
-///
-/// ```
-///
-/// let timestamp = system_timestamp();
-/// println!("Current timestamp: {}", timestamp);
-/// ```
 pub(crate) fn system_timestamp() -> u64 {
     match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
         Ok(n) => n.as_secs(),
@@ -37,7 +30,7 @@ impl StringExt for String  {
     }
 }
 
-impl StringExt for &String  {
+impl StringExt for &str  {
     fn as_der_bytes(&self) -> Result<Vec<u8>, DecodeError> {
         STANDARD.decode(self)
     }
