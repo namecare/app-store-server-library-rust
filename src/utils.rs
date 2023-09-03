@@ -20,7 +20,19 @@ pub(crate) fn system_timestamp() -> u64 {
     }
 }
 
+/// A trait for extending the functionality of Rust strings.
 pub trait StringExt {
+    /// Converts the string into a DER-encoded byte vector.
+    ///
+    /// This method attempts to parse the string as a DER-encoded byte sequence
+    /// and returns the result as a `Vec<u8>`. If the parsing fails, it returns
+    /// a `DecodeError`.
+    ///
+    /// # Errors
+    ///
+    /// If the string cannot be successfully parsed as DER-encoded bytes, this
+    /// method returns a `DecodeError` indicating the reason for the failure.
+    ///
     fn as_der_bytes(&self) -> Result<Vec<u8>, DecodeError>;
 }
 

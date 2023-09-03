@@ -29,6 +29,8 @@ pub enum SignedDataVerifierError {
     InternalJWTError(#[from] jsonwebtoken::errors::Error)
 }
 
+/// A verifier for signed data, commonly used for verifying and decoding
+/// signed Apple server notifications and transactions.
 pub struct SignedDataVerifier {
     root_certificates: Vec<Vec<u8>>,
     environment: Environment,
@@ -37,6 +39,18 @@ pub struct SignedDataVerifier {
 }
 
 impl SignedDataVerifier {
+    /// Creates a new `SignedDataVerifier` instance with the specified parameters.
+    ///
+    /// # Arguments
+    ///
+    /// * `root_certificates` - A vector of DER-encoded root certificates used for verification.
+    /// * `environment` - The environment (e.g., `Environment::PRODUCTION` or `Environment::SANDBOX`).
+    /// * `bundle_id` - The bundle ID associated with the application.
+    /// * `app_apple_id` - An optional Apple ID associated with the application.
+    ///
+    /// # Returns
+    ///
+    /// A new `SignedDataVerifier` instance.
     pub fn new(root_certificates: Vec<Vec<u8>>,
            environment: Environment,
            bundle_id: String,
@@ -51,7 +65,22 @@ impl SignedDataVerifier {
     }
 }
 
+
 impl SignedDataVerifier {
+    /// Verifies and decodes a signed transaction.
+    ///
+    /// This method takes a signed transaction string, verifies its authenticity and
+    /// integrity, and returns the decoded payload as a `JWSTransactionDecodedPayload`
+    /// if the verification is successful.
+    ///
+    /// # Arguments
+    ///
+    /// * `signed_transaction` - The signed transaction string to verify and decode.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(JWSTransactionDecodedPayload)` if verification and decoding are successful.
+    /// - `Err(SignedDataVerifierError)` if verification or decoding fails, with error details.
     pub fn verify_and_decode_signed_transaction(&self, signed_transaction: &str) -> Result<JWSTransactionDecodedPayload, SignedDataVerifierError> {
         let decoded_signed_tx: JWSTransactionDecodedPayload  = self.decode_signed_object(signed_transaction)?;
 
@@ -65,6 +94,21 @@ impl SignedDataVerifier {
 
         Ok(decoded_signed_tx)
     }
+
+    /// Verifies and decodes a signed notification.
+    ///
+    /// This method takes a signed notification string, verifies its authenticity and
+    /// integrity, and returns the decoded payload as a `ResponseBodyV2DecodedPayload`
+    /// if the verification is successful.
+    ///
+    /// # Arguments
+    ///
+    /// * `signed_payload` - The signed notification string to verify and decode.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(ResponseBodyV2DecodedPayload)` if verification and decoding are successful.
+    /// - `Err(SignedDataVerifierError)` if verification or decoding fails, with error details.
     pub fn verify_and_decode_notification(&self, signed_payload: &str) -> Result<ResponseBodyV2DecodedPayload, SignedDataVerifierError> {
         let decoded_signed_notification: ResponseBodyV2DecodedPayload  = self.decode_signed_object(signed_payload)?;
 
@@ -95,6 +139,7 @@ impl SignedDataVerifier {
         Ok(decoded_signed_notification)
     }
 
+    /// Private method used for decoding a signed object (internal use).
     fn decode_signed_object<T: DeserializeOwned>(&self, signed_obj: &str) -> Result<T, SignedDataVerifierError> {
         let header = jsonwebtoken::decode_header(signed_obj)?;
 
@@ -130,9 +175,6 @@ impl SignedDataVerifier {
 
 #[cfg(test)]
 mod tests {
-    use base64::Engine;
-    use base64::engine::general_purpose::STANDARD;
-    use jsonwebtoken::errors::ErrorKind;
     use crate::primitives::notification_type_v2::NotificationTypeV2;
     use super::*;
 
