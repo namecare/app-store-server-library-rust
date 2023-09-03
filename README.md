@@ -34,8 +34,8 @@ let verifier = SignedDataVerifier::new(
 
 let payload = "signed-payload";
 let decoded_payload = verifier.verify_and_decode_notification(payload).unwrap();
-
 ```
+
 ## Documentation
 
 * The full documentation is available at [docs.rs](https://docs.rs/google_maps/)
