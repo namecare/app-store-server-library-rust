@@ -1,11 +1,12 @@
-use base64::Engine;
+use base64::{DecodeError, Engine};
 use base64::engine::general_purpose::STANDARD;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use serde::de::DeserializeOwned;
-use crate::chain_verifier::{ChainVerifier, ChainVerifierError};
+use crate::chain_verifier::{ChainVerifierError, verify_chain};
 use crate::primitives::environment::Environment;
 use crate::primitives::jws_transaction_decoded_payload::JWSTransactionDecodedPayload;
 use crate::primitives::response_body_v2_decoded_payload::ResponseBodyV2DecodedPayload;
+use crate::utils::StringExt;
 
 #[derive(thiserror::Error, Debug)]
 pub enum SignedDataVerifierError {
@@ -20,10 +21,13 @@ pub enum SignedDataVerifierError {
 
     #[error("InternalChainVerifierError")]
     InternalChainVerifierError(#[from] ChainVerifierError),
+
+    #[error("InternalDecodeError: [{0}]")]
+    InternalDecodeError(#[from] base64::DecodeError)
 }
 
 pub struct SignedDataVerifier {
-    chain_verifier: ChainVerifier,
+    root_certificates: Vec<Vec<u8>>,
     environment: Environment,
     bundle_id: String,
     app_apple_id: Option<i64>,
@@ -35,10 +39,8 @@ impl SignedDataVerifier {
            bundle_id: String,
            app_apple_id: Option<i64>,
     ) -> Self {
-        let chain_verifier = ChainVerifier::new(true, root_certificates);
-
         return SignedDataVerifier {
-            chain_verifier,
+            root_certificates,
             environment,
             bundle_id,
             app_apple_id,
@@ -100,13 +102,15 @@ impl SignedDataVerifier {
         if x5c.is_empty() {
             return Err(SignedDataVerifierError::VerificationFailure);
         }
-        let x5c = x5c.iter().map(|c| STANDARD.decode(c).expect("Expect bytes")).collect();
+
+        let x5c: Result<Vec<Vec<u8>>, DecodeError> = x5c.iter().map(|c| c.as_der_bytes()).collect();
+        let chain = x5c?;
 
         if header.alg != Algorithm::ES256 {
             return Err(SignedDataVerifierError::VerificationFailure);
         }
 
-        let pub_key = self.chain_verifier.verify(&x5c,  None)?;
+        let pub_key = verify_chain(&chain, &self.root_certificates, None)?;
 
         let decoding_key = DecodingKey::from_ec_der(pub_key.as_slice());
         let claims: [&str; 0] = [];
