@@ -1,5 +1,5 @@
-use base64::{DecodeError, Engine};
-use base64::engine::general_purpose::STANDARD;
+use base64::{DecodeError};
+
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use serde::de::DeserializeOwned;
 use crate::chain_verifier::{ChainVerifierError, verify_chain};
@@ -248,7 +248,7 @@ mod tests {
     }
 
     fn get_payload_verifier() -> SignedDataVerifier {
-        let mut verifier = SignedDataVerifier::new(
+        let verifier = SignedDataVerifier::new(
             vec![ROOT_CA_BASE64_ENCODED.as_der_bytes().unwrap()],
             Environment::Sandbox,
             "com.example".to_string(),

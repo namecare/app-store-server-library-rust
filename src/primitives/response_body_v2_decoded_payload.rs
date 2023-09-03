@@ -1,10 +1,10 @@
-use ::chrono::{DateTime, Utc};
 use crate::primitives::data::Data;
 use crate::primitives::notification_type_v2::NotificationTypeV2;
 use crate::primitives::subtype::Subtype;
 use crate::primitives::summary::Summary;
-use serde_with::TimestampMilliSeconds;
+use ::chrono::{DateTime, Utc};
 use serde_with::formats::Flexible;
+use serde_with::TimestampMilliSeconds;
 
 /// A decoded payload containing the version 2 notification data.
 ///

@@ -1,7 +1,7 @@
-use chrono::NaiveDateTime;
-use serde::{Deserialize, Serialize};
 use crate::primitives::notification_type_v2::NotificationTypeV2;
 use crate::primitives::subtype::Subtype;
+use chrono::NaiveDateTime;
+use serde::{Deserialize, Serialize};
 
 /// The request body for notification history.
 ///

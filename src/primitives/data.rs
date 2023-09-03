@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::primitives::environment::Environment;
+use serde::{Deserialize, Serialize};
 
 /// The app metadata and the signed renewal and transaction information.
 ///

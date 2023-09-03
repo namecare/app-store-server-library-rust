@@ -2,10 +2,9 @@ use std::fmt::{Display, Formatter};
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use pem::{parse, PemError};
-use ring::{error, signature};
-use ring::signature::{ECDSA_P256_SHA256_ASN1, ECDSA_P256_SHA256_ASN1_SIGNING, EcdsaKeyPair, KeyPair, Signature};
+use ring::{error};
+use ring::signature::{ECDSA_P256_SHA256_ASN1_SIGNING, EcdsaKeyPair, KeyPair, Signature};
 use thiserror::Error;
-use crate::utils::StringExt;
 
 #[derive(Error, Debug)]
 pub struct KeyRejectedWrapped(error::KeyRejected);
@@ -126,8 +125,7 @@ impl PromotionalOfferSignatureCreator {
 
 #[cfg(test)]
 mod tests {
-    use ring::signature::Signature;
-    use x509_parser::nom::character::complete::i64;
+    use ring::signature::{ECDSA_P256_SHA256_ASN1, UnparsedPublicKey};
     use crate::utils::system_timestamp;
     use super::*;
 
@@ -149,7 +147,7 @@ mod tests {
 
         // Verify
         let public_key = creator.public_key();
-        let public_key = signature::UnparsedPublicKey::new(&ECDSA_P256_SHA256_ASN1, public_key.as_slice());
+        let public_key = UnparsedPublicKey::new(&ECDSA_P256_SHA256_ASN1, public_key.as_slice());
         assert_eq!((), public_key.verify(payload.as_bytes(), signature.as_ref()).unwrap());
     }
 }

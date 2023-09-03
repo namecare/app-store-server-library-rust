@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::primitives::last_transactions_item::LastTransactionsItem;
+use serde::{Deserialize, Serialize};
 
 /// Information for auto-renewable subscriptions, including signed transaction information and signed renewal information, for one subscription group.
 ///
