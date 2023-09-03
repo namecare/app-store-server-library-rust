@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::primitives::send_attempt_item::SendAttemptItem;
+use serde::{Deserialize, Serialize};
 
 /// A response that contains the contents of the test notification sent by the App Store server and the result from your server.
 ///

@@ -1,6 +1,6 @@
+use crate::primitives::in_app_ownership_type::InAppOwnershipType;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use crate::primitives::in_app_ownership_type::InAppOwnershipType;
 
 #[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub struct TransactionHistoryRequest {

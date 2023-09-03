@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::primitives::extend_reason_code::ExtendReasonCode;
+use serde::{Deserialize, Serialize};
 
 /// The request body that contains subscription-renewal-extension data for an individual subscription.
 ///
