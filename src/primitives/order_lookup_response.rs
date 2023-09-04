@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::primitives::order_lookup_status::OrderLookupStatus;
+use serde::{Deserialize, Serialize};
 
 /// A response that includes the order lookup status and an array of signed transactions for the in-app purchases in the order.
 ///
