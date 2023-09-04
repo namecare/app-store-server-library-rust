@@ -1,13 +1,13 @@
-use ::chrono::{DateTime, Utc};
-use uuid::Uuid;
-use serde_with::TimestampMilliSeconds;
-use serde_with::formats::Flexible;
 use crate::primitives::environment::Environment;
 use crate::primitives::in_app_ownership_type::InAppOwnershipType;
 use crate::primitives::offer_type::OfferType;
 use crate::primitives::product_type::ProductType;
 use crate::primitives::revocation_reason::RevocationReason;
 use crate::primitives::transaction_reason::TransactionReason;
+use ::chrono::{DateTime, Utc};
+use serde_with::formats::Flexible;
+use serde_with::TimestampMilliSeconds;
+use uuid::Uuid;
 
 /// A decoded payload containing transaction information.
 ///

@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::primitives::environment::Environment;
+use serde::{Deserialize, Serialize};
 
 /// A response that contains the customer’s transaction history for an app.
 ///

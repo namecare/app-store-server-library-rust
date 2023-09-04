@@ -1,7 +1,7 @@
+use crate::primitives::environment::Environment;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::primitives::environment::Environment;
 
 #[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct AppTransaction {

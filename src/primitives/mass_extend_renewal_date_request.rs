@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::primitives::extend_reason_code::ExtendReasonCode;
+use serde::{Deserialize, Serialize};
 
 /// The request body that contains subscription-renewal-extension data to apply for all eligible active subscribers.
 ///
@@ -12,7 +12,6 @@ pub struct MassExtendRenewalDateRequest {
     /// maximum: 90
     #[serde(rename = "extendByDays")]
     pub extend_by_days: i32,
-
 
     /// The reason code for the subscription-renewal-date extension.
     ///

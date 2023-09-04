@@ -16,6 +16,8 @@ edition = "2021"
 # Cryptography
 x509-parser = { version = "0.15.1", features = ["verify", "validate"] }
 jsonwebtoken = { version = "8.3.0" }
+ring = "0.16.20"
+pem = "3.0.2"
 
 # Serialization
 serde = { version = "1.0.176", features = ["derive"] }

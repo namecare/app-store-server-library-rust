@@ -1,5 +1,3 @@
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use crate::primitives::account_tenure::AccountTenure;
 use crate::primitives::consumption_status::ConsumptionStatus;
 use crate::primitives::delivery_status::DeliveryStatus;
@@ -8,6 +6,8 @@ use crate::primitives::lifetime_dollars_refunded::LifetimeDollarsRefunded;
 use crate::primitives::platform::Platform;
 use crate::primitives::play_time::PlayTime;
 use crate::primitives::user_status::UserStatus;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 /// The request body containing consumption information.
 ///

@@ -1,6 +1,6 @@
+use crate::primitives::send_attempt_result::SendAttemptResult;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use crate::primitives::send_attempt_result::SendAttemptResult;
 
 /// The success or error information and the date the App Store server records when it attempts to send a server notification to your server.
 ///

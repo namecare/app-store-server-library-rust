@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::primitives::status::Status;
+use serde::{Deserialize, Serialize};
 
 /// The most recent App Store-signed transaction information and App Store-signed renewal information for an auto-renewable subscription.
 ///
