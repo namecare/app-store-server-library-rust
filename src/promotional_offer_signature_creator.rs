@@ -57,7 +57,9 @@ impl PromotionalOfferSignatureCreator {
         let private_key = pem.contents();
         let alg = &ECDSA_P256_SHA256_ASN1_SIGNING;
 
-        let ec_private_key = EcdsaKeyPair::from_pkcs8(alg, private_key).map_err(KeyRejectedWrapped)?;
+        let ec_private_key = EcdsaKeyPair::from_pkcs8(alg, private_key)
+            .map_err(KeyRejectedWrapped)?;
+
         Ok(PromotionalOfferSignatureCreator {
             ec_private_key,
             key_id,

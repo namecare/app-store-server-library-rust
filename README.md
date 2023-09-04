@@ -11,7 +11,7 @@ Specify `app-store-server-library` in your project's `Cargo.toml` file, under th
 
 ```rust
 [dependencies]
-app-store-server-library = "0.4.0"
+app-store-server-library = "0.5.0"
 ```
 Check
 [crates.io](https://crates.io/crates/app-store-server-library) for the latest version number.
@@ -21,7 +21,7 @@ Check
 ### Verification Usage
 
 ```rust
-
+// .unwrap() used for example purposes only
 let root_cert = "apple-root-cert-in-base-base64-format"; // https://www.apple.com/certificateauthority/AppleRootCA-G3.cer
 let root_cert_der = STANDARD.decode(root_cert).expect("Expect bytes"); // Use `base64` crate to decode base64 string into bytes 
 
@@ -34,6 +34,15 @@ let verifier = SignedDataVerifier::new(
 
 let payload = "signed-payload";
 let decoded_payload = verifier.verify_and_decode_notification(payload).unwrap();
+```
+
+### Promotional Offer Signature Creation
+```rust
+// .unwrap() used for example purposes only
+let private_key = include_str!("../assets/SubscriptionKey_L256SYR32L.p8");
+let creator = PromotionalOfferSignatureCreator::new(private_key, "L256SYR32L".to_string(), "com.test.app".to_string()).unwrap();
+let signature: String = creator.create_signature("com.test.product", "com.test.offer", uuid::Uuid::new_v4().to_string().as_str(), &uuid::Uuid::new_v4(), i64::try_from(system_timestamp()).unwrap()).unwrap();
+
 ```
 
 ## Documentation
