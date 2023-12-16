@@ -47,7 +47,7 @@ let signature: String = creator.create_signature("com.test.product", "com.test.o
 
 ## Documentation
 
-* The full documentation is available at [docs.rs](https://docs.rs/google_maps/)
+* The full documentation is available at [docs.rs](https://docs.rs/app-store-server-library/)
 * [WWDC Video](https://developer.apple.com/videos/play/wwdc2023/10143/)
 
 ## References
