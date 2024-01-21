@@ -11,7 +11,7 @@ Specify `app-store-server-library` in your project's `Cargo.toml` file, under th
 
 ```rust
 [dependencies]
-app-store-server-library = "0.5.0"
+app-store-server-library = "0.5.1"
 ```
 Check
 [crates.io](https://crates.io/crates/app-store-server-library) for the latest version number.
@@ -47,7 +47,7 @@ let signature: String = creator.create_signature("com.test.product", "com.test.o
 
 ## Documentation
 
-* The full documentation is available at [docs.rs](https://docs.rs/google_maps/)
+* The full documentation is available at [docs.rs](https://docs.rs/app-store-server-library/)
 * [WWDC Video](https://developer.apple.com/videos/play/wwdc2023/10143/)
 
 ## References
