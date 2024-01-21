@@ -4,7 +4,7 @@ use crate::primitives::offer_type::OfferType;
 use crate::primitives::product_type::ProductType;
 use crate::primitives::revocation_reason::RevocationReason;
 use crate::primitives::transaction_reason::TransactionReason;
-use ::chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
 use uuid::Uuid;
@@ -18,13 +18,13 @@ pub struct JWSTransactionDecodedPayload {
     /// The original transaction identifier of a purchase.
     ///
     /// [originalTransactionId](https://developer.apple.com/documentation/appstoreserverapi/originaltransactionid)
-    #[serde(rename = "signedRenewalInfo")]
+    #[serde(rename = "originalTransactionId")]
     pub original_transaction_id: Option<String>,
 
     /// The unique identifier for a transaction such as an in-app purchase, restored in-app purchase, or subscription renewal.
     ///
     /// [transactionId](https://developer.apple.com/documentation/appstoreserverapi/transactionid)
-    #[serde(rename = "signedRenewalInfo")]
+    #[serde(rename = "transactionId")]
     pub transaction_id: Option<String>,
 
     /// The unique identifier of subscription-purchase events across devices, including renewals.
