@@ -15,20 +15,20 @@ edition = "2021"
 
 # Cryptography
 x509-parser = { version = "0.15.1", features = ["verify", "validate"] }
-jsonwebtoken = { version = "8.3.0" }
-ring = "0.16.20"
-pem = "3.0.2"
+jsonwebtoken = { version = "9.2.0" }
+ring = "0.17.7"
+pem = "3.0.3"
 
 # Serialization
-serde = { version = "1.0.188", features = ["derive"] }
-serde_json = { version = "1.0.105" }
-serde_with = { version = "3.3.0", features = ["chrono"] }
-uuid = { version = "1.4.1", features = ["serde", "v4"] }
-chrono = { version = "0.4.28", features = ["serde"] }
-base64 = "0.21.3"
+serde = { version = "1.0.195", features = ["derive"] }
+serde_json = { version = "1.0.111" }
+serde_with = { version = "3.5.0", features = ["chrono"] }
+uuid = { version = "1.7.0", features = ["serde", "v4"] }
+chrono = { version = "0.4.32", features = ["serde"] }
+base64 = "0.21.7"
 
 # Utils
-thiserror = "1.0.47"
+thiserror = "1.0.56"
 
 [dev-dependencies]
 dotenv = "0.15.0"

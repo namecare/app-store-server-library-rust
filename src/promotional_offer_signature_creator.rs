@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use pem::{parse, PemError};
-use ring::{error};
+use ring::{error, rand};
 use ring::signature::{ECDSA_P256_SHA256_ASN1_SIGNING, EcdsaKeyPair, KeyPair, Signature};
 use thiserror::Error;
 
@@ -11,7 +11,7 @@ pub struct KeyRejectedWrapped(error::KeyRejected);
 
 impl PartialEq for KeyRejectedWrapped {
     fn eq(&self, other: &Self) -> bool {
-        self.0.description_() == other.0.description_()
+        self.0.to_string() == other.0.to_string()
     }
 }
 
@@ -56,8 +56,9 @@ impl PromotionalOfferSignatureCreator {
         let pem = parse(private_key)?;
         let private_key = pem.contents();
         let alg = &ECDSA_P256_SHA256_ASN1_SIGNING;
+        let rng = rand::SystemRandom::new();
 
-        let ec_private_key = EcdsaKeyPair::from_pkcs8(alg, private_key)
+        let ec_private_key = EcdsaKeyPair::from_pkcs8(alg, private_key, &rng)
             .map_err(KeyRejectedWrapped)?;
 
         Ok(PromotionalOfferSignatureCreator {
