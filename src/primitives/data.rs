@@ -1,5 +1,6 @@
 use crate::primitives::environment::Environment;
 use serde::{Deserialize, Serialize};
+use crate::primitives::status::Status;
 
 /// The app metadata and the signed renewal and transaction information.
 ///
@@ -40,4 +41,10 @@ pub struct Data {
     /// [JWSRenewalInfo](https://developer.apple.com/documentation/appstoreserverapi/jwsrenewalinfo)
     #[serde(rename = "signedRenewalInfo")]
     pub signed_renewal_info: Option<String>,
+
+    /// The status of an auto-renewable subscription at the time the App Store signs the notification.
+    ///
+    /// [JWSRenewalInfo](https://developer.apple.com/documentation/appstoreservernotifications/status)
+    #[serde(rename = "status")]
+    pub status: Option<Status>
 }
