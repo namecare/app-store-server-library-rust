@@ -4,6 +4,7 @@ use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use serde::de::DeserializeOwned;
 use crate::chain_verifier::{ChainVerifierError, verify_chain};
 use crate::primitives::environment::Environment;
+use crate::primitives::jws_renewal_info_decoded_payload::JWSRenewalInfoDecodedPayload;
 use crate::primitives::jws_transaction_decoded_payload::JWSTransactionDecodedPayload;
 use crate::primitives::response_body_v2_decoded_payload::ResponseBodyV2DecodedPayload;
 use crate::utils::StringExt;
@@ -67,6 +68,24 @@ impl SignedDataVerifier {
 
 
 impl SignedDataVerifier {
+    /// Verifies and decodes a signed renewal info.
+    ///
+    /// This method takes a signed renewal info string, verifies its authenticity and
+    /// integrity, and returns the decoded payload as a `JWSRenewalInfoDecodedPayload`
+    /// if the verification is successful.
+    ///
+    /// # Arguments
+    ///
+    /// * `signed_renewal_info` - The signed renewal info string to verify and decode.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(JWSRenewalInfoDecodedPayload)` if verification and decoding are successful.
+    /// - `Err(SignedDataVerifierError)` if verification or decoding fails, with error details.
+    pub fn verify_and_decode_renewal_info(&self, signed_renewal_info: &str) -> Result<JWSRenewalInfoDecodedPayload, SignedDataVerifierError> {
+        Ok(self.decode_signed_object(signed_renewal_info)?)
+    }
+
     /// Verifies and decodes a signed transaction.
     ///
     /// This method takes a signed transaction string, verifies its authenticity and
@@ -219,12 +238,12 @@ mod tests {
         assert_eq!(result.err().unwrap(), SignedDataVerifierError::InvalidAppIdentifier);
     }
 
-    // #[test]
-    // fn test_renewal_info_decoding() {
-    //     let verifier = get_payload_verifier();
-    //     let notification = verifier.verify_and_decode_renewal_info(RENEWAL_INFO);
-    //     assert_eq!(notification.environment, Environment::Sandbox);
-    // }
+    #[test]
+    fn test_renewal_info_decoding() {
+        let verifier = get_payload_verifier();
+        let renewal_info = verifier.verify_and_decode_renewal_info(RENEWAL_INFO).unwrap();
+        assert_eq!(renewal_info.environment, Some(Environment::Sandbox));
+    }
 
     #[test]
     fn test_transaction_info_decoding() {
