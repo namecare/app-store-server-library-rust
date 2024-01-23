@@ -50,3 +50,4 @@ pub mod transaction_history_request;
 pub mod transaction_info_response;
 pub mod transaction_reason;
 pub mod user_status;
+pub mod offer_discount_type;

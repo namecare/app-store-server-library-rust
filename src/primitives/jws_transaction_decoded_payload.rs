@@ -8,6 +8,7 @@ use chrono::{DateTime, Utc};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
 use uuid::Uuid;
+use crate::primitives::offer_discount_type::OfferDiscountType;
 
 /// A decoded payload containing transaction information.
 ///
@@ -155,4 +156,20 @@ pub struct JWSTransactionDecodedPayload {
     /// [transactionReason](https://developer.apple.com/documentation/appstoreserverapi/transactionreason)
     #[serde(rename = "transactionReason")]
     pub transaction_reason: Option<TransactionReason>,
+
+    /// The three-letter ISO 4217 currency code for the price of the product.
+    ///
+    /// [currency](https://developer.apple.com/documentation/appstoreserverapi/currency)
+    pub currency: Option<String>,
+
+    /// The price of the in-app purchase or subscription offer that you configured in App Store Connect, as an integer.
+    ///
+    /// [price](https://developer.apple.com/documentation/appstoreserverapi/price)
+    pub price: Option<i32>,
+
+    /// The payment mode you configure for an introductory offer, promotional offer, or offer code on an auto-renewable subscription.
+    ///
+    /// [offerDiscountType](https://developer.apple.com/documentation/appstoreserverapi/offerdiscounttype)
+    #[serde(rename = "offerDiscountType")]
+    pub offer_discount_type: Option<OfferDiscountType>
 }
