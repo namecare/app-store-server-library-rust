@@ -1,6 +1,6 @@
-use std::time::{SystemTime};
-use base64::{DecodeError, Engine};
 use base64::engine::general_purpose::STANDARD;
+use base64::{DecodeError, Engine};
+use std::time::SystemTime;
 
 /// Returns the current system timestamp in seconds since the UNIX EPOCH.
 ///
@@ -36,13 +36,13 @@ pub trait StringExt {
     fn as_der_bytes(&self) -> Result<Vec<u8>, DecodeError>;
 }
 
-impl StringExt for String  {
+impl StringExt for String {
     fn as_der_bytes(&self) -> Result<Vec<u8>, DecodeError> {
         STANDARD.decode(self)
     }
 }
 
-impl StringExt for &str  {
+impl StringExt for &str {
     fn as_der_bytes(&self) -> Result<Vec<u8>, DecodeError> {
         STANDARD.decode(self)
     }
