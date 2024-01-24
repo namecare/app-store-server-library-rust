@@ -1,10 +1,12 @@
+use crate::chain_verifier::ChainVerificationFailureReason::{
+    CertificateExpired, InvalidCertificate, InvalidChainLength, InvalidEffectiveDate,
+};
 use thiserror::Error;
-use crate::chain_verifier::ChainVerificationFailureReason::{CertificateExpired, InvalidCertificate, InvalidChainLength, InvalidEffectiveDate};
 
 use x509_parser::certificate::X509Certificate;
-use x509_parser::prelude::{FromDer, ASN1Time};
 use x509_parser::der_parser::asn1_rs::oid;
 use x509_parser::error::X509Error;
+use x509_parser::prelude::{ASN1Time, FromDer};
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ChainVerifierError {
@@ -15,7 +17,7 @@ pub enum ChainVerifierError {
     InternalX509Error(#[from] X509Error),
 
     #[error("InternalDecodeError: [{0}]")]
-    InternalDecodeError(#[from] base64::DecodeError)
+    InternalDecodeError(#[from] base64::DecodeError),
 }
 
 #[derive(Error, Debug, PartialEq)]
@@ -39,7 +41,7 @@ pub enum ChainVerificationFailureReason {
     InvalidEffectiveDate,
 
     #[error("CertificateExpired")]
-    CertificateExpired
+    CertificateExpired,
 }
 
 const EXPECTED_CHAIN_LENGTH: usize = 3;
@@ -78,7 +80,11 @@ const EXPECTED_CHAIN_LENGTH: usize = 3;
 /// ```
 ///
 /// TODO: Implement issuer checking
-pub fn verify_chain(certificates: &Vec<Vec<u8>>, root_certificates: &Vec<Vec<u8>>, effective_date: Option<u64>) -> Result<Vec<u8>, ChainVerifierError> {
+pub fn verify_chain(
+    certificates: &Vec<Vec<u8>>,
+    root_certificates: &Vec<Vec<u8>>,
+    effective_date: Option<u64>,
+) -> Result<Vec<u8>, ChainVerifierError> {
     if root_certificates.is_empty() {
         return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
     }
@@ -93,17 +99,22 @@ pub fn verify_chain(certificates: &Vec<Vec<u8>>, root_certificates: &Vec<Vec<u8>
     };
     let leaf_certificate = leaf_certificate.1;
 
-    let Some(_) = leaf_certificate.get_extension_unique(&oid!(1.2.840.113635.100.6.11.1))? else {
+    let Some(_) = leaf_certificate.get_extension_unique(&oid!(1.2.840.113635.100.6.11.1))?
+    else {
         return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
     };
 
     let intermediate_certificate = &certificates[1];
-    let Ok(intermediate_certificate) = X509Certificate::from_der(intermediate_certificate.as_slice()) else {
+    let Ok(intermediate_certificate) =
+        X509Certificate::from_der(intermediate_certificate.as_slice())
+    else {
         return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
     };
     let intermediate_certificate = intermediate_certificate.1;
 
-    let Some(_) = intermediate_certificate.get_extension_unique(&oid!(1.2.840.113635.100.6.2.1))? else {
+    let Some(_) =
+        intermediate_certificate.get_extension_unique(&oid!(1.2.840.113635.100.6.2.1))?
+    else {
         return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
     };
 
@@ -116,27 +127,30 @@ pub fn verify_chain(certificates: &Vec<Vec<u8>>, root_certificates: &Vec<Vec<u8>
 
         match intermediate_certificate.verify_signature(Some(cert.1.public_key())) {
             Ok(_) => (),
-            Err(e) => return Err(ChainVerifierError::InternalX509Error(e))
+            Err(e) => return Err(ChainVerifierError::InternalX509Error(e)),
         }
 
         root_certificate = Some(cert.1)
     }
 
     let Some(root_certificate) = root_certificate else {
-        return Err(ChainVerifierError::VerificationFailure(InvalidCertificate))
+        return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
     };
 
     leaf_certificate.verify_signature(Some(intermediate_certificate.public_key()))?;
 
     if let Some(date) = effective_date {
         let Ok(time) = ASN1Time::from_timestamp(i64::try_from(date).unwrap()) else {
-            return Err(ChainVerifierError::VerificationFailure(InvalidEffectiveDate))
+            return Err(ChainVerifierError::VerificationFailure(
+                InvalidEffectiveDate,
+            ));
         };
 
-        if !(root_certificate.validity.is_valid_at(time) &&
-            leaf_certificate.validity.is_valid_at(time) &&
-            intermediate_certificate.validity.is_valid_at(time)) {
-            return Err(ChainVerifierError::VerificationFailure(CertificateExpired))
+        if !(root_certificate.validity.is_valid_at(time)
+            && leaf_certificate.validity.is_valid_at(time)
+            && intermediate_certificate.validity.is_valid_at(time))
+        {
+            return Err(ChainVerifierError::VerificationFailure(CertificateExpired));
         }
     }
 
@@ -146,19 +160,10 @@ pub fn verify_chain(certificates: &Vec<Vec<u8>>, root_certificates: &Vec<Vec<u8>
 
 #[cfg(test)]
 mod tests {
-    use base64::{DecodeError, Engine};
-    use base64::engine::general_purpose::STANDARD;
-    use crate::utils::{StringExt};
     use super::*;
-
-    pub fn signed_payload() -> String {
-        std::env::var("SIGNED_PAYLOAD").expect("SIGNED_PAYLOAD must be set")
-    }
-
-    pub fn apple_root_cert() -> String {
-        std::env::var("APPLE_ROOT_BASE64_ENCODED").expect("APPLE_ROOT_BASE64_ENCODED must be set")
-    }
-
+    use crate::utils::StringExt;
+    use base64::engine::general_purpose::STANDARD;
+    use base64::{DecodeError, Engine};
     extern crate base64;
 
     use x509_parser::error::X509Error::SignatureVerificationError;
@@ -185,20 +190,30 @@ mod tests {
         let intermediate = INTERMEDIATE_CA_BASE64_ENCODED.as_der_bytes().unwrap();
         let chain = vec![leaf.clone(), intermediate, root.clone()];
 
-        let public_key = verify_chain(&chain, &vec![root],  Some(EFFECTIVE_DATE))?;
-        assert_eq!(LEAF_CERT_PUBLIC_KEY_BASE64_ENCODED.as_der_bytes().unwrap(), public_key);
+        let public_key = verify_chain(&chain, &vec![root], Some(EFFECTIVE_DATE))?;
+        assert_eq!(
+            LEAF_CERT_PUBLIC_KEY_BASE64_ENCODED.as_der_bytes().unwrap(),
+            public_key
+        );
         Ok(())
     }
 
     #[test]
     fn test_valid_chain_invalid_intermediate_oid_without_ocsp() -> Result<(), ChainVerifierError> {
         let root = ROOT_CA_BASE64_ENCODED.as_der_bytes().unwrap();
-        let leaf = LEAF_CERT_BASE64_ENCODED.as_der_bytes().unwrap();
-        let intermediate = INTERMEDIATE_CA_INVALID_OID_BASE64_ENCODED.as_der_bytes().unwrap();
+        let leaf = LEAF_CERT_FOR_INTERMEDIATE_CA_INVALID_OID_BASE64_ENCODED
+            .as_der_bytes()
+            .unwrap();
+        let intermediate = INTERMEDIATE_CA_INVALID_OID_BASE64_ENCODED
+            .as_der_bytes()
+            .unwrap();
         let chain = vec![leaf.clone(), intermediate, root.clone()];
 
-        let public_key = verify_chain(&chain, &vec![root],  Some(EFFECTIVE_DATE));
-        assert_eq!(public_key.expect_err("Expect error"), ChainVerifierError::VerificationFailure(InvalidCertificate));
+        let public_key = verify_chain(&chain, &vec![root], Some(EFFECTIVE_DATE));
+        assert_eq!(
+            public_key.expect_err("Expect error"),
+            ChainVerifierError::VerificationFailure(InvalidCertificate)
+        );
         Ok(())
     }
 
@@ -209,8 +224,11 @@ mod tests {
         let intermediate = INTERMEDIATE_CA_BASE64_ENCODED.as_der_bytes().unwrap();
         let chain = vec![leaf.clone(), intermediate, root.clone()];
 
-        let public_key = verify_chain(&chain, &vec![root],  Some(EFFECTIVE_DATE));
-        assert_eq!(public_key.expect_err("Expect error"), ChainVerifierError::VerificationFailure(InvalidCertificate));
+        let public_key = verify_chain(&chain, &vec![root], Some(EFFECTIVE_DATE));
+        assert_eq!(
+            public_key.expect_err("Expect error"),
+            ChainVerifierError::VerificationFailure(InvalidCertificate)
+        );
         Ok(())
     }
 
@@ -218,17 +236,25 @@ mod tests {
     fn test_invalid_chain_length() -> Result<(), ChainVerifierError> {
         let root = ROOT_CA_BASE64_ENCODED.as_der_bytes().unwrap();
         let leaf = LEAF_CERT_BASE64_ENCODED.as_der_bytes().unwrap();
-        let intermediate = INTERMEDIATE_CA_INVALID_OID_BASE64_ENCODED.as_der_bytes().unwrap();
+        let intermediate = INTERMEDIATE_CA_INVALID_OID_BASE64_ENCODED
+            .as_der_bytes()
+            .unwrap();
         let chain = vec![leaf.clone(), intermediate];
 
-        let public_key = verify_chain(&chain, &vec![root],  Some(EFFECTIVE_DATE));
-        assert_eq!(public_key.expect_err("Expect error"), ChainVerifierError::VerificationFailure(InvalidChainLength));
+        let public_key = verify_chain(&chain, &vec![root], Some(EFFECTIVE_DATE));
+        assert_eq!(
+            public_key.expect_err("Expect error"),
+            ChainVerifierError::VerificationFailure(InvalidChainLength)
+        );
         Ok(())
     }
 
     #[test]
     fn test_invalid_base64_in_certificate_list() -> Result<(), ChainVerifierError> {
-        assert_eq!("abc".as_der_bytes().expect_err("Expect Error"), DecodeError::InvalidPadding);
+        assert_eq!(
+            "abc".as_der_bytes().expect_err("Expect Error"),
+            DecodeError::InvalidPadding
+        );
         Ok(())
     }
 
@@ -239,8 +265,11 @@ mod tests {
         let intermediate = INTERMEDIATE_CA_BASE64_ENCODED.as_der_bytes().unwrap();
         let chain = vec![leaf.clone(), intermediate, root.clone()];
 
-        let public_key = verify_chain(&chain, &vec![root],  Some(EFFECTIVE_DATE));
-        assert_eq!(public_key.expect_err("Expect error"), ChainVerifierError::VerificationFailure(InvalidCertificate));
+        let public_key = verify_chain(&chain, &vec![root], Some(EFFECTIVE_DATE));
+        assert_eq!(
+            public_key.expect_err("Expect error"),
+            ChainVerifierError::VerificationFailure(InvalidCertificate)
+        );
         Ok(())
     }
 
@@ -252,8 +281,11 @@ mod tests {
         let intermediate = INTERMEDIATE_CA_BASE64_ENCODED.as_der_bytes().unwrap();
         let chain = vec![leaf.clone(), intermediate, root.clone()];
 
-        let public_key = verify_chain(&chain, &vec![malformed_root],  Some(EFFECTIVE_DATE));
-        assert_eq!(public_key.expect_err("Expect error"), ChainVerifierError::VerificationFailure(InvalidCertificate));
+        let public_key = verify_chain(&chain, &vec![malformed_root], Some(EFFECTIVE_DATE));
+        assert_eq!(
+            public_key.expect_err("Expect error"),
+            ChainVerifierError::VerificationFailure(InvalidCertificate)
+        );
         Ok(())
     }
 
@@ -265,8 +297,11 @@ mod tests {
         let intermediate = INTERMEDIATE_CA_BASE64_ENCODED.as_der_bytes().unwrap();
         let chain = vec![leaf.clone(), intermediate, root.clone()];
 
-        let public_key = verify_chain(&chain, &vec![real_root],  Some(EFFECTIVE_DATE));
-        assert_eq!(public_key.expect_err("Expect error"), ChainVerifierError::InternalX509Error(SignatureVerificationError));
+        let public_key = verify_chain(&chain, &vec![real_root], Some(EFFECTIVE_DATE));
+        assert_eq!(
+            public_key.expect_err("Expect error"),
+            ChainVerifierError::InternalX509Error(SignatureVerificationError)
+        );
         Ok(())
     }
 
@@ -277,16 +312,26 @@ mod tests {
         let intermediate = INTERMEDIATE_CA_BASE64_ENCODED.as_der_bytes().unwrap();
         let chain = vec![leaf.clone(), intermediate, root.clone()];
 
-        let public_key = verify_chain(&chain, &vec![root],  Some(2280946846));
-        assert_eq!(public_key.expect_err("Expect error"), ChainVerifierError::VerificationFailure(CertificateExpired));
+        let public_key = verify_chain(&chain, &vec![root], Some(2280946846));
+        assert_eq!(
+            public_key.expect_err("Expect error"),
+            ChainVerifierError::VerificationFailure(CertificateExpired)
+        );
         Ok(())
     }
 
-    // #[test]
-    // fn test_apple_chain_is_valid_with_ocsp_and_strict() -> Result<(), ChainVerifierError> {
-    //     // Implement this test case.
-    //     todo!();
-    //     unimplemented!()
-    // }
-}
+    #[test]
+    fn test_apple_chain_is_valid() -> Result<(), ChainVerifierError> {
+        let root = REAL_APPLE_ROOT_BASE64_ENCODED.as_der_bytes().unwrap();
+        let leaf = REAL_APPLE_SIGNING_CERTIFICATE_BASE64_ENCODED
+            .as_der_bytes()
+            .unwrap();
+        let intermediate = REAL_APPLE_INTERMEDIATE_BASE64_ENCODED
+            .as_der_bytes()
+            .unwrap();
+        let chain = vec![leaf.clone(), intermediate, root.clone()];
 
+        let _public_key = verify_chain(&chain, &vec![root], Some(EFFECTIVE_DATE)).unwrap();
+        Ok(())
+    }
+}

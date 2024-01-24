@@ -1,5 +1,6 @@
 use crate::primitives::environment::Environment;
 use crate::primitives::in_app_ownership_type::InAppOwnershipType;
+use crate::primitives::offer_discount_type::OfferDiscountType;
 use crate::primitives::offer_type::OfferType;
 use crate::primitives::product_type::ProductType;
 use crate::primitives::revocation_reason::RevocationReason;
@@ -8,7 +9,6 @@ use chrono::{DateTime, Utc};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
 use uuid::Uuid;
-use crate::primitives::offer_discount_type::OfferDiscountType;
 
 /// A decoded payload containing transaction information.
 ///
@@ -31,7 +31,7 @@ pub struct JWSTransactionDecodedPayload {
     /// The unique identifier of subscription-purchase events across devices, including renewals.
     ///
     /// [webOrderLineItemId](https://developer.apple.com/documentation/appstoreserverapi/weborderlineitemid)
-    #[serde(rename = "signedRenewalInfo")]
+    #[serde(rename = "webOrderLineItemId")]
     pub web_order_line_item_id: Option<String>,
 
     /// The bundle identifier of an app.
@@ -171,5 +171,5 @@ pub struct JWSTransactionDecodedPayload {
     ///
     /// [offerDiscountType](https://developer.apple.com/documentation/appstoreserverapi/offerdiscounttype)
     #[serde(rename = "offerDiscountType")]
-    pub offer_discount_type: Option<OfferDiscountType>
+    pub offer_discount_type: Option<OfferDiscountType>,
 }

@@ -1,6 +1,10 @@
-use serde::{Deserialize, Serialize};
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
-#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
+/// The age of the customer’s account.
+///
+/// [accountTenure](https://developer.apple.com/documentation/appstoreserverapi/accounttenure)
+#[derive(Debug, Clone, Deserialize_repr, Serialize_repr, Hash, PartialEq, Eq)]
+#[repr(u8)]
 pub enum AccountTenure {
     Undeclared = 0,
     ZeroToThreeDays = 1,
