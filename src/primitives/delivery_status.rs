@@ -1,4 +1,4 @@
-use serde_repr::{Serialize_repr, Deserialize_repr};
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
 /// A value that indicates whether the app successfully delivered an in-app purchase that works properly.
 ///

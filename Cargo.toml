@@ -31,5 +31,4 @@ base64 = "0.21.7"
 # Utils
 thiserror = "1.0.56"
 
-[dev-dependencies]
-dotenv = "0.15.0"
+

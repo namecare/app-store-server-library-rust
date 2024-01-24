@@ -99,7 +99,7 @@ pub fn verify_chain(
     };
     let leaf_certificate = leaf_certificate.1;
 
-    let Some(_) = leaf_certificate.get_extension_unique(&oid!(1.2.840 .113635 .100 .6 .11 .1))?
+    let Some(_) = leaf_certificate.get_extension_unique(&oid!(1.2.840.113635.100.6.11.1))?
     else {
         return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
     };
@@ -113,7 +113,7 @@ pub fn verify_chain(
     let intermediate_certificate = intermediate_certificate.1;
 
     let Some(_) =
-        intermediate_certificate.get_extension_unique(&oid!(1.2.840 .113635 .100 .6 .2 .1))?
+        intermediate_certificate.get_extension_unique(&oid!(1.2.840.113635.100.6.2.1))?
     else {
         return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
     };
@@ -164,15 +164,6 @@ mod tests {
     use crate::utils::StringExt;
     use base64::engine::general_purpose::STANDARD;
     use base64::{DecodeError, Engine};
-
-    pub fn signed_payload() -> String {
-        std::env::var("SIGNED_PAYLOAD").expect("SIGNED_PAYLOAD must be set")
-    }
-
-    pub fn apple_root_cert() -> String {
-        std::env::var("APPLE_ROOT_BASE64_ENCODED").expect("APPLE_ROOT_BASE64_ENCODED must be set")
-    }
-
     extern crate base64;
 
     use x509_parser::error::X509Error::SignatureVerificationError;
@@ -210,7 +201,9 @@ mod tests {
     #[test]
     fn test_valid_chain_invalid_intermediate_oid_without_ocsp() -> Result<(), ChainVerifierError> {
         let root = ROOT_CA_BASE64_ENCODED.as_der_bytes().unwrap();
-        let leaf = LEAF_CERT_BASE64_ENCODED.as_der_bytes().unwrap();
+        let leaf = LEAF_CERT_FOR_INTERMEDIATE_CA_INVALID_OID_BASE64_ENCODED
+            .as_der_bytes()
+            .unwrap();
         let intermediate = INTERMEDIATE_CA_INVALID_OID_BASE64_ENCODED
             .as_der_bytes()
             .unwrap();
@@ -324,6 +317,21 @@ mod tests {
             public_key.expect_err("Expect error"),
             ChainVerifierError::VerificationFailure(CertificateExpired)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn test_apple_chain_is_valid() -> Result<(), ChainVerifierError> {
+        let root = REAL_APPLE_ROOT_BASE64_ENCODED.as_der_bytes().unwrap();
+        let leaf = REAL_APPLE_SIGNING_CERTIFICATE_BASE64_ENCODED
+            .as_der_bytes()
+            .unwrap();
+        let intermediate = REAL_APPLE_INTERMEDIATE_BASE64_ENCODED
+            .as_der_bytes()
+            .unwrap();
+        let chain = vec![leaf.clone(), intermediate, root.clone()];
+
+        let _public_key = verify_chain(&chain, &vec![root], Some(EFFECTIVE_DATE)).unwrap();
         Ok(())
     }
 }
