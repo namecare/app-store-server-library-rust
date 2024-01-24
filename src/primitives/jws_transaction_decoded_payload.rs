@@ -31,7 +31,7 @@ pub struct JWSTransactionDecodedPayload {
     /// The unique identifier of subscription-purchase events across devices, including renewals.
     ///
     /// [webOrderLineItemId](https://developer.apple.com/documentation/appstoreserverapi/weborderlineitemid)
-    #[serde(rename = "signedRenewalInfo")]
+    #[serde(rename = "webOrderLineItemId")]
     pub web_order_line_item_id: Option<String>,
 
     /// The bundle identifier of an app.
