@@ -1,15 +1,20 @@
 use crate::primitives::in_app_ownership_type::InAppOwnershipType;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use serde_with::formats::Flexible;
+use serde_with::TimestampMilliSeconds;
 
+#[serde_with::serde_as]
 #[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub struct TransactionHistoryRequest {
     /// An optional start date of the timespan for the transaction history records you’re requesting.
     #[serde(rename = "startDate")]
+    #[serde_as(as = "Option<TimestampMilliSeconds<String, Flexible>>")]
     pub start_date: Option<DateTime<Utc>>,
 
     /// An optional end date of the timespan for the transaction history records you’re requesting.
     #[serde(rename = "endDate")]
+    #[serde_as(as = "Option<TimestampMilliSeconds<String, Flexible>>")]
     pub end_date: Option<DateTime<Utc>>,
 
     /// An optional filter that indicates the product identifier to include in the transaction history.
