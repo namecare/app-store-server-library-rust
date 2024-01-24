@@ -23,6 +23,7 @@ pem = "3.0.3"
 serde = { version = "1.0.195", features = ["derive"] }
 serde_json = { version = "1.0.111" }
 serde_with = { version = "3.5.0", features = ["chrono"] }
+serde_repr = "0.1.18"
 uuid = { version = "1.7.0", features = ["serde", "v4"] }
 chrono = { version = "0.4.32", features = ["serde"] }
 base64 = "0.21.7"
