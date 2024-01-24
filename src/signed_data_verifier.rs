@@ -8,6 +8,7 @@ use crate::primitives::response_body_v2_decoded_payload::ResponseBodyV2DecodedPa
 use crate::utils::StringExt;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use serde::de::DeserializeOwned;
+use crate::primitives::app_transaction::AppTransaction;
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum SignedDataVerifierError {
@@ -170,6 +171,37 @@ impl SignedDataVerifier {
         }
 
         Ok(decoded_signed_notification)
+    }
+
+    /// Verifies and decodes a signed notification.
+    ///
+    /// This method takes a signed notification string, verifies its authenticity and
+    /// integrity, and returns the decoded payload as a `ResponseBodyV2DecodedPayload`
+    /// if the verification is successful.
+    ///
+    /// # Arguments
+    ///
+    /// * `signed_payload` - The signed notification string to verify and decode.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(ResponseBodyV2DecodedPayload)` if verification and decoding are successful.
+    /// - `Err(SignedDataVerifierError)` if verification or decoding fails, with error details.
+    pub fn verify_and_decode_app_transaction(
+        &self,
+        signed_app_transaction: &str,
+    ) -> Result<AppTransaction, SignedDataVerifierError> {
+        let decoded_app_transaction: AppTransaction = self.decode_signed_object(signed_app_transaction)?;
+
+        if decoded_app_transaction.bundle_id.as_ref() != Some(&self.bundle_id) {
+            return Err(SignedDataVerifierError::InvalidAppIdentifier);
+        }
+
+        if decoded_app_transaction.receipt_type.as_ref() != Some(&self.environment) {
+            return Err(SignedDataVerifierError::InvalidEnvironment);
+        }
+
+        Ok(decoded_app_transaction)
     }
 
     /// Private method used for decoding a signed object (internal use).
