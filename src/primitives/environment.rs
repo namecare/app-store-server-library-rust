@@ -6,4 +6,8 @@ pub enum Environment {
     Sandbox,
     #[serde(rename = "Production")]
     Production,
+    #[serde(rename = "Xcode")]
+    Xcode,
+    #[serde(rename = "LocalTesting")]
+    LocalTesting,
 }

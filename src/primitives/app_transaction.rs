@@ -71,7 +71,6 @@ pub struct AppTransaction {
 }
 
 impl AppTransaction {
-
     /// The date that the App Store signed the JWS app transaction.
     /// [signedDate](https://developer.apple.com/documentation/storekit/apptransaction/3954449-signeddate)
     pub fn signed_date(&self) -> Option<DateTime<Utc>> {

@@ -1,4 +1,4 @@
-use serde_repr::{Serialize_repr, Deserialize_repr};
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
 /// A value that indicates the amount of time that the customer used the app.
 ///

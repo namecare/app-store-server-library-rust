@@ -1,4 +1,4 @@
-use serde_repr::{Serialize_repr, Deserialize_repr};
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
 /// The platform on which the customer consumed the in-app purchase.
 ///

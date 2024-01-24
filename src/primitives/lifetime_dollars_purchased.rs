@@ -1,4 +1,4 @@
-use serde_repr::{Serialize_repr, Deserialize_repr};
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
 /// A value that indicates the total amount, in USD, of in-app purchases the customer has made in your app, across all platforms.
 ///
