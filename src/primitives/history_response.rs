@@ -9,30 +9,36 @@ pub struct HistoryResponse {
     /// A token you use in a query to request the next set of transactions for the customer.
     ///
     /// [revision](https://developer.apple.com/documentation/appstoreserverapi/revision)
+    #[serde(rename = "revision")]
     pub revision: Option<String>,
 
     /// A Boolean value indicating whether the App Store has more transaction data.
     ///
     /// [hasMore](https://developer.apple.com/documentation/appstoreserverapi/hasmore)
+    #[serde(rename = "hasMore")]
     pub has_more: Option<bool>,
 
     /// The bundle identifier of an app.
     ///
-    /// [bundle_id](https://developer.apple.com/documentation/appstoreserverapi/bundleid)
+    /// [bundleId](https://developer.apple.com/documentation/appstoreserverapi/bundleid)
+    #[serde(rename = "bundleId")]
     pub bundle_id: Option<String>,
 
     /// The unique identifier of an app in the App Store.
     ///
-    /// [app_apple_id](https://developer.apple.com/documentation/appstoreservernotifications/appappleid)
+    /// [appAppleId](https://developer.apple.com/documentation/appstoreservernotifications/appappleid)
+    #[serde(rename = "appAppleId")]
     pub app_apple_id: Option<i64>,
 
     /// The server environment in which you’re making the request, whether sandbox or production.
     ///
     /// [environment](https://developer.apple.com/documentation/appstoreserverapi/environment)
+    #[serde(rename = "environment")]
     pub environment: Option<Environment>,
 
     /// An array of in-app purchase transactions for the customer, signed by Apple, in JSON Web Signature format.
     ///
     /// [JWSTransaction](https://developer.apple.com/documentation/appstoreserverapi/jwstransaction)
+    #[serde(rename = "signedTransactions")]
     pub signed_transactions: Option<Vec<String>>,
 }

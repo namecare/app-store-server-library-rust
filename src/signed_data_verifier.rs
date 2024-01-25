@@ -26,7 +26,7 @@ pub enum SignedDataVerifierError {
     InternalChainVerifierError(#[from] ChainVerifierError),
 
     #[error("InternalDecodeError: [{0}]")]
-    InternalDecodeError(#[from] base64::DecodeError),
+    InternalDecodeError(#[from] DecodeError),
 
     #[error("InternalJWTError: [{0}]")]
     InternalJWTError(#[from] jsonwebtoken::errors::Error),
@@ -295,6 +295,7 @@ mod tests {
     const WRONG_BUNDLE_ID: &str = "eyJ4NWMiOlsiTUlJQm9EQ0NBVWFnQXdJQkFnSUJEREFLQmdncWhrak9QUVFEQXpCRk1Rc3dDUVlEVlFRR0V3SlZVekVMTUFrR0ExVUVDQXdDUTBFeEVqQVFCZ05WQkFjTUNVTjFjR1Z5ZEdsdWJ6RVZNQk1HQTFVRUNnd01TVzUwWlhKdFpXUnBZWFJsTUI0WERUSXpNREV3TlRJeE16RXpORm9YRFRNek1ERXdNVEl4TXpFek5Gb3dQVEVMTUFrR0ExVUVCaE1DVlZNeEN6QUpCZ05WQkFnTUFrTkJNUkl3RUFZRFZRUUhEQWxEZFhCbGNuUnBibTh4RFRBTEJnTlZCQW9NQkV4bFlXWXdXVEFUQmdjcWhrak9QUUlCQmdncWhrak9QUU1CQndOQ0FBVGl0WUhFYVlWdWM4ZzlBalRPd0VyTXZHeVB5a1BhK3B1dlRJOGhKVEhaWkRMR2FzMnFYMStFcnhnUVRKZ1ZYdjc2bm1MaGhSSkgrajI1QWlBSThpR3NveTh3TFRBSkJnTlZIUk1FQWpBQU1BNEdBMVVkRHdFQi93UUVBd0lIZ0RBUUJnb3Foa2lHOTJOa0Jnc0JCQUlGQURBS0JnZ3Foa2pPUFFRREF3TklBREJGQWlCWDRjK1QwRnA1bko1UVJDbFJmdTVQU0J5UnZOUHR1YVRzazB2UEIzV0FJQUloQU5nYWF1QWovWVA5czBBa0VoeUpoeFFPLzZRMnpvdVorSDFDSU9laG5NelEiLCJNSUlCbnpDQ0FVV2dBd0lCQWdJQkN6QUtCZ2dxaGtqT1BRUURBekEyTVFzd0NRWURWUVFHRXdKVlV6RVRNQkVHQTFVRUNBd0tRMkZzYVdadmNtNXBZVEVTTUJBR0ExVUVCd3dKUTNWd1pYSjBhVzV2TUI0WERUSXpNREV3TlRJeE16RXdOVm9YRFRNek1ERXdNVEl4TXpFd05Wb3dSVEVMTUFrR0ExVUVCaE1DVlZNeEN6QUpCZ05WQkFnTUFrTkJNUkl3RUFZRFZRUUhEQWxEZFhCbGNuUnBibTh4RlRBVEJnTlZCQW9NREVsdWRHVnliV1ZrYVdGMFpUQlpNQk1HQnlxR1NNNDlBZ0VHQ0NxR1NNNDlBd0VIQTBJQUJCVU41VjlyS2pmUmlNQUlvakVBMEF2NU1wMG9GK08wY0w0Z3pyVEYxNzhpblVIdWdqN0V0NDZOcmtRN2hLZ01WbmpvZ3E0NVExck1zK2NNSFZOSUxXcWpOVEF6TUE4R0ExVWRFd1FJTUFZQkFmOENBUUF3RGdZRFZSMFBBUUgvQkFRREFnRUdNQkFHQ2lxR1NJYjNZMlFHQWdFRUFnVUFNQW9HQ0NxR1NNNDlCQU1EQTBnQU1FVUNJUUNtc0lLWXM0MXVsbHNzSFg0clZ2ZVVUMFo3SXM1L2hMSzFsRlBUdHVuM2hBSWdjMisyUkc1K2dOY0ZWY3MrWEplRWw0R1orb2psM1JPT21sbCt5ZTdkeW5RPSIsIk1JSUJnakNDQVNtZ0F3SUJBZ0lKQUxVYzVBTGlINXBiTUFvR0NDcUdTTTQ5QkFNRE1EWXhDekFKQmdOVkJBWVRBbFZUTVJNd0VRWURWUVFJREFwRFlXeHBabTl5Ym1saE1SSXdFQVlEVlFRSERBbERkWEJsY25ScGJtOHdIaGNOTWpNd01UQTFNakV6TURJeVdoY05Nek13TVRBeU1qRXpNREl5V2pBMk1Rc3dDUVlEVlFRR0V3SlZVekVUTUJFR0ExVUVDQXdLUTJGc2FXWnZjbTVwWVRFU01CQUdBMVVFQnd3SlEzVndaWEowYVc1dk1Ga3dFd1lIS29aSXpqMENBUVlJS29aSXpqMERBUWNEUWdBRWMrL0JsK2dvc3BvNnRmOVo3aW81dGRLZHJsTjFZZFZucUVoRURYRFNoemRBSlBRaWphbVhJTUhmOHhXV1RhMXpnb1lUeE9LcGJ1SnREcGx6MVhyaVRhTWdNQjR3REFZRFZSMFRCQVV3QXdFQi96QU9CZ05WSFE4QkFmOEVCQU1DQVFZd0NnWUlLb1pJemowRUF3TURSd0F3UkFJZ2VtV1FYbk1BZFRhZDJKREpXbmc5VTR1QkJMNW1BN1dJMDVIN29IN2M2aVFDSUhpUnFNak5melVBeWl1OWg2ck9VL0sraVRSMEkvM1kvTlNXc1hIWCthY2MiXSwidHlwIjoiSldUIiwiYWxnIjoiRVMyNTYifQ.eyJkYXRhIjp7ImJ1bmRsZUlkIjoiY29tLmV4YW1wbGUud3JvbmcifSwibm90aWZpY2F0aW9uVVVJRCI6IjlhZDU2YmQyLTBiYzYtNDJlMC1hZjI0LWZkOTk2ZDg3YTFlNiIsIm5vdGlmaWNhdGlvblR5cGUiOiJURVNUIn0.WWE31hTB_mcv2O_lf-xI-MNY3d8txc0MzpqFx4QnYDfFIxB95Lo2Fm3r46YSjLLdL7xCWdEJrJP5bHgRCejAGg";
     const RENEWAL_INFO: &str = "eyJ4NWMiOlsiTUlJQm9EQ0NBVWFnQXdJQkFnSUJEREFLQmdncWhrak9QUVFEQXpCRk1Rc3dDUVlEVlFRR0V3SlZVekVMTUFrR0ExVUVDQXdDUTBFeEVqQVFCZ05WQkFjTUNVTjFjR1Z5ZEdsdWJ6RVZNQk1HQTFVRUNnd01TVzUwWlhKdFpXUnBZWFJsTUI0WERUSXpNREV3TlRJeE16RXpORm9YRFRNek1ERXdNVEl4TXpFek5Gb3dQVEVMTUFrR0ExVUVCaE1DVlZNeEN6QUpCZ05WQkFnTUFrTkJNUkl3RUFZRFZRUUhEQWxEZFhCbGNuUnBibTh4RFRBTEJnTlZCQW9NQkV4bFlXWXdXVEFUQmdjcWhrak9QUUlCQmdncWhrak9QUU1CQndOQ0FBVGl0WUhFYVlWdWM4ZzlBalRPd0VyTXZHeVB5a1BhK3B1dlRJOGhKVEhaWkRMR2FzMnFYMStFcnhnUVRKZ1ZYdjc2bm1MaGhSSkgrajI1QWlBSThpR3NveTh3TFRBSkJnTlZIUk1FQWpBQU1BNEdBMVVkRHdFQi93UUVBd0lIZ0RBUUJnb3Foa2lHOTJOa0Jnc0JCQUlGQURBS0JnZ3Foa2pPUFFRREF3TklBREJGQWlCWDRjK1QwRnA1bko1UVJDbFJmdTVQU0J5UnZOUHR1YVRzazB2UEIzV0FJQUloQU5nYWF1QWovWVA5czBBa0VoeUpoeFFPLzZRMnpvdVorSDFDSU9laG5NelEiLCJNSUlCbnpDQ0FVV2dBd0lCQWdJQkN6QUtCZ2dxaGtqT1BRUURBekEyTVFzd0NRWURWUVFHRXdKVlV6RVRNQkVHQTFVRUNBd0tRMkZzYVdadmNtNXBZVEVTTUJBR0ExVUVCd3dKUTNWd1pYSjBhVzV2TUI0WERUSXpNREV3TlRJeE16RXdOVm9YRFRNek1ERXdNVEl4TXpFd05Wb3dSVEVMTUFrR0ExVUVCaE1DVlZNeEN6QUpCZ05WQkFnTUFrTkJNUkl3RUFZRFZRUUhEQWxEZFhCbGNuUnBibTh4RlRBVEJnTlZCQW9NREVsdWRHVnliV1ZrYVdGMFpUQlpNQk1HQnlxR1NNNDlBZ0VHQ0NxR1NNNDlBd0VIQTBJQUJCVU41VjlyS2pmUmlNQUlvakVBMEF2NU1wMG9GK08wY0w0Z3pyVEYxNzhpblVIdWdqN0V0NDZOcmtRN2hLZ01WbmpvZ3E0NVExck1zK2NNSFZOSUxXcWpOVEF6TUE4R0ExVWRFd1FJTUFZQkFmOENBUUF3RGdZRFZSMFBBUUgvQkFRREFnRUdNQkFHQ2lxR1NJYjNZMlFHQWdFRUFnVUFNQW9HQ0NxR1NNNDlCQU1EQTBnQU1FVUNJUUNtc0lLWXM0MXVsbHNzSFg0clZ2ZVVUMFo3SXM1L2hMSzFsRlBUdHVuM2hBSWdjMisyUkc1K2dOY0ZWY3MrWEplRWw0R1orb2psM1JPT21sbCt5ZTdkeW5RPSIsIk1JSUJnakNDQVNtZ0F3SUJBZ0lKQUxVYzVBTGlINXBiTUFvR0NDcUdTTTQ5QkFNRE1EWXhDekFKQmdOVkJBWVRBbFZUTVJNd0VRWURWUVFJREFwRFlXeHBabTl5Ym1saE1SSXdFQVlEVlFRSERBbERkWEJsY25ScGJtOHdIaGNOTWpNd01UQTFNakV6TURJeVdoY05Nek13TVRBeU1qRXpNREl5V2pBMk1Rc3dDUVlEVlFRR0V3SlZVekVUTUJFR0ExVUVDQXdLUTJGc2FXWnZjbTVwWVRFU01CQUdBMVVFQnd3SlEzVndaWEowYVc1dk1Ga3dFd1lIS29aSXpqMENBUVlJS29aSXpqMERBUWNEUWdBRWMrL0JsK2dvc3BvNnRmOVo3aW81dGRLZHJsTjFZZFZucUVoRURYRFNoemRBSlBRaWphbVhJTUhmOHhXV1RhMXpnb1lUeE9LcGJ1SnREcGx6MVhyaVRhTWdNQjR3REFZRFZSMFRCQVV3QXdFQi96QU9CZ05WSFE4QkFmOEVCQU1DQVFZd0NnWUlLb1pJemowRUF3TURSd0F3UkFJZ2VtV1FYbk1BZFRhZDJKREpXbmc5VTR1QkJMNW1BN1dJMDVIN29IN2M2aVFDSUhpUnFNak5melVBeWl1OWg2ck9VL0sraVRSMEkvM1kvTlNXc1hIWCthY2MiXSwidHlwIjoiSldUIiwiYWxnIjoiRVMyNTYifQ.eyJlbnZpcm9ubWVudCI6IlNhbmRib3giLCJzaWduZWREYXRlIjoxNjcyOTU2MTU0MDAwfQ.FbK2OL-t6l4892W7fzWyus_g9mIl2CzWLbVt7Kgcnt6zzVulF8bzovgpe0v_y490blROGixy8KDoe2dSU53-Xw";
     const TRANSACTION_INFO: &str = "eyJ4NWMiOlsiTUlJQm9EQ0NBVWFnQXdJQkFnSUJDekFLQmdncWhrak9QUVFEQWpCTk1Rc3dDUVlEVlFRR0V3SlZVekVUTUJFR0ExVUVDQXdLUTJGc2FXWnZjbTVwWVRFU01CQUdBMVVFQnd3SlEzVndaWEowYVc1dk1SVXdFd1lEVlFRS0RBeEpiblJsY20xbFpHbGhkR1V3SGhjTk1qTXdNVEEwTVRZek56TXhXaGNOTXpJeE1qTXhNVFl6TnpNeFdqQkZNUXN3Q1FZRFZRUUdFd0pWVXpFVE1CRUdBMVVFQ0F3S1EyRnNhV1p2Y201cFlURVNNQkFHQTFVRUJ3d0pRM1Z3WlhKMGFXNXZNUTB3Q3dZRFZRUUtEQVJNWldGbU1Ga3dFd1lIS29aSXpqMENBUVlJS29aSXpqMERBUWNEUWdBRTRyV0J4R21GYm5QSVBRSTB6c0JLekx4c2o4cEQydnFicjB5UElTVXgyV1F5eG1yTnFsOWZoSzhZRUV5WUZWNysrcDVpNFlVU1Ivbzl1UUlnQ1BJaHJLTWZNQjB3Q1FZRFZSMFRCQUl3QURBUUJnb3Foa2lHOTJOa0Jnc0JCQUlUQURBS0JnZ3Foa2pPUFFRREFnTklBREJGQWlFQWtpRVprb0ZNa2o0Z1huK1E5alhRWk1qWjJnbmpaM2FNOE5ZcmdmVFVpdlFDSURKWVowRmFMZTduU0lVMkxXTFRrNXRYVENjNEU4R0pTWWYvc1lSeEVGaWUiLCJNSUlCbHpDQ0FUMmdBd0lCQWdJQkJqQUtCZ2dxaGtqT1BRUURBakEyTVFzd0NRWURWUVFHRXdKVlV6RVRNQkVHQTFVRUNBd0tRMkZzYVdadmNtNXBZVEVTTUJBR0ExVUVCd3dKUTNWd1pYSjBhVzV2TUI0WERUSXpNREV3TkRFMk1qWXdNVm9YRFRNeU1USXpNVEUyTWpZd01Wb3dUVEVMTUFrR0ExVUVCaE1DVlZNeEV6QVJCZ05WQkFnTUNrTmhiR2xtYjNKdWFXRXhFakFRQmdOVkJBY01DVU4xY0dWeWRHbHViekVWTUJNR0ExVUVDZ3dNU1c1MFpYSnRaV1JwWVhSbE1Ga3dFd1lIS29aSXpqMENBUVlJS29aSXpqMERBUWNEUWdBRUZRM2xYMnNxTjlHSXdBaWlNUURRQy9reW5TZ1g0N1J3dmlET3RNWFh2eUtkUWU2Q1BzUzNqbzJ1UkR1RXFBeFdlT2lDcmpsRFdzeXo1d3dkVTBndGFxTWxNQ013RHdZRFZSMFRCQWd3QmdFQi93SUJBREFRQmdvcWhraUc5Mk5rQmdJQkJBSVRBREFLQmdncWhrak9QUVFEQWdOSUFEQkZBaUVBdm56TWNWMjY4Y1JiMS9GcHlWMUVoVDNXRnZPenJCVVdQNi9Ub1RoRmF2TUNJRmJhNXQ2WUt5MFIySkR0eHF0T2pKeTY2bDZWN2QvUHJBRE5wa21JUFcraSIsIk1JSUJYRENDQVFJQ0NRQ2ZqVFVHTERuUjlqQUtCZ2dxaGtqT1BRUURBekEyTVFzd0NRWURWUVFHRXdKVlV6RVRNQkVHQTFVRUNBd0tRMkZzYVdadmNtNXBZVEVTTUJBR0ExVUVCd3dKUTNWd1pYSjBhVzV2TUI0WERUSXpNREV3TkRFMk1qQXpNbG9YRFRNek1ERXdNVEUyTWpBek1sb3dOakVMTUFrR0ExVUVCaE1DVlZNeEV6QVJCZ05WQkFnTUNrTmhiR2xtYjNKdWFXRXhFakFRQmdOVkJBY01DVU4xY0dWeWRHbHViekJaTUJNR0J5cUdTTTQ5QWdFR0NDcUdTTTQ5QXdFSEEwSUFCSFB2d1pmb0tMS2FPclgvV2U0cU9iWFNuYTVUZFdIVlo2aElSQTF3MG9jM1FDVDBJbzJwbHlEQjMvTVZsazJ0YzRLR0U4VGlxVzdpYlE2WmM5VjY0azB3Q2dZSUtvWkl6ajBFQXdNRFNBQXdSUUloQU1USGhXdGJBUU4waFN4SVhjUDRDS3JEQ0gvZ3N4V3B4NmpUWkxUZVorRlBBaUIzNW53azVxMHpjSXBlZnZZSjBNVS95R0dIU1dlejBicTBwRFlVTy9ubUR3PT0iXSwidHlwIjoiSldUIiwiYWxnIjoiRVMyNTYifQ.eyJlbnZpcm9ubWVudCI6IlNhbmRib3giLCJidW5kbGVJZCI6ImNvbS5leGFtcGxlIiwic2lnbmVkRGF0ZSI6MTY3Mjk1NjE1NDAwMH0.PnHWpeIJZ8f2Q218NSGLo_aR0IBEJvC6PxmxKXh-qfYTrZccx2suGl223OSNAX78e4Ylf2yJCG2N-FfU-NIhZQ";
+    const XCODE_BUNDLE_ID: &str = "com.example.naturelab.backyardbirds.example";
 
     #[test]
     fn test_app_store_server_notification_decoding() {
@@ -868,6 +869,96 @@ mod tests {
                 err
             ),
         }
+    }
+
+    #[test]
+    fn test_xcode_signed_app_transaction() {
+        let verifier = get_signed_data_verifier(Environment::Xcode, XCODE_BUNDLE_ID, None);
+        let encoded_app_transaction = fs::read_to_string("assets/xcode-signed-app-transaction").expect("Failed to read file");
+
+        if let Ok(app_transaction) = verifier.verify_and_decode_app_transaction(&encoded_app_transaction) {
+            assert_eq!(XCODE_BUNDLE_ID, app_transaction.bundle_id.as_deref().expect("Expect bundle_id"));
+            assert_eq!("1", app_transaction.application_version.as_deref().expect("Expect application_version"));
+            assert_eq!(None, app_transaction.version_external_identifier);
+            assert_eq!(-62135769600000, app_transaction.original_purchase_date.expect("Expect value").timestamp_millis());
+            assert_eq!("1", app_transaction.original_application_version.as_deref().expect("Expect original_application_version"));
+            assert_eq!("cYUsXc53EbYc0pOeXG5d6/31LGHeVGf84sqSN0OrJi5u/j2H89WWKgS8N0hMsMlf", app_transaction.device_verification.as_deref().expect("Expect device_verification"));
+            assert_eq!("48c8b92d-ce0d-4229-bedf-e61b4f9cfc92", app_transaction.device_verification_nonce.expect("Expect device_verification_nonce").to_string());
+            assert_eq!(None, app_transaction.preorder_date);
+            assert_eq!(Environment::Xcode, app_transaction.receipt_type.unwrap());
+        } else {
+            panic!("Failed to verify and decode app transaction");
+        }
+    }
+
+    #[test]
+    fn test_xcode_signed_transaction() {
+        let verifier = get_signed_data_verifier(Environment::Xcode, XCODE_BUNDLE_ID, None);
+        let encoded_app_transaction = fs::read_to_string("assets/xcode-signed-transaction").expect("Failed to read file");
+
+        if let Ok(transaction) = verifier.verify_and_decode_signed_transaction(&encoded_app_transaction) {
+            assert_eq!("0", transaction.original_transaction_id.as_deref().expect("Expect original_transaction_id"));
+            assert_eq!("0", transaction.transaction_id.as_deref().expect("Expect transaction_id"));
+            assert_eq!("0", transaction.web_order_line_item_id.as_deref().expect("Expect web_order_line_item_id"));
+            assert_eq!(XCODE_BUNDLE_ID, transaction.bundle_id.as_deref().expect("Expect bundle_id"));
+            assert_eq!("pass.premium", transaction.product_id.as_deref().expect("Expect product_id"));
+            assert_eq!("6F3A93AB", transaction.subscription_group_identifier.as_deref().expect("Expect subscription_group_identifier"));
+            assert_eq!(1697679936049, transaction.purchase_date.unwrap().timestamp_millis());
+            assert_eq!(1697679936049, transaction.original_purchase_date.unwrap().timestamp_millis());
+            assert_eq!(1700358336049, transaction.expires_date.unwrap().timestamp_millis());
+            assert_eq!(1, transaction.quantity.expect("Expect quantity"));
+            assert_eq!(ProductType::AutoRenewableSubscription, transaction.r#type.expect("Expect type"));
+            assert_eq!(None, transaction.app_account_token);
+            assert_eq!(InAppOwnershipType::Purchased, transaction.in_app_ownership_type.expect("Expect in_app_ownership_type"));
+            assert_eq!(1697679936056, transaction.signed_date.unwrap().timestamp_millis());
+            assert_eq!(None, transaction.revocation_reason);
+            assert_eq!(None, transaction.revocation_date);
+            assert!(!transaction.is_upgraded.unwrap_or(false));
+            assert_eq!(OfferType::IntroductoryOffer, transaction.offer_type.expect("Expect offer_type"));
+            assert_eq!(None, transaction.offer_identifier);
+            assert_eq!(Environment::Xcode, transaction.environment.expect("Expect environment"));
+            assert_eq!("USA", transaction.storefront.expect("Expect storefront"));
+            assert_eq!("143441", transaction.storefront_id.as_deref().expect("Expect storefront_id"));
+            assert_eq!(TransactionReason::Purchase, transaction.transaction_reason.expect("Expect transaction_reason"));
+        } else {
+            panic!("Failed to verify and decode signed transaction");
+        }
+    }
+
+    #[test]
+    fn test_xcode_signed_renewal_info() {
+        let verifier = get_signed_data_verifier(Environment::Xcode, XCODE_BUNDLE_ID, None);
+        let encoded_renewal_info = fs::read_to_string("assets/xcode-signed-renewal-info").expect("Failed to read file");
+
+        if let Ok(renewal_info) = verifier.verify_and_decode_renewal_info(&encoded_renewal_info) {
+            assert_eq!(None, renewal_info.expiration_intent);
+            assert_eq!("0", renewal_info.original_transaction_id.as_deref().expect("Expect original_transaction_id"));
+            assert_eq!("pass.premium", renewal_info.auto_renew_product_id.as_deref().expect("Expect auto_renew_product_id"));
+            assert_eq!("pass.premium", renewal_info.product_id.as_deref().expect("Expect product_id"));
+            assert_eq!(AutoRenewStatus::On, renewal_info.auto_renew_status.expect("Expect auto_renew_status"));
+            assert_eq!(None, renewal_info.is_in_billing_retry_period);
+            assert_eq!(None, renewal_info.price_increase_status);
+            assert_eq!(None, renewal_info.grace_period_expires_date);
+            assert_eq!(None, renewal_info.offer_type);
+            assert_eq!(None, renewal_info.offer_identifier);
+            assert_eq!(1697679936711, renewal_info.signed_date.unwrap().timestamp_millis());
+            assert_eq!(Environment::Xcode, renewal_info.environment.expect("Expect environment"));
+            assert_eq!(1697679936049, renewal_info.recent_subscription_start_date.unwrap().timestamp_millis());
+            assert_eq!(1700358336049, renewal_info.renewal_date.unwrap().timestamp_millis());
+        } else {
+            panic!("Failed to verify and decode signed renewal info");
+        }
+    }
+
+    #[test]
+    fn test_xcode_signed_app_transaction_with_production_environment() {
+        let verifier = get_signed_data_verifier(Environment::Production, XCODE_BUNDLE_ID, None);
+        let encoded_app_transaction = fs::read_to_string("assets/xcode-signed-app-transaction").expect("Failed to read file");
+
+        if let Err(_) = verifier.verify_and_decode_app_transaction(&encoded_app_transaction) {
+            return;
+        }
+        panic!("Expected VerificationException, but no exception was raised");
     }
 
     fn get_default_signed_data_verifier() -> SignedDataVerifier {
