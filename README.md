@@ -11,7 +11,7 @@ Specify `app-store-server-library` in your project's `Cargo.toml` file, under th
 
 ```rust
 [dependencies]
-app-store-server-library = "0.8.0"
+app-store-server-library = { version = "0.8.0", features = ["receipt_utility"] }
 ```
 Check
 [crates.io](https://crates.io/crates/app-store-server-library) for the latest version number.
@@ -35,6 +35,13 @@ let verifier = SignedDataVerifier::new(
 let payload = "signed-payload";
 let decoded_payload = verifier.verify_and_decode_notification(payload).unwrap();
 ```
+
+### Receipt Usage
+```rust
+let receipt = "MI..";
+let transaction_id = extract_transaction_id_from_app_receipt(receipt);
+```
+> Note: To extract transaction id from app/tx receipt, `receipt_utility` feature must be enabled.
 
 ### Promotional Offer Signature Creation
 ```rust
