@@ -1,7 +1,7 @@
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use pem::{parse, PemError};
-use ring::signature::{EcdsaKeyPair, KeyPair, Signature, ECDSA_P256_SHA256_ASN1_SIGNING};
+use ring::signature::{EcdsaKeyPair, Signature, ECDSA_P256_SHA256_ASN1_SIGNING};
 use ring::{error, rand};
 use std::fmt::{Display, Formatter};
 use thiserror::Error;
@@ -134,6 +134,8 @@ impl PromotionalOfferSignatureCreator {
 
     #[cfg(test)]
     fn public_key(&self) -> Vec<u8> {
+        use ring::signature::KeyPair;
+
         return self.ec_private_key.public_key().as_ref().to_vec();
     }
 }
