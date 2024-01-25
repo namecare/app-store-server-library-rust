@@ -7,7 +7,7 @@ use serde_with::TimestampMilliSeconds;
 ///
 /// [sendAttemptItem](https://developer.apple.com/documentation/appstoreserverapi/sendattemptitem)
 #[serde_with::serde_as]
-#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq)]
 pub struct SendAttemptItem {
     /// The date the App Store server attempts to send a notification.
     ///
