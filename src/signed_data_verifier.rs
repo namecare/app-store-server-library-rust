@@ -26,7 +26,7 @@ pub enum SignedDataVerifierError {
     InternalChainVerifierError(#[from] ChainVerifierError),
 
     #[error("InternalDecodeError: [{0}]")]
-    InternalDecodeError(#[from] base64::DecodeError),
+    InternalDecodeError(#[from] DecodeError),
 
     #[error("InternalJWTError: [{0}]")]
     InternalJWTError(#[from] jsonwebtoken::errors::Error),

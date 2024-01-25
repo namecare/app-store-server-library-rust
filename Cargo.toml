@@ -27,8 +27,13 @@ serde_repr = "0.1.18"
 uuid = { version = "1.7.0", features = ["serde", "v4"] }
 chrono = { version = "0.4.32", features = ["serde"] }
 base64 = "0.21.7"
+asn1-rs = { version = "0.5.2", optional = true }
 
 # Utils
 thiserror = "1.0.56"
 
+# Tools
+regex = { version = "1.10.3", optional = true }
 
+[features]
+receipt_utility = ["dep:asn1-rs", "dep:regex"]
