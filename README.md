@@ -1,17 +1,13 @@
 # Apple App Store Server Rust Library
 The Rust server library for the [App Store Server API](https://developer.apple.com/documentation/appstoreserverapi) and [App Store Server Notifications](https://developer.apple.com/documentation/appstoreservernotifications)
 
-## ⚠️ Beta ⚠️
-
-This software is currently in Beta testing. Therefore, it should only be used for testing purposes, like for the Sandbox environment. API signatures may change between releases and signature verification may receive security updates.
-
 ## Installation
 
 Specify `app-store-server-library` in your project's `Cargo.toml` file, under the `[dependencies]` section:
 
 ```rust
 [dependencies]
-app-store-server-library = "0.8.0"
+app-store-server-library = { version = "0.9.0", features = ["receipt_utility"] }
 ```
 Check
 [crates.io](https://crates.io/crates/app-store-server-library) for the latest version number.
@@ -36,13 +32,19 @@ let payload = "signed-payload";
 let decoded_payload = verifier.verify_and_decode_notification(payload).unwrap();
 ```
 
+### Receipt Usage
+```rust
+let receipt = "MI..";
+let transaction_id = extract_transaction_id_from_app_receipt(receipt);
+```
+> Note: To extract transaction id from app/tx receipt, `receipt_utility` feature must be enabled.
+
 ### Promotional Offer Signature Creation
 ```rust
 // .unwrap() used for example purposes only
 let private_key = include_str!("../assets/SubscriptionKey_L256SYR32L.p8");
 let creator = PromotionalOfferSignatureCreator::new(private_key, "L256SYR32L".to_string(), "com.test.app".to_string()).unwrap();
 let signature: String = creator.create_signature("com.test.product", "com.test.offer", uuid::Uuid::new_v4().to_string().as_str(), &uuid::Uuid::new_v4(), i64::try_from(system_timestamp()).unwrap()).unwrap();
-
 ```
 
 ## Documentation

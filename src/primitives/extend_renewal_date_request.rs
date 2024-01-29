@@ -11,15 +11,18 @@ pub struct ExtendRenewalDateRequest {
     /// [extendByDays](https://developer.apple.com/documentation/appstoreserverapi/extendbydays)
     ///
     /// maximum: 90
+    #[serde(rename = "extendByDays")]
     pub extend_by_days: Option<i32>,
 
     /// The reason code for the subscription date extension.
     ///
     /// [extendReasonCode](https://developer.apple.com/documentation/appstoreserverapi/extendreasoncode)
+    #[serde(rename = "extendReasonCode")]
     pub extend_reason_code: Option<ExtendReasonCode>,
 
     /// A string that contains a unique identifier you provide to track each subscription-renewal-date extension request.
     ///
     /// [requestIdentifier](https://developer.apple.com/documentation/appstoreserverapi/requestidentifier)
+    #[serde(rename = "requestIdentifier")]
     pub request_identifier: Option<String>,
 }
