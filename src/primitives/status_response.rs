@@ -22,7 +22,7 @@ pub struct StatusResponse {
     ///
     /// [appAppleId](https://developer.apple.com/documentation/appstoreservernotifications/appappleid)
     #[serde(rename = "appAppleId")]
-    pub app_apple_id: i64,
+    pub app_apple_id: Option<i64>,
 
     /// An array of information for auto-renewable subscriptions, including App Store-signed transaction information and App Store-signed renewal information.
     pub data: Vec<SubscriptionGroupIdentifierItem>,
