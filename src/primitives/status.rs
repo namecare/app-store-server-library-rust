@@ -12,3 +12,15 @@ pub enum Status {
     BillingGracePeriod = 4,
     Revoked = 5,
 }
+
+impl Status {
+    pub fn raw_value(&self) -> u8 {
+        match &self {
+            Status::Active => 1,
+            Status::Expired => 2,
+            Status::BillingRetry => 3,
+            Status::BillingGracePeriod => 4,
+            Status::Revoked => 5,
+        }
+    }
+}

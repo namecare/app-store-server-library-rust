@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 /// The most recent App Store-signed transaction information and App Store-signed renewal information for an auto-renewable subscription.
 ///
 /// [lastTransactionsItem](https://developer.apple.com/documentation/appstoreserverapi/lasttransactionsitem)
-#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq)]
 pub struct LastTransactionsItem {
     /// The status of the auto-renewable subscription.
     ///

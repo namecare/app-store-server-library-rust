@@ -29,11 +29,23 @@ chrono = { version = "0.4.32", features = ["serde"] }
 base64 = "0.21.7"
 asn1-rs = { version = "0.5.2", optional = true }
 
+# Networking
+reqwest = { version = "0.11.23", features = ["json"], optional = true }
+
 # Utils
 thiserror = "1.0.56"
 
 # Tools
 regex = { version = "1.10.3", optional = true }
+url = "2.5.0"
+
+
+[dev-dependencies]
+http = "1.0.0"
+tokio = { version = "1.35.1", features = ["test-util", "macros"] }
+jsonwebtoken = { version = "9.2.0", features = ["use_pem"] }
 
 [features]
-receipt_utility = ["dep:asn1-rs", "dep:regex"]
+api-client = ["dep:reqwest"]
+receipt-utility = ["dep:asn1-rs", "dep:regex"]
+

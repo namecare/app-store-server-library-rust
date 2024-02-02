@@ -14,6 +14,35 @@ Check
 
 ## Usage
 
+### API Usage
+
+```rust
+use app_store_server_library::{AppStoreServerApiClient, Environment, AppStoreApiResponse, APIError};
+
+#[tokio::main]
+async fn main() {
+    let issuer_id = "99b16628-15e4-4668-972b-eeff55eeff55";
+    let key_id = "ABCDEFGHIJ";
+    let bundle_id = "com.example";
+    let encoded_key = std::fs::read_to_string("/path/to/key/SubscriptionKey_ABCDEFGHIJ.p8").unwrap(); // Adjust the path accordingly
+    let environment = Environment::Sandbox;
+    
+    let client = AppStoreServerApiClient::new(encoded_key, key_id, issuer_id, bundle_id, environment);
+    match client.request_test_notification().await {
+        Ok(res) => {
+            println!("{}", response.test_notification_token);
+        }
+        Err(err) => {
+            println!("{}", err.http_status_code);
+            println!("{:?}", err.raw_api_error);
+            println!("{:?}", err.api_error);
+            println!("{}", err.error_message);
+        }
+    }
+}
+```
+> Note: To extract transaction id from app/tx receipt, `api-client` feature must be enabled.
+
 ### Verification Usage
 
 ```rust
@@ -37,7 +66,7 @@ let decoded_payload = verifier.verify_and_decode_notification(payload).unwrap();
 let receipt = "MI..";
 let transaction_id = extract_transaction_id_from_app_receipt(receipt);
 ```
-> Note: To extract transaction id from app/tx receipt, `receipt_utility` feature must be enabled.
+> Note: To extract transaction id from app/tx receipt, `receipt-utility` feature must be enabled.
 
 ### Promotional Offer Signature Creation
 ```rust

@@ -52,10 +52,30 @@ pub enum ProductType {
     NonConsumable,
 }
 
+impl ProductType {
+    pub fn raw_value(&self) -> &str {
+        match self {
+            ProductType::AutoRenewable => "AUTO_RENEWABLE",
+            ProductType::NonRenewable => "NON_RENEWABLE",
+            ProductType::Consumable => "CONSUMABLE",
+            ProductType::NonConsumable => "NON_CONSUMABLE",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub enum Order {
     #[serde(rename = "ASCENDING")]
     Ascending,
     #[serde(rename = "DESCENDING")]
     Descending,
+}
+
+impl Order {
+    pub fn raw_value(&self) -> &str {
+        match self {
+            Order::Ascending => "ASCENDING",
+            Order::Descending => "DESCENDING",
+        }
+    }
 }

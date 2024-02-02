@@ -1,11 +1,14 @@
 use crate::primitives::notification_type_v2::NotificationTypeV2;
 use crate::primitives::subtype::Subtype;
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use serde_with::formats::Flexible;
+use serde_with::TimestampMilliSeconds;
 
 /// The request body for notification history.
 ///
 /// [NotificationHistoryRequest](https://developer.apple.com/documentation/appstoreserverapi/notificationhistoryrequest)
+#[serde_with::serde_as]
 #[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub struct NotificationHistoryRequest {
     /// The start date of the timespan for the requested App Store Server Notification history records.
@@ -13,14 +16,16 @@ pub struct NotificationHistoryRequest {
     ///
     /// [startDate](https://developer.apple.com/documentation/appstoreserverapi/startdate)
     #[serde(rename = "startDate")]
-    pub start_date: Option<NaiveDateTime>,
+    #[serde_as(as = "Option<TimestampMilliSeconds<i64, Flexible>>")]
+    pub start_date: Option<DateTime<Utc>>,
 
     /// The end date of the timespan for the requested App Store Server Notification history records.
     /// Choose an endDate that’s later than the startDate. If you choose an endDate in the future, the endpoint automatically uses the current date as the endDate.
     ///
     /// [endDate](https://developer.apple.com/documentation/appstoreserverapi/enddate)
     #[serde(rename = "endDate")]
-    pub end_date: Option<NaiveDateTime>,
+    #[serde_as(as = "Option<TimestampMilliSeconds<i64, Flexible>>")]
+    pub end_date: Option<DateTime<Utc>>,
 
     /// A notification type. Provide this field to limit the notification history records to those with this one notification type.
     /// For a list of notifications types, see notificationType.

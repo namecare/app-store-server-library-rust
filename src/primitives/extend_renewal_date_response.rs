@@ -1,9 +1,12 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use serde_with::formats::Flexible;
+use serde_with::TimestampMilliSeconds;
 
 /// A response that indicates whether an individual renewal-date extension succeeded, and related details.
 ///
 /// [ExtendRenewalDateResponse](https://developer.apple.com/documentation/appstoreserverapi/extendrenewaldateresponse)
+#[serde_with::serde_as]
 #[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct ExtendRenewalDateResponse {
     /// The original transaction identifier of a purchase.
@@ -28,5 +31,6 @@ pub struct ExtendRenewalDateResponse {
     ///
     /// [effectiveDate](https://developer.apple.com/documentation/appstoreserverapi/effectivedate)
     #[serde(rename = "effectiveDate")]
+    #[serde_as(as = "Option<TimestampMilliSeconds<String, Flexible>>")]
     pub effective_date: Option<DateTime<Utc>>,
 }

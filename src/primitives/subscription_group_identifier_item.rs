@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 /// Information for auto-renewable subscriptions, including signed transaction information and signed renewal information, for one subscription group.
 ///
 /// [SubscriptionGroupIdentifierItem](https://developer.apple.com/documentation/appstoreserverapi/subscriptiongroupidentifieritem)
-#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq)]
 pub struct SubscriptionGroupIdentifierItem {
     /// The identifier of the subscription group that the subscription belongs to.
     ///

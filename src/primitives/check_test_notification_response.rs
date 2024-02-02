@@ -15,6 +15,6 @@ pub struct CheckTestNotificationResponse {
     /// An array of information the App Store server records for its attempts to send the TEST notification to your server. The array may contain a maximum of six sendAttemptItem objects.
     ///
     /// [sendAttemptItem](https://developer.apple.com/documentation/appstoreserverapi/sendattemptitem)
-    #[serde(rename = "sendAttemptItem")]
+    #[serde(rename = "sendAttempts")]
     pub send_attempts: Option<Vec<SendAttemptItem>>,
 }
