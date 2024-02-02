@@ -584,8 +584,7 @@ mod tests {
     use chrono::NaiveDateTime;
     use url::Url;
     use uuid::Uuid;
-    use base64::engine::general_purpose::STANDARD;
-    use base64::prelude::{BASE64_STANDARD, BASE64_STANDARD_NO_PAD};
+    use base64::prelude::BASE64_STANDARD_NO_PAD;
     use crate::primitives::account_tenure::AccountTenure;
     use crate::primitives::consumption_status::ConsumptionStatus;
     use crate::primitives::delivery_status::DeliveryStatus;
@@ -671,7 +670,7 @@ mod tests {
 
         assert_eq!(Environment::LocalTesting, response.environment.unwrap());
         assert_eq!("com.example", response.bundle_id.as_str());
-        assert_eq!(5454545, response.app_apple_id);
+        assert_eq!(5454545, response.app_apple_id.unwrap());
 
         let item = SubscriptionGroupIdentifierItem {
             subscription_group_identifier: Some("sub_group_one".to_string()),

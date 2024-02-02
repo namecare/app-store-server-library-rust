@@ -7,7 +7,7 @@ Specify `app-store-server-library` in your project's `Cargo.toml` file, under th
 
 ```rust
 [dependencies]
-app-store-server-library = { version = "0.9.1", features = ["receipt_utility"] }
+app-store-server-library = { version = "1.0.0", features = ["receipt-utility", "api-client"] }
 ```
 Check
 [crates.io](https://crates.io/crates/app-store-server-library) for the latest version number.
