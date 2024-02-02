@@ -10,3 +10,13 @@ pub enum InAppOwnershipType {
     #[serde(rename = "PURCHASED")]
     Purchased,
 }
+
+
+impl InAppOwnershipType {
+    pub fn raw_value(&self) -> &str {
+        match self {
+            InAppOwnershipType::FamilyShared => "FAMILY_SHARED",
+            InAppOwnershipType::Purchased => "PURCHASED",
+        }
+    }
+}

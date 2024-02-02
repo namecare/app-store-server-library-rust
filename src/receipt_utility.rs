@@ -146,7 +146,7 @@ pub fn extract_transaction_id_from_transaction_receipt(
                             if let Some(encoded_transaction_id) = transaction_id_match.get(1) {
                                 return Ok(Some(encoded_transaction_id.as_str().to_string()));
                             }
-                        }
+                        };
                     }
                 }
             }
