@@ -156,22 +156,53 @@ impl SignedDataVerifier {
             bundle_id = summary.bundle_id.clone();
             app_apple_id = summary.app_apple_id.clone();
             environment = summary.environment.clone();
+        } else if let Some(external_purchase_token) = &decoded_signed_notification.external_purchase_token {
+            bundle_id = external_purchase_token.bundle_id.clone();
+            app_apple_id = external_purchase_token.app_apple_id.clone();
+
+            if let Some(external_purchase_id) = &external_purchase_token.external_purchase_id {
+                if external_purchase_id.starts_with("SANDBOX") {
+                    environment = Some(Environment::Sandbox)
+                } else {
+                    environment = Some(Environment::Production)
+                }
+            } else {
+                environment = Some(Environment::Production)
+            }
         } else {
-            return Err(SignedDataVerifierError::InvalidAppIdentifier);
+            bundle_id = None;
+            app_apple_id = None;
+            environment = None;
         }
 
-        if bundle_id.as_ref() != Some(&self.bundle_id)
-            || (self.environment == Environment::Production
-                && app_apple_id.as_ref() != self.app_apple_id.as_ref())
-        {
-            return Err(SignedDataVerifierError::InvalidAppIdentifier);
-        }
-
-        if environment.as_ref() != Some(&self.environment) {
-            return Err(SignedDataVerifierError::InvalidEnvironment);
-        }
+        self.verify_notification_app_identifier_and_environment(bundle_id, app_apple_id, environment)?;
 
         Ok(decoded_signed_notification)
+    }
+
+    fn verify_notification_app_identifier_and_environment(
+        &self,
+        bundle_id: Option<String>,
+        app_apple_id: Option<i64>,
+        environment: Option<Environment>,
+    ) -> Result<(), SignedDataVerifierError> {
+        if let Some(bundle_id) = bundle_id {
+            if bundle_id != self.bundle_id {
+                return Err(SignedDataVerifierError::InvalidAppIdentifier);
+            }
+        }
+
+        if self.environment == Environment::Production && self.app_apple_id != app_apple_id {
+            return Err(SignedDataVerifierError::InvalidAppIdentifier);
+        }
+
+        if let Some(environment) = environment {
+            if self.environment != Environment::LocalTesting && self.environment != environment {
+                return Err(SignedDataVerifierError::InvalidEnvironment);
+            }
+        }
+
+        Ok(())
     }
 
     /// Verifies and decodes a signed notification.
@@ -354,6 +385,80 @@ mod tests {
             .verify_and_decode_renewal_info(RENEWAL_INFO)
             .unwrap();
         assert_eq!(renewal_info.environment, Some(Environment::Sandbox));
+    }
+
+    #[test]
+    fn test_external_purchase_token_notification_decoding() {
+        let signed_notification =
+            create_signed_data_from_json("assets/signedExternalPurchaseTokenNotification.json");
+
+        let signed_data_verifier = get_signed_data_verifier(Environment::LocalTesting, "com.example", Some(55555));
+
+        match signed_data_verifier.verify_and_decode_notification(&signed_notification) {
+            Ok(notification) => {
+
+                assert_eq!(NotificationTypeV2::ExternalPurchaseToken, notification.notification_type);
+                assert_eq!(Subtype::Unreported, notification.subtype.expect("Expect subtype"));
+                assert_eq!("002e14d5-51f5-4503-b5a8-c3a1af68eb20", &notification.notification_uuid);
+                assert_eq!("2.0", &notification.version.expect("Expect version"));
+                assert_eq!(
+                    1698148900,
+                    notification.signed_date.expect("Expect signed_date").timestamp()
+                );
+                assert!(notification.data.is_none());
+                assert!(notification.summary.is_none());
+                assert!(notification.external_purchase_token.is_some());
+
+                if let Some(external_purchase_token) = notification.external_purchase_token {
+                    assert_eq!("b2158121-7af9-49d4-9561-1f588205523e", &external_purchase_token.external_purchase_id.expect("Expect external_purchase_id"));
+                    assert_eq!(1698148950, external_purchase_token.token_creation_date.unwrap().timestamp());
+                    assert_eq!(55555, external_purchase_token.app_apple_id.unwrap());
+                    assert_eq!("com.example", &external_purchase_token.bundle_id.unwrap());
+                } else {
+                    panic!("External purchase token is expected to be Some, but it was None");
+                }
+            }
+            Err(err) => {
+                panic!("Failed to verify and decode app transaction: {:?}", err)
+            }
+        }
+    }
+
+    #[test]
+    fn test_external_purchase_token_sanbox_notification_decoding() {
+        let signed_notification =
+            create_signed_data_from_json("assets/signedExternalPurchaseTokenSandboxNotification.json");
+
+        let signed_data_verifier = get_signed_data_verifier(Environment::LocalTesting, "com.example", Some(55555));
+
+        match signed_data_verifier.verify_and_decode_notification(&signed_notification) {
+            Ok(notification) => {
+
+                assert_eq!(NotificationTypeV2::ExternalPurchaseToken, notification.notification_type);
+                assert_eq!(Subtype::Unreported, notification.subtype.expect("Expect subtype"));
+                assert_eq!("002e14d5-51f5-4503-b5a8-c3a1af68eb20", &notification.notification_uuid);
+                assert_eq!("2.0", &notification.version.expect("Expect version"));
+                assert_eq!(
+                    1698148900,
+                    notification.signed_date.expect("Expect signed_date").timestamp()
+                );
+                assert!(notification.data.is_none());
+                assert!(notification.summary.is_none());
+                assert!(notification.external_purchase_token.is_some());
+
+                if let Some(external_purchase_token) = notification.external_purchase_token {
+                    assert_eq!("SANDBOX_b2158121-7af9-49d4-9561-1f588205523e", &external_purchase_token.external_purchase_id.expect("Expect external_purchase_id"));
+                    assert_eq!(1698148950, external_purchase_token.token_creation_date.unwrap().timestamp());
+                    assert_eq!(55555, external_purchase_token.app_apple_id.unwrap());
+                    assert_eq!("com.example", &external_purchase_token.bundle_id.unwrap());
+                } else {
+                    panic!("External purchase token is expected to be Some, but it was None");
+                }
+            }
+            Err(err) => {
+                panic!("Failed to verify and decode app transaction: {:?}", err)
+            }
+        }
     }
 
     #[test]
@@ -766,6 +871,7 @@ mod tests {
                 );
                 assert!(notification.data.is_some());
                 assert!(notification.summary.is_none());
+                assert!(notification.external_purchase_token.is_none());
 
                 if let Some(data) = notification.data {
                     assert_eq!(
@@ -838,6 +944,7 @@ mod tests {
                 );
                 assert!(notification.data.is_none());
                 assert!(notification.summary.is_some());
+                assert!(notification.external_purchase_token.is_none());
 
                 if let Some(summary) = notification.summary {
                     assert_eq!(

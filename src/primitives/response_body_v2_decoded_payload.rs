@@ -5,6 +5,7 @@ use crate::primitives::summary::Summary;
 use ::chrono::{DateTime, Utc};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
+use crate::primitives::external_purchase_token::ExternalPurchaseToken;
 
 /// A decoded payload containing the version 2 notification data.
 ///
@@ -31,7 +32,7 @@ pub struct ResponseBodyV2DecodedPayload {
     pub notification_uuid: String,
 
     /// The object that contains the app metadata and signed renewal and transaction information.
-    /// The data and summary fields are mutually exclusive. The payload contains one of the fields, but not both.
+    /// The data, summary, and externalPurchaseToken fields are mutually exclusive. The payload contains only one of these fields.
     ///
     /// [data](https://developer.apple.com/documentation/appstoreservernotifications/data)
     pub data: Option<Data>,
@@ -49,8 +50,15 @@ pub struct ResponseBodyV2DecodedPayload {
     pub signed_date: Option<DateTime<Utc>>,
 
     /// The summary data that appears when the App Store server completes your request to extend a subscription renewal date for eligible subscribers.
-    /// The data and summary fields are mutually exclusive. The payload contains one of the fields, but not both.
+    /// The data, summary, and externalPurchaseToken fields are mutually exclusive. The payload contains only one of these fields.
     ///
     /// [summary](https://developer.apple.com/documentation/appstoreservernotifications/summary)
     pub summary: Option<Summary>,
+
+    /// This field appears when the notificationType is EXTERNAL_PURCHASE_TOKEN.
+    /// The data, summary, and externalPurchaseToken fields are mutually exclusive. The payload contains only one of these fields.
+    ///
+    /// [externalPurchaseToken](https://developer.apple.com/documentation/appstoreservernotifications/externalpurchasetoken)
+    #[serde(rename = "externalPurchaseToken")]
+    pub external_purchase_token: Option<ExternalPurchaseToken>
 }
