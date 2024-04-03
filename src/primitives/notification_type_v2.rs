@@ -39,4 +39,6 @@ pub enum NotificationTypeV2 {
     RenewalExtension,
     #[serde(rename = "REFUND_REVERSED")]
     RefundReversed,
+    #[serde(rename = "EXTERNAL_PURCHASE_TOKEN")]
+    ExternalPurchaseToken,
 }

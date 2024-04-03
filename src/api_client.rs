@@ -581,7 +581,6 @@ mod tests {
     use http::StatusCode;
     use serde_json::Value;
     use chrono::DateTime;
-    use chrono::NaiveDateTime;
     use url::Url;
     use uuid::Uuid;
     use base64::prelude::BASE64_STANDARD_NO_PAD;
@@ -750,11 +749,11 @@ mod tests {
 
         let send_attempt_items = vec![
             SendAttemptItem {
-                attempt_date: DateTime::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(1698148900, 0).unwrap(), Utc).into(),
+                attempt_date: DateTime::from_timestamp(1698148900, 0),
                 send_attempt_result: SendAttemptResult::NoResponse.into(),
             },
             SendAttemptItem {
-                attempt_date: DateTime::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(1698148950, 0).unwrap(), Utc).into(),
+                attempt_date: DateTime::from_timestamp(1698148950, 0),
                 send_attempt_result: SendAttemptResult::Success.into(),
             },
         ];
@@ -777,8 +776,8 @@ mod tests {
         }));
 
         let notification_history_request = NotificationHistoryRequest {
-            start_date: DateTime::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(1698148900, 0).unwrap(), Utc).into(),
-            end_date: DateTime::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(1698148950, 0).unwrap(), Utc).into(),
+            start_date:DateTime::from_timestamp(1698148900, 0),
+            end_date:DateTime::from_timestamp(1698148950, 0),
             notification_type: NotificationTypeV2::Subscribed.into(),
             notification_subtype: Subtype::InitialBuy.into(),
             transaction_id: "999733843".to_string().into(),
@@ -794,11 +793,11 @@ mod tests {
                 signed_payload: "signed_payload_one".to_string().into(),
                 send_attempts: vec![
                     SendAttemptItem {
-                        attempt_date: DateTime::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(1698148900, 0).unwrap(), Utc).into(),
+                        attempt_date: DateTime::from_timestamp(1698148900, 0),
                         send_attempt_result: SendAttemptResult::NoResponse.into(),
                     },
                     SendAttemptItem {
-                        attempt_date: DateTime::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(1698148950, 0).unwrap(), Utc).into(),
+                        attempt_date: DateTime::from_timestamp(1698148950, 0),
                         send_attempt_result: SendAttemptResult::Success.into(),
                     },
                 ].into(),
@@ -807,7 +806,7 @@ mod tests {
                 signed_payload: "signed_payload_two".to_string().into(),
                 send_attempts: vec![
                     SendAttemptItem {
-                        attempt_date: DateTime::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(1698148800, 0).unwrap(), Utc).into(),
+                        attempt_date: DateTime::from_timestamp(1698148800, 0),
                         send_attempt_result: SendAttemptResult::CircularRedirect.into(),
                     },
                 ].into(),
@@ -839,8 +838,8 @@ mod tests {
         }));
 
         let request = TransactionHistoryRequest {
-            start_date: DateTime::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(123, 455000000).unwrap(), Utc).into(),
-            end_date: DateTime::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(123, 456000000).unwrap(), Utc).into(),
+            start_date: DateTime::from_timestamp(123, 455000000),
+            end_date: DateTime::from_timestamp(123, 456000000),
             product_ids: vec!["com.example.1", "com.example.2"].into_iter().map(String::from).collect::<Vec<String>>().into(),
             product_types: vec![ProductType::Consumable, ProductType::AutoRenewable].into(),
             sort: Order::Ascending.into(),
@@ -1014,8 +1013,8 @@ mod tests {
         let client = app_store_server_api_client_with_body_from_file("assets/models/transactionHistoryResponseWithMalformedEnvironment.json", StatusCode::OK, None);
 
         let request = TransactionHistoryRequest {
-            start_date: DateTime::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(123, 455000000).unwrap(), Utc).into(),
-            end_date: DateTime::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(123, 456000000).unwrap(), Utc).into(),
+            start_date: DateTime::from_timestamp(123, 455000000),
+            end_date: DateTime::from_timestamp(123, 456000000),
             product_ids: vec!["com.example.1".to_string(), "com.example.2".to_string()].into(),
             product_types: vec![ProductType::Consumable, ProductType::AutoRenewable].into(),
             sort: Some(Order::Ascending),
@@ -1033,8 +1032,8 @@ mod tests {
         let client = app_store_server_api_client_with_body_from_file("assets/models/transactionHistoryResponseWithMalformedAppAppleId.json", StatusCode::OK, None);
 
         let request = TransactionHistoryRequest {
-            start_date: DateTime::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(123, 455000000).unwrap(), Utc).into(),
-            end_date: DateTime::from_naive_utc_and_offset(NaiveDateTime::from_timestamp_opt(123, 456000000).unwrap(), Utc).into(),
+            start_date: DateTime::from_timestamp(123, 455000000),
+            end_date: DateTime::from_timestamp(123, 456000000),
             product_ids: vec!["com.example.1".to_string(), "com.example.2".to_string()].into(),
             product_types: vec![ProductType::Consumable, ProductType::AutoRenewable].into(),
             sort: Some(Order::Ascending),

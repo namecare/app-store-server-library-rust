@@ -37,4 +37,6 @@ pub enum Subtype {
     Summary,
     #[serde(rename = "FAILURE")]
     Failure,
+    #[serde(rename = "UNREPORTED")]
+    Unreported,
 }

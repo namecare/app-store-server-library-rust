@@ -14,36 +14,36 @@ edition = "2021"
 [dependencies]
 
 # Cryptography
-x509-parser = { version = "0.15.1", features = ["verify", "validate"] }
-jsonwebtoken = { version = "9.2.0" }
-ring = "0.17.7"
+x509-parser = { version = "0.16.0", features = ["verify", "validate"] }
+jsonwebtoken = { version = "9.3.0" }
+ring = "0.17.8"
 pem = "3.0.3"
 
 # Serialization
-serde = { version = "1.0.195", features = ["derive"] }
-serde_json = { version = "1.0.111" }
-serde_with = { version = "3.5.0", features = ["chrono"] }
+serde = { version = "1.0.197", features = ["derive"] }
+serde_json = { version = "1.0.115" }
+serde_with = { version = "3.7.0", features = ["chrono"] }
 serde_repr = "0.1.18"
-uuid = { version = "1.7.0", features = ["serde", "v4"] }
-chrono = { version = "0.4.32", features = ["serde"] }
-base64 = "0.21.7"
-asn1-rs = { version = "0.5.2", optional = true }
+uuid = { version = "1.8.0", features = ["serde", "v4"] }
+chrono = { version = "0.4.37", features = ["serde"] }
+base64 = "0.22.0"
+asn1-rs = { version = "0.6.1", optional = true }
 
 # Networking
-reqwest = { version = "0.11.23", features = ["json"], optional = true }
+reqwest = { version = "0.12.2", features = ["json"], optional = true }
 
 # Utils
-thiserror = "1.0.56"
+thiserror = "1.0.58"
 
 # Tools
-regex = { version = "1.10.3", optional = true }
+regex = { version = "1.10.4", optional = true }
 url = "2.5.0"
 
 
 [dev-dependencies]
-http = "1.0.0"
-tokio = { version = "1.35.1", features = ["test-util", "macros"] }
-jsonwebtoken = { version = "9.2.0", features = ["use_pem"] }
+http = "1.1.0"
+tokio = { version = "1.37.0", features = ["test-util", "macros"] }
+jsonwebtoken = { version = "9.3.0", features = ["use_pem"] }
 
 [features]
 api-client = ["dep:reqwest"]
