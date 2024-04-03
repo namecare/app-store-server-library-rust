@@ -162,10 +162,10 @@ pub struct JWSTransactionDecodedPayload {
     /// [currency](https://developer.apple.com/documentation/appstoreserverapi/currency)
     pub currency: Option<String>,
 
-    /// The price of the in-app purchase or subscription offer that you configured in App Store Connect, as an integer.
+    /// The price, in milliunits, of the in-app purchase or subscription offer that you configured in App Store Connect.
     ///
     /// [price](https://developer.apple.com/documentation/appstoreserverapi/price)
-    pub price: Option<i32>,
+    pub price: Option<i64>,
 
     /// The payment mode you configure for an introductory offer, promotional offer, or offer code on an auto-renewable subscription.
     ///
