@@ -20,20 +20,20 @@ ring = "0.17.8"
 pem = "3.0.3"
 
 # Serialization
-serde = { version = "1.0.197", features = ["derive"] }
-serde_json = { version = "1.0.115" }
-serde_with = { version = "3.7.0", features = ["chrono"] }
-serde_repr = "0.1.18"
+serde = { version = "1.0.201", features = ["derive"] }
+serde_json = { version = "1.0.117" }
+serde_with = { version = "3.8.1", features = ["chrono"] }
+serde_repr = "0.1.19"
 uuid = { version = "1.8.0", features = ["serde", "v4"] }
-chrono = { version = "0.4.37", features = ["serde"] }
-base64 = "0.22.0"
+chrono = { version = "0.4.38", features = ["serde"] }
+base64 = "0.22.1"
 asn1-rs = { version = "0.6.1", optional = true }
 
 # Networking
-reqwest = { version = "0.12.2", features = ["json"], optional = true }
+reqwest = { version = "0.12.4", features = ["json"], optional = true }
 
 # Utils
-thiserror = "1.0.58"
+thiserror = "1.0.60"
 
 # Tools
 regex = { version = "1.10.4", optional = true }
