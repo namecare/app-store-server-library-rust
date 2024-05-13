@@ -610,7 +610,7 @@ mod tests {
     async fn test_extend_renewal_date_for_all_active_subscribers() {
         let client = app_store_server_api_client_with_body_from_file("assets/models/extendRenewalDateForAllActiveSubscribersResponse.json", StatusCode::OK, Some(|req, body| {
             assert_eq!(Method::POST, req.method());
-            assert_eq!("https://api.storekit-sandbox.itunes.apple.com/inApps/v1/subscriptions/extend/mass", req.url().as_str());
+            assert_eq!("https://local-testing-base-url/inApps/v1/subscriptions/extend/mass", req.url().as_str());
 
             let decoded_json: HashMap<&str, Value> = serde_json::from_slice(body.unwrap()).unwrap();
             assert_eq!(45, decoded_json.get("extendByDays").unwrap().as_u64().unwrap());
@@ -636,7 +636,7 @@ mod tests {
     async fn test_extend_subscription_renewal_date() {
         let client = app_store_server_api_client_with_body_from_file("assets/models/extendSubscriptionRenewalDateResponse.json", StatusCode::OK, Some(|req, body| {
             assert_eq!(Method::PUT, req.method());
-            assert_eq!("https://api.storekit-sandbox.itunes.apple.com/inApps/v1/subscriptions/extend/4124214", req.url().as_str());
+            assert_eq!("https://local-testing-base-url/inApps/v1/subscriptions/extend/4124214", req.url().as_str());
 
             let decoded_json: HashMap<&str, Value> = serde_json::from_slice(body.unwrap()).unwrap();
             assert_eq!(45, decoded_json.get("extendByDays").unwrap().as_u64().unwrap());
@@ -661,7 +661,7 @@ mod tests {
     async fn test_get_all_subscription_statuses() {
         let client = app_store_server_api_client_with_body_from_file("assets/models/getAllSubscriptionStatusesResponse.json", StatusCode::OK, Some(|req, _body| {
             assert_eq!(Method::GET, req.method());
-            assert_eq!("https://api.storekit-sandbox.itunes.apple.com/inApps/v1/subscriptions/4321?status=2&status=1", req.url().as_str());
+            assert_eq!("https://local-testing-base-url/inApps/v1/subscriptions/4321?status=2&status=1", req.url().as_str());
             assert!(req.body().is_none());
         }));
 
@@ -709,7 +709,7 @@ mod tests {
     async fn test_get_refund_history() {
         let client = app_store_server_api_client_with_body_from_file("assets/models/getRefundHistoryResponse.json", StatusCode::OK, Some(|req, _body| {
             assert_eq!(Method::GET, req.method());
-            assert_eq!("https://api.storekit-sandbox.itunes.apple.com/inApps/v2/refund/lookup/555555?revision=revision_input", req.url().as_str());
+            assert_eq!("https://local-testing-base-url/inApps/v2/refund/lookup/555555?revision=revision_input", req.url().as_str());
             assert!(req.body().is_none());
         }));
 
@@ -724,7 +724,7 @@ mod tests {
     async fn test_get_status_of_subscription_renewal_date_extensions() {
         let client = app_store_server_api_client_with_body_from_file("assets/models/getStatusOfSubscriptionRenewalDateExtensionsResponse.json", StatusCode::OK, Some(|req, _body| {
             assert_eq!(Method::GET, req.method());
-            assert_eq!("https://api.storekit-sandbox.itunes.apple.com/inApps/v1/subscriptions/extend/mass/20fba8a0-2b80-4a7d-a17f-85c1854727f8/com.example.product", req.url().as_str());
+            assert_eq!("https://local-testing-base-url/inApps/v1/subscriptions/extend/mass/20fba8a0-2b80-4a7d-a17f-85c1854727f8/com.example.product", req.url().as_str());
             assert!(req.body().is_none());
         }));
 
@@ -741,7 +741,7 @@ mod tests {
     async fn test_get_test_notification_status() {
         let client = app_store_server_api_client_with_body_from_file("assets/models/getTestNotificationStatusResponse.json", StatusCode::OK, Some(|req, _body| {
             assert_eq!(Method::GET, req.method());
-            assert_eq!("https://api.storekit-sandbox.itunes.apple.com/inApps/v1/notifications/test/8cd2974c-f905-492a-bf9a-b2f47c791d19", req.url().as_str());
+            assert_eq!("https://local-testing-base-url/inApps/v1/notifications/test/8cd2974c-f905-492a-bf9a-b2f47c791d19", req.url().as_str());
             assert!(req.body().is_none());
         }));
 
@@ -765,7 +765,7 @@ mod tests {
     async fn test_get_notification_history() {
         let client = app_store_server_api_client_with_body_from_file("assets/models/getNotificationHistoryResponse.json", StatusCode::OK, Some(|req, body| {
             assert_eq!(Method::POST, req.method());
-            assert_eq!("https://api.storekit-sandbox.itunes.apple.com/inApps/v1/notifications/history?paginationToken=a036bc0e-52b8-4bee-82fc-8c24cb6715d6", req.url().as_str());
+            assert_eq!("https://local-testing-base-url/inApps/v1/notifications/history?paginationToken=a036bc0e-52b8-4bee-82fc-8c24cb6715d6", req.url().as_str());
 
             let decoded_json: HashMap<&str, Value> = serde_json::from_slice(body.unwrap()).unwrap();
             assert_eq!(1698148900000, decoded_json["startDate"].as_i64().unwrap());
@@ -862,7 +862,7 @@ mod tests {
     async fn test_get_transaction_info() {
         let client = app_store_server_api_client_with_body_from_file("assets/models/transactionInfoResponse.json", StatusCode::OK, Some(|req, _body| {
             assert_eq!(Method::GET, req.method());
-            assert_eq!("https://api.storekit-sandbox.itunes.apple.com/inApps/v1/transactions/1234", req.url().as_str());
+            assert_eq!("https://local-testing-base-url/inApps/v1/transactions/1234", req.url().as_str());
             assert!(req.body().is_none());
         }));
 
@@ -874,7 +874,7 @@ mod tests {
     async fn test_look_up_order_id() {
         let client = app_store_server_api_client_with_body_from_file("assets/models/lookupOrderIdResponse.json", StatusCode::OK, Some(|req, _body| {
             assert_eq!(Method::GET, req.method());
-            assert_eq!("https://api.storekit-sandbox.itunes.apple.com/inApps/v1/lookup/W002182", req.url().as_str());
+            assert_eq!("https://local-testing-base-url/inApps/v1/lookup/W002182", req.url().as_str());
             assert!(req.body().is_none());
         }));
 
@@ -887,7 +887,7 @@ mod tests {
     async fn test_request_test_notification() {
         let client = app_store_server_api_client_with_body_from_file("assets/models/requestTestNotificationResponse.json", StatusCode::OK, Some(|req, _body| {
             assert_eq!(Method::POST, req.method());
-            assert_eq!("https://api.storekit-sandbox.itunes.apple.com/inApps/v1/notifications/test", req.url().as_str());
+            assert_eq!("https://local-testing-base-url/inApps/v1/notifications/test", req.url().as_str());
             assert!(req.body().is_none());
         }));
 
@@ -899,7 +899,7 @@ mod tests {
     async fn test_send_consumption_data() {
         let client = app_store_server_api_client("".into(), StatusCode::OK, Some(|req, body| {
             assert_eq!(Method::PUT, req.method());
-            assert_eq!("https://api.storekit-sandbox.itunes.apple.com/inApps/v1/transactions/consumption/49571273", req.url().as_str());
+            assert_eq!("https://local-testing-base-url/inApps/v1/transactions/consumption/49571273", req.url().as_str());
             assert_eq!("application/json", req.headers().get("Content-Type").unwrap().to_str().unwrap());
             let decoded_json: HashMap<String, Value> = serde_json::from_slice(body.unwrap()).unwrap();
             assert_eq!(true, decoded_json["customerConsented"].as_bool().unwrap());
