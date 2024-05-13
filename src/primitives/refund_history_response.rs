@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub struct RefundHistoryResponse {
     /// A list of up to 20 JWS transactions, or an empty array if the customer hasn't received any refunds in your app. The transactions are sorted in ascending order by revocationDate.
+    ///
+    /// [JWSTransaction](https://developer.apple.com/documentation/appstoreserverapi/jwstransaction)
     #[serde(rename = "signedTransactions")]
     pub signed_transactions: Vec<String>,
 

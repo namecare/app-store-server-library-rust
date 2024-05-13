@@ -13,6 +13,8 @@ pub struct SubscriptionGroupIdentifierItem {
     pub subscription_group_identifier: Option<String>,
 
     /// An array of the most recent App Store-signed transaction information and App Store-signed renewal information for all auto-renewable subscriptions in the subscription group.
+    ///
+    /// [lastTransactionsItem](https://developer.apple.com/documentation/appstoreserverapi/lasttransactionsitem)
     #[serde(rename = "lastTransactions")]
     pub last_transactions: Option<Vec<LastTransactionsItem>>,
 }
