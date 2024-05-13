@@ -318,6 +318,8 @@ mod tests {
     use ring::signature::ECDSA_P256_SHA256_FIXED_SIGNING;
     use serde_json::{Map, Value};
     use std::fs;
+    use chrono::TimeZone;
+    use crate::primitives::consumption_request_reason::ConsumptionRequestReason;
 
     const ROOT_CA_BASE64_ENCODED: &str = "MIIBgjCCASmgAwIBAgIJALUc5ALiH5pbMAoGCCqGSM49BAMDMDYxCzAJBgNVBAYTAlVTMRMwEQYDVQQIDApDYWxpZm9ybmlhMRIwEAYDVQQHDAlDdXBlcnRpbm8wHhcNMjMwMTA1MjEzMDIyWhcNMzMwMTAyMjEzMDIyWjA2MQswCQYDVQQGEwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTESMBAGA1UEBwwJQ3VwZXJ0aW5vMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEc+/Bl+gospo6tf9Z7io5tdKdrlN1YdVnqEhEDXDShzdAJPQijamXIMHf8xWWTa1zgoYTxOKpbuJtDplz1XriTaMgMB4wDAYDVR0TBAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYwCgYIKoZIzj0EAwMDRwAwRAIgemWQXnMAdTad2JDJWng9U4uBBL5mA7WI05H7oH7c6iQCIHiRqMjNfzUAyiu9h6rOU/K+iTR0I/3Y/NSWsXHX+acc";
 
@@ -902,11 +904,47 @@ mod tests {
                             .expect("Expect signed_renewal_info")
                     );
                     assert_eq!(Status::Active, data.status.expect("Expect status"));
+                    assert!(data.consumption_request_reason.is_none());
                 } else {
                     panic!("Data field is expected to be present in the notification");
                 }
             }
             Err(err) => panic!("Failed to verify and decode notification: {:?}", err),
+        }
+    }
+
+    #[test]
+    fn test_consumption_request_notification_decoding() {
+        let signed_notification = create_signed_data_from_json("assets/signedConsumptionRequestNotification.json");
+
+        let signed_data_verifier = get_default_signed_data_verifier();
+
+        match signed_data_verifier.verify_and_decode_notification(&signed_notification) {
+            Ok(notification) => {
+                assert_eq!(NotificationTypeV2::ConsumptionRequest, notification.notification_type);
+                assert!(notification.subtype.is_none());
+                assert_eq!("002e14d5-51f5-4503-b5a8-c3a1af68eb20", notification.notification_uuid);
+                assert_eq!("2.0", notification.version.unwrap());
+                assert_eq!(1698148900, notification.signed_date.unwrap().timestamp());
+                assert!(notification.data.is_some());
+                assert!(notification.summary.is_none());
+                assert!(notification.external_purchase_token.is_none());
+
+                if let Some(data) = notification.data {
+                    assert_eq!(Environment::LocalTesting, data.environment.unwrap());
+                    assert_eq!(41234, data.app_apple_id.unwrap());
+                    assert_eq!("com.example", data.bundle_id.unwrap());
+                    assert_eq!("1.2.3", data.bundle_version.unwrap());
+                    assert_eq!("signed_transaction_info_value", data.signed_transaction_info.unwrap());
+                    assert_eq!("signed_renewal_info_value", data.signed_renewal_info.unwrap());
+                    assert_eq!(Status::Active, data.status.unwrap());
+                    assert_eq!(ConsumptionRequestReason::UnintendedPurchase, data.consumption_request_reason.unwrap());
+                }
+            }
+            Err(err) => panic!(
+                "Failed to verify and decode consumption request notification: {:?}",
+                err
+            ),
         }
     }
 

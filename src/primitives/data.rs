@@ -1,6 +1,7 @@
 use crate::primitives::environment::Environment;
 use crate::primitives::status::Status;
 use serde::{Deserialize, Serialize};
+use crate::primitives::consumption_request_reason::ConsumptionRequestReason;
 
 /// The app metadata and the signed renewal and transaction information.
 ///
@@ -47,4 +48,10 @@ pub struct Data {
     /// [JWSRenewalInfo](https://developer.apple.com/documentation/appstoreservernotifications/status)
     #[serde(rename = "status")]
     pub status: Option<Status>,
+
+    /// The reason the customer requested the refund.
+    ///
+    /// [consumptionRequestReason](https://developer.apple.com/documentation/appstoreservernotifications/consumptionrequestreason)
+    #[serde(rename = "consumptionRequestReason")]
+    pub consumption_request_reason: Option<ConsumptionRequestReason>,
 }
