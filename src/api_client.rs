@@ -597,6 +597,7 @@ mod tests {
     use crate::primitives::order_lookup_status::OrderLookupStatus;
     use crate::primitives::platform::Platform;
     use crate::primitives::play_time::PlayTime;
+    use crate::primitives::refund_preference::RefundPreference;
     use crate::primitives::send_attempt_item::SendAttemptItem;
     use crate::primitives::send_attempt_result::SendAttemptResult;
     use crate::primitives::subscription_group_identifier_item::SubscriptionGroupIdentifierItem;
@@ -912,6 +913,7 @@ mod tests {
             assert_eq!(6, decoded_json["lifetimeDollarsRefunded"].as_i64().unwrap());
             assert_eq!(7, decoded_json["lifetimeDollarsPurchased"].as_i64().unwrap());
             assert_eq!(4, decoded_json["userStatus"].as_i64().unwrap());
+            assert_eq!(3, decoded_json["refundPreference"].as_i64().unwrap());
         }));
 
         let consumption_request = ConsumptionRequest {
@@ -926,6 +928,7 @@ mod tests {
             lifetime_dollars_refunded: LifetimeDollarsRefunded::OneThousandDollarsToOneThousandNineHundredNinetyNineDollarsAndNinetyNineCents.into(),
             lifetime_dollars_purchased: LifetimeDollarsPurchased::TwoThousandDollarsOrGreater.into(),
             user_status: UserStatus::LimitedAccess.into(),
+            refund_preference: RefundPreference::NoPreference.into(),
         };
 
         let _ = client.send_consumption_data("49571273", &consumption_request).await.unwrap();
