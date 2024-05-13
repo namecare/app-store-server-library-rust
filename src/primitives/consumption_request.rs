@@ -8,6 +8,7 @@ use crate::primitives::play_time::PlayTime;
 use crate::primitives::user_status::UserStatus;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use crate::primitives::refund_preference::RefundPreference;
 
 /// The request body containing consumption information.
 ///
@@ -78,4 +79,10 @@ pub struct ConsumptionRequest {
     /// [userStatus](https://developer.apple.com/documentation/appstoreserverapi/userstatus)
     #[serde(rename = "userStatus")]
     pub user_status: Option<UserStatus>,
+
+    /// A value that indicates your preference, based on your operational logic, as to whether Apple should grant the refund.
+    ///
+    /// [refundPreference](https://developer.apple.com/documentation/appstoreserverapi/refundpreference)
+    #[serde(rename = "refundPreference")]
+    pub refund_preference: Option<RefundPreference>,
 }

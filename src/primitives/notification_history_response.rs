@@ -20,5 +20,7 @@ pub struct NotificationHistoryResponse {
 
     /// An array of App Store server notification history records.
     #[serde(rename = "notificationHistory")]
+    ///
+    ///[notificationHistoryResponseItem](https://developer.apple.com/documentation/appstoreserverapi/notificationhistoryresponseitem)
     pub notification_history: Option<Vec<NotificationHistoryResponseItem>>,
 }

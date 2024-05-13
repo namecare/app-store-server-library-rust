@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-/// A notification type value that App Store Server Notifications V2 uses.
+/// The type that describes the in-app purchase or external purchase event for which the App Store sends the version 2 notification.
 ///
-/// [notificationType](https://developer.apple.com/documentation/appstoreserverapi/notificationtype)
+/// [notificationType](https://developer.apple.com/documentation/appstoreservernotifications/notificationtype)
 #[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub enum NotificationTypeV2 {
     #[serde(rename = "SUBSCRIBED")]
