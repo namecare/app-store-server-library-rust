@@ -29,7 +29,7 @@ async fn main() {
     
     let client = AppStoreServerApiClient::new(encoded_key, key_id, issuer_id, bundle_id, environment);
     match client.request_test_notification().await {
-        Ok(res) => {
+        Ok(response) => {
             println!("{}", response.test_notification_token);
         }
         Err(err) => {
