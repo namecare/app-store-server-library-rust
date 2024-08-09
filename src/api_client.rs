@@ -25,10 +25,10 @@ use crate::primitives::transaction_info_response::TransactionInfoResponse;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct APIException {
-    http_status_code: u16,
-    api_error: Option<APIError>,
-    raw_api_error: Option<i64>,
-    error_message: Option<String>,
+    pub http_status_code: u16,
+    pub api_error: Option<APIError>,
+    pub raw_api_error: Option<i64>,
+    pub error_message: Option<String>,
 }
 
 impl fmt::Display for APIException {

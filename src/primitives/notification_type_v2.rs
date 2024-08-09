@@ -41,4 +41,6 @@ pub enum NotificationTypeV2 {
     RefundReversed,
     #[serde(rename = "EXTERNAL_PURCHASE_TOKEN")]
     ExternalPurchaseToken,
+    #[serde(rename = "ONE_TIME_CHARGE")]
+    OneTimeCharge,
 }
