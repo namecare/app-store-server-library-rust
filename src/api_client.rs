@@ -360,6 +360,33 @@ impl AppStoreServerAPIClient {
         self.make_request_with_response_body(req).await
     }
 
+    /// Get the transaction history for a given transaction ID.
+    ///
+    /// This method is deprecated. Please use `get_transaction_history_with_version` instead.
+    ///
+    /// # Arguments
+    ///
+    /// * `transaction_id` - The identifier of the transaction to retrieve the history for.
+    /// * `revision` - An optional revision string to specify the starting point of the transaction history.
+    /// * `transaction_history_request` - The request object containing additional parameters for the transaction history.
+    ///
+    /// # Returns
+    ///
+    /// A response that contains the transaction history for the given transaction ID.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIException` if the request could not be processed.
+    #[deprecated(note = "Use `get_transaction_history_with_version` instead.")]
+    pub async fn get_transaction_history(
+        &self,
+        transaction_id: &str,
+        revision: Option<&str>,
+        transaction_history_request: TransactionHistoryRequest,
+    ) -> Result<HistoryResponse, APIException> {
+        self.get_transaction_history_with_version(transaction_id, revision, &transaction_history_request, GetTransactionHistoryVersion::V1).await
+    }
+
     /// Get a list of notifications that the App Store server attempted to send to your server.
     ///
     /// [Apple Documentation](https://developer.apple.com/documentation/appstoreserverapi/get_notification_history)
@@ -413,11 +440,12 @@ impl AppStoreServerAPIClient {
     /// * `TransactionHistoryNotFoundError` (Status Code: 4040010) - An error that indicates a transaction identifier wasn't found.
     /// * `TransactionHistoryServerError` (Status Code: 5000000) - An error that indicates a server error occurred during the request processing.
     ///
-    pub async fn get_transaction_history(
+    pub async fn get_transaction_history_with_version(
         &self,
         transaction_id: &str,
         revision: Option<&str>,
         transaction_history_request: &TransactionHistoryRequest,
+        version: GetTransactionHistoryVersion,
     ) -> Result<HistoryResponse, APIException> {
         let mut query_parameters: Vec<(&str, Value)> = vec![];
 
@@ -465,7 +493,7 @@ impl AppStoreServerAPIClient {
             query_parameters.push(("revoked", revoked.to_string().into()));
         }
 
-        let path = format!("/inApps/v1/history/{}", transaction_id);
+        let path = format!("/inApps/{}/history/{}", version.as_str(), transaction_id);
         let req = self.build_request(path.as_str(), Method::GET)
             .query(&query_parameters);
         self.make_request_with_response_body(req).await
@@ -550,6 +578,24 @@ impl AppStoreServerAPIClient {
     }
 }
 
+/// Represents the version of the Get Transaction History endpoint to use.
+#[derive(Debug)]
+pub enum GetTransactionHistoryVersion {
+    #[deprecated(note = "Version v1 is deprecated, use v2 instead.")]
+    V1,
+    V2,
+}
+
+impl GetTransactionHistoryVersion {
+    /// Converts the enum variant to its corresponding string representation.
+    pub fn as_str(&self) -> &str {
+        match self {
+            GetTransactionHistoryVersion::V1 => "v1",
+            GetTransactionHistoryVersion::V2 => "v2",
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims<'a> {
     bid: &'a str,
@@ -581,7 +627,6 @@ mod tests {
     use http::StatusCode;
     use serde_json::Value;
     use chrono::DateTime;
-    use url::Url;
     use uuid::Uuid;
     use base64::prelude::BASE64_STANDARD_NO_PAD;
     use crate::primitives::account_tenure::AccountTenure;
@@ -817,41 +862,102 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_transaction_history() {
-        let client = app_store_server_api_client_with_body_from_file("assets/models/transactionHistoryResponse.json", StatusCode::OK, Some(|req, _body| {
-            assert_eq!(Method::GET, req.method());
-            let url = req.url();
-            let url_components = Url::parse(url.as_str()).unwrap();
-            assert_eq!("/inApps/v1/history/1234", url_components.path());
-            let params = url_components.query_pairs().into_owned().fold(HashMap::new(), |mut acc, (k, v)| {
-                acc.entry(k.to_string()).or_insert_with(Vec::new).push(v);
-                acc
-            });
-            assert_eq!(&vec!["revision_input"], params.get("revision").unwrap());
-            assert_eq!(&vec!["123455"], params.get("startDate").unwrap());
-            assert_eq!(&vec!["123456"], params.get("endDate").unwrap());
-            assert_eq!(&vec!["com.example.1", "com.example.2"], params.get("productId").unwrap());
-            assert_eq!(&vec!["CONSUMABLE", "AUTO_RENEWABLE"], params.get("productType").unwrap());
-            assert_eq!(&vec!["ASCENDING"], params.get("sort").unwrap());
-            assert_eq!(&vec!["sub_group_id", "sub_group_id_2"], params.get("subscriptionGroupIdentifier").unwrap());
-            assert_eq!(&vec!["FAMILY_SHARED"], params.get("inAppOwnershipType").unwrap());
-            assert_eq!(&vec!["false"], params.get("revoked").unwrap());
-        }));
+    async fn test_get_transaction_history_v1() {
+        let client = app_store_server_api_client_with_body_from_file(
+            "assets/models/transactionHistoryResponse.json",
+            StatusCode::OK,
+            Some(|req, _body| {
+                assert_eq!(Method::GET, req.method());
+                assert_eq!(
+                    "/inApps/v1/history/1234",
+                    req.url().path()
+                );
+                assert!(req.body().is_none());
+            }),
+        );
 
         let request = TransactionHistoryRequest {
             start_date: DateTime::from_timestamp(123, 455000000),
             end_date: DateTime::from_timestamp(123, 456000000),
-            product_ids: vec!["com.example.1", "com.example.2"].into_iter().map(String::from).collect::<Vec<String>>().into(),
-            product_types: vec![ProductType::Consumable, ProductType::AutoRenewable].into(),
-            sort: Order::Ascending.into(),
-            subscription_group_identifiers: vec!["sub_group_id".to_string(), "sub_group_id_2".to_string()].into(),
-            in_app_ownership_type: InAppOwnershipType::FamilyShared.into(),
-            revoked: false.into(),
+            product_ids: Some(vec!["com.example.1".to_string(), "com.example.2".to_string()]),
+            product_types: Some(vec![ProductType::Consumable, ProductType::AutoRenewable]),
+            sort: Some(Order::Ascending),
+            subscription_group_identifiers: Some(vec![
+                "sub_group_id".to_string(),
+                "sub_group_id_2".to_string(),
+            ]),
+            in_app_ownership_type: Some(InAppOwnershipType::FamilyShared),
+            revoked: Some(false),
         };
 
-        let response = client.get_transaction_history("1234", Some("revision_input"), &request).await.unwrap();
+        let response = client
+            .get_transaction_history("1234", Some("revision_input"), request)
+            .await
+            .unwrap();
+
         assert_eq!("revision_output", response.revision.unwrap());
-        assert_eq!(true, response.has_more.unwrap());
+        assert_eq!(response.has_more, Some(true));
+        assert_eq!("com.example", response.bundle_id.unwrap().as_str());
+        assert_eq!(323232, response.app_apple_id.unwrap());
+        assert_eq!(Environment::LocalTesting, response.environment.unwrap());
+        assert_eq!(vec!["signed_transaction_value", "signed_transaction_value2"], response.signed_transactions.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_get_transaction_history_v2() {
+        let client = app_store_server_api_client_with_body_from_file(
+            "assets/models/transactionHistoryResponse.json",
+            StatusCode::OK,
+            Some(|req, _body| {
+                assert_eq!(Method::GET, req.method());
+                let url = req.url();
+                assert_eq!(
+                    "/inApps/v2/history/1234",
+                    url.path()
+                );
+
+                let params: HashMap<String, Vec<String>> = url.query_pairs()
+                    .into_owned()
+                    .fold(HashMap::new(), |mut acc, (k, v)| {
+                        acc.entry(k).or_insert_with(Vec::new).push(v);
+                        acc
+                    });
+
+                assert_eq!(vec!["revision_input".to_string()], *params.get("revision").unwrap());
+                assert_eq!(vec!["123455"], *params.get("startDate").unwrap());
+                assert_eq!(vec!["123456"], *params.get("endDate").unwrap());
+                assert_eq!(vec!["com.example.1", "com.example.2"], *params.get("productId").unwrap());
+                assert_eq!(vec!["CONSUMABLE", "AUTO_RENEWABLE"], *params.get("productType").unwrap());
+                assert_eq!(vec!["ASCENDING"], *params.get("sort").unwrap());
+                assert_eq!(vec!["sub_group_id", "sub_group_id_2"], *params.get("subscriptionGroupIdentifier").unwrap());
+                assert_eq!(vec!["FAMILY_SHARED"], *params.get("inAppOwnershipType").unwrap());
+                assert_eq!(vec!["false"], *params.get("revoked").unwrap());
+
+                assert!(req.body().is_none());
+            }),
+        );
+
+        let request = TransactionHistoryRequest {
+            start_date: DateTime::from_timestamp(123, 455000000),
+            end_date: DateTime::from_timestamp(123, 456000000),
+            product_ids: Some(vec!["com.example.1".to_string(), "com.example.2".to_string()]),
+            product_types: Some(vec![ProductType::Consumable, ProductType::AutoRenewable]),
+            sort: Some(Order::Ascending),
+            subscription_group_identifiers: Some(vec![
+                "sub_group_id".to_string(),
+                "sub_group_id_2".to_string(),
+            ]),
+            in_app_ownership_type: Some(InAppOwnershipType::FamilyShared),
+            revoked: Some(false),
+        };
+
+        let response = client
+            .get_transaction_history_with_version("1234", Some("revision_input"), &request, GetTransactionHistoryVersion::V2)
+            .await
+            .unwrap();
+
+        assert_eq!("revision_output", response.revision.unwrap());
+        assert_eq!(response.has_more, Some(true));
         assert_eq!("com.example", response.bundle_id.unwrap().as_str());
         assert_eq!(323232, response.app_apple_id.unwrap());
         assert_eq!(Environment::LocalTesting, response.environment.unwrap());
@@ -1026,7 +1132,7 @@ mod tests {
             revoked: Some(false),
         };
 
-        let result = client.get_transaction_history("1234", Some("revision_input"), &request).await.unwrap();
+        let result = client.get_transaction_history("1234", Some("revision_input"), request).await.unwrap();
         assert_eq!(Environment::Unknown, result.environment.unwrap());
     }
 
@@ -1045,7 +1151,7 @@ mod tests {
             revoked: Some(false),
         };
 
-        let result = client.get_transaction_history("1234", Some("revision_input"), &request).await;
+        let result = client.get_transaction_history("1234", Some("revision_input"), request).await;
         match result {
             Ok(_) => {
                 assert!(false, "Unexpected response type");

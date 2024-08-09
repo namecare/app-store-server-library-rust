@@ -7,6 +7,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
+use crate::primitives::offer_discount_type::OfferDiscountType;
 
 /// A decoded payload containing subscription renewal information for an auto-renewable subscription.
 ///
@@ -101,4 +102,21 @@ pub struct JWSRenewalInfoDecodedPayload {
     #[serde(rename = "renewalDate")]
     #[serde_as(as = "Option<TimestampMilliSeconds<String, Flexible>>")]
     pub renewal_date: Option<DateTime<Utc>>,
+
+    ///The currency code for the renewalPrice of the subscription.
+    ///
+    ///[currency](https://developer.apple.com/documentation/appstoreserverapi/currency)
+    pub currency: Option<String>,
+
+    ///The renewal price, in milliunits, of the auto-renewable subscription that renews at the next billing period.
+    ///
+    ///[renewalPrice](https://developer.apple.com/documentation/appstoreserverapi/renewalprice)
+    #[serde(rename = "renewalPrice")]
+    pub renewal_price: Option<i64>,
+
+    ///The payment mode of the discount offer.
+    ///
+    ///[offerDiscountType](https://developer.apple.com/documentation/appstoreserverapi/offerdiscounttype)
+    #[serde(rename = "offerDiscountType")]
+    pub offer_discount_type: Option<OfferDiscountType>
 }
