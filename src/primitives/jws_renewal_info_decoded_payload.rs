@@ -118,5 +118,11 @@ pub struct JWSRenewalInfoDecodedPayload {
     ///
     ///[offerDiscountType](https://developer.apple.com/documentation/appstoreserverapi/offerdiscounttype)
     #[serde(rename = "offerDiscountType")]
-    pub offer_discount_type: Option<OfferDiscountType>
+    pub offer_discount_type: Option<OfferDiscountType>,
+
+    ///An array of win-back offer identifiers that a customer is eligible to redeem, which sorts the identifiers to present the better offers first.
+    ///
+    ///[eligibleWinBackOfferIds](https://developer.apple.com/documentation/appstoreserverapi/eligiblewinbackofferids)
+    #[serde(rename = "eligibleWinBackOfferIds")]
+    pub eligible_win_back_offer_ids: Option<Vec<String>>
 }
