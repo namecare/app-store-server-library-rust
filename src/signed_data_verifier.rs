@@ -386,6 +386,21 @@ mod tests {
             .verify_and_decode_renewal_info(RENEWAL_INFO)
             .unwrap();
         assert_eq!(renewal_info.environment, Some(Environment::Sandbox));
+        // TODO: Implement TestingUtility to generate signed data from json
+        // assert_eq!(
+        //     "USD",
+        //     renewal_info.currency.as_deref().expect("Expect currency")
+        // );
+        // assert_eq!(
+        //     OfferDiscountType::PayAsYouGo,
+        //     renewal_info
+        //         .offer_discount_type
+        //         .expect("Expect offer_discount_type")
+        // );
+        // assert_eq!(
+        //     vec!["eligible1", "eligible2"],
+        //     renewal_info.eligible_win_back_offer_ids.unwrap()
+        // );
     }
 
     #[test]
