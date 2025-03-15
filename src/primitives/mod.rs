@@ -54,3 +54,4 @@ pub mod user_status;
 pub mod external_purchase_token;
 pub mod consumption_request_reason;
 pub mod refund_preference;
+pub mod purchase_platform;
