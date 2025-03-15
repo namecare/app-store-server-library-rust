@@ -7,6 +7,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
+use uuid::Uuid;
 use crate::primitives::offer_discount_type::OfferDiscountType;
 
 /// A decoded payload containing subscription renewal information for an auto-renewable subscription.
@@ -130,7 +131,7 @@ pub struct JWSRenewalInfoDecodedPayload {
     ///
     /// [appAccountToken](https://developer.apple.com/documentation/appstoreserverapi/appAccountToken)
     #[serde(rename = "appAccountToken")]
-    pub app_account_token: Option<String>,
+    pub app_account_token: Option<Uuid>,
 
     /// The unique identifier of the app download transaction.
     ///
