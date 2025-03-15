@@ -167,6 +167,11 @@ pub enum APIError {
     /// [InvalidTransactionTypeNotSupportedError](https://developer.apple.com/documentation/appstoreserverapi/invalidtransactiontypenotsupportederror)
     InvalidTransactionTypeNotSupported = 4000047,
 
+    /// An error that indicates the endpoint doesn't support an app transaction ID.
+    ///
+    /// [AppTransactionIdNotSupportedError](https://developer.apple.com/documentation/appstoreserverapi/apptransactionidnotsupportederror)
+    AppTransactionIdNotSupportedError = 4000048,
+
     /// An error that indicates the subscription doesn't qualify for a renewal-date extension due to its subscription state.
     /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/subscriptionextensionineligibleerror)
     SubscriptionExtensionIneligible = 4030004,
