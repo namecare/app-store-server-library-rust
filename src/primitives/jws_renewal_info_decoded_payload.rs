@@ -7,6 +7,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
+use uuid::Uuid;
 use crate::primitives::offer_discount_type::OfferDiscountType;
 
 /// A decoded payload containing subscription renewal information for an auto-renewable subscription.
@@ -124,5 +125,23 @@ pub struct JWSRenewalInfoDecodedPayload {
     ///
     ///[eligibleWinBackOfferIds](https://developer.apple.com/documentation/appstoreserverapi/eligiblewinbackofferids)
     #[serde(rename = "eligibleWinBackOfferIds")]
-    pub eligible_win_back_offer_ids: Option<Vec<String>>
+    pub eligible_win_back_offer_ids: Option<Vec<String>>,
+
+    /// The UUID that an app optionally generates to map a customer’s in-app purchase with its resulting App Store transaction.
+    ///
+    /// [appAccountToken](https://developer.apple.com/documentation/appstoreserverapi/appAccountToken)
+    #[serde(rename = "appAccountToken")]
+    pub app_account_token: Option<Uuid>,
+
+    /// The unique identifier of the app download transaction.
+    ///
+    /// [appTransactionId](https://developer.apple.com/documentation/appstoreserverapi/appTransactionId)
+    #[serde(rename = "appTransactionId")]
+    pub app_transaction_id: Option<String>,
+
+    /// The duration of the offer.
+    ///
+    /// [offerPeriod](https://developer.apple.com/documentation/appstoreserverapi/offerPeriod)
+    #[serde(rename = "offerPeriod")]
+    pub offer_period: Option<String>,
 }

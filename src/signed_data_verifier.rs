@@ -311,6 +311,7 @@ mod tests {
     use crate::primitives::offer_type::OfferType;
     use crate::primitives::price_increase_status::PriceIncreaseStatus;
     use crate::primitives::product_type::ProductType;
+    use crate::primitives::purchase_platform::PurchasePlatform;
     use crate::primitives::revocation_reason::RevocationReason;
     use crate::primitives::status::Status;
     use crate::primitives::subtype::Subtype;
@@ -595,6 +596,19 @@ mod tests {
                         .expect("Expect preorder_date")
                         .timestamp()
                 );
+                assert_eq!(
+                    "71134",
+                    app_transaction
+                        .app_transaction_id
+                        .expect("Expect app_transaction_id")
+                        .to_string()
+                );
+                assert_eq!(
+                    PurchasePlatform::IOS,
+                    app_transaction
+                        .original_platform
+                        .expect("Expect original_platform")
+                );
             }
             Err(err) => panic!("Failed to verify and decode app transaction: {:?}", err),
         }
@@ -753,6 +767,20 @@ mod tests {
                         .offer_discount_type
                         .expect("Expect offer_discount_type")
                 );
+                assert_eq!(
+                    "71134",
+                    transaction
+                        .app_transaction_id
+                        .expect("Expect app_transaction_id")
+                        .to_string()
+                );
+                assert_eq!(
+                    "P1Y",
+                    transaction
+                        .offer_period
+                        .expect("Expect offer_period")
+                        .to_string()
+                );
             }
             Err(err) => panic!("Failed to verify and decode signed transaction: {:?}", err),
         }
@@ -848,6 +876,27 @@ mod tests {
                         .renewal_date
                         .expect("Expect renewal_date")
                         .timestamp()
+                );
+                assert_eq!(
+                    "71134",
+                    renewal_info
+                        .app_transaction_id
+                        .expect("Expect app_transaction_id")
+                        .to_string()
+                );
+                assert_eq!(
+                    "P1Y",
+                    renewal_info
+                        .offer_period
+                        .expect("Expect offer_period")
+                        .to_string()
+                );
+                assert_eq!(
+                    "7e3fb20b-4cdb-47cc-936d-99d65f608138",
+                    renewal_info
+                        .app_account_token
+                        .expect("Expect app_account_token")
+                        .to_string()
                 );
             }
             Err(err) => panic!("Failed to verify and decode renewal info: {:?}", err),

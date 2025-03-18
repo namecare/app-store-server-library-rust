@@ -172,4 +172,16 @@ pub struct JWSTransactionDecodedPayload {
     /// [offerDiscountType](https://developer.apple.com/documentation/appstoreserverapi/offerdiscounttype)
     #[serde(rename = "offerDiscountType")]
     pub offer_discount_type: Option<OfferDiscountType>,
+
+    /// The unique identifier of the app download transaction.
+    ///
+    /// [appTransactionId](https://developer.apple.com/documentation/appstoreserverapi/appTransactionId)
+    #[serde(rename = "appTransactionId")]
+    pub app_transaction_id: Option<String>,
+
+    /// The duration of the offer.
+    ///
+    /// [offerPeriod](https://developer.apple.com/documentation/appstoreserverapi/offerPeriod)
+    #[serde(rename = "offerPeriod")]
+    pub offer_period: Option<String>,
 }

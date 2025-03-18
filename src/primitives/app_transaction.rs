@@ -1,4 +1,5 @@
 use crate::primitives::environment::Environment;
+use crate::primitives::purchase_platform::PurchasePlatform;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::formats::Flexible;
@@ -68,6 +69,18 @@ pub struct AppTransaction {
     #[serde(rename = "preorderDate")]
     #[serde_as(as = "Option<TimestampMilliSeconds<String, Flexible>>")]
     pub preorder_date: Option<DateTime<Utc>>,
+
+    /// The unique identifier of the app download transaction.
+    ///
+    /// [appTransactionId](https://developer.apple.com/documentation/storekit/apptransaction/apptransactionid)
+    #[serde(rename = "appTransactionId")]
+    pub app_transaction_id: Option<String>,
+
+    /// The platform on which the customer originally purchased the app.
+    ///
+    /// [original_platform](https://developer.apple.com/documentation/storekit/apptransaction/originalplatform)
+    #[serde(rename = "originalPlatform")]
+    pub original_platform: Option<PurchasePlatform>,
 }
 
 impl AppTransaction {
