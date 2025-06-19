@@ -34,14 +34,22 @@ pub enum SignedDataVerifierError {
 
 /// A verifier for signed data, commonly used for verifying and decoding
 /// signed Apple server notifications and transactions.
-pub struct SignedDataVerifier {
-    root_certificates: Vec<Vec<u8>>,
+pub struct SignedDataVerifier<C, B>
+where
+    C: AsRef<[Vec<u8>]>,
+    B: AsRef<str> + PartialEq,
+{
+    root_certificates: C,
     environment: Environment,
-    bundle_id: String,
+    bundle_id: B,
     app_apple_id: Option<i64>,
 }
 
-impl SignedDataVerifier {
+impl<C, B> SignedDataVerifier<C, B>
+where
+    C: AsRef<[Vec<u8>]>,
+    B: AsRef<str> + PartialEq,
+{
     /// Creates a new `SignedDataVerifier` instance with the specified parameters.
     ///
     /// # Arguments
@@ -55,9 +63,9 @@ impl SignedDataVerifier {
     ///
     /// A new `SignedDataVerifier` instance.
     pub fn new(
-        root_certificates: Vec<Vec<u8>>,
+        root_certificates: C,
         environment: Environment,
-        bundle_id: String,
+        bundle_id: B,
         app_apple_id: Option<i64>,
     ) -> Self {
         return SignedDataVerifier {
@@ -69,7 +77,11 @@ impl SignedDataVerifier {
     }
 }
 
-impl SignedDataVerifier {
+impl<C, B> SignedDataVerifier<C, B>
+where
+    C: AsRef<[Vec<u8>]>,
+    B: std::convert::AsRef<str> + PartialEq,
+{
     /// Verifies and decodes a signed renewal info.
     ///
     /// This method takes a signed renewal info string, verifies its authenticity and
@@ -112,7 +124,7 @@ impl SignedDataVerifier {
         let decoded_signed_tx: JWSTransactionDecodedPayload =
             self.decode_signed_object(signed_transaction)?;
 
-        if decoded_signed_tx.bundle_id.as_ref() != Some(&self.bundle_id) {
+        if decoded_signed_tx.bundle_id.as_deref() != Some(self.bundle_id.as_ref()) {
             return Err(SignedDataVerifierError::InvalidAppIdentifier);
         }
 
@@ -156,7 +168,9 @@ impl SignedDataVerifier {
             bundle_id = summary.bundle_id.clone();
             app_apple_id = summary.app_apple_id.clone();
             environment = summary.environment.clone();
-        } else if let Some(external_purchase_token) = &decoded_signed_notification.external_purchase_token {
+        } else if let Some(external_purchase_token) =
+            &decoded_signed_notification.external_purchase_token
+        {
             bundle_id = external_purchase_token.bundle_id.clone();
             app_apple_id = external_purchase_token.app_apple_id.clone();
 
@@ -175,19 +189,23 @@ impl SignedDataVerifier {
             environment = None;
         }
 
-        self.verify_notification_app_identifier_and_environment(bundle_id, app_apple_id, environment)?;
+        self.verify_notification_app_identifier_and_environment(
+            bundle_id.as_deref(),
+            app_apple_id,
+            environment,
+        )?;
 
         Ok(decoded_signed_notification)
     }
 
     fn verify_notification_app_identifier_and_environment(
         &self,
-        bundle_id: Option<String>,
+        bundle_id: Option<&str>,
         app_apple_id: Option<i64>,
         environment: Option<Environment>,
     ) -> Result<(), SignedDataVerifierError> {
         if let Some(bundle_id) = bundle_id {
-            if bundle_id != self.bundle_id {
+            if bundle_id != self.bundle_id.as_ref() {
                 return Err(SignedDataVerifierError::InvalidAppIdentifier);
             }
         }
@@ -226,7 +244,7 @@ impl SignedDataVerifier {
         let decoded_app_transaction: AppTransaction =
             self.decode_signed_object(signed_app_transaction)?;
 
-        if decoded_app_transaction.bundle_id.as_ref() != Some(&self.bundle_id) {
+        if decoded_app_transaction.bundle_id.as_deref() != Some(self.bundle_id.as_ref()) {
             return Err(SignedDataVerifierError::InvalidAppIdentifier);
         }
 
@@ -304,6 +322,7 @@ impl SignedDataVerifier {
 mod tests {
     use super::*;
     use crate::primitives::auto_renew_status::AutoRenewStatus;
+    use crate::primitives::consumption_request_reason::ConsumptionRequestReason;
     use crate::primitives::expiration_intent::ExpirationIntent;
     use crate::primitives::in_app_ownership_type::InAppOwnershipType;
     use crate::primitives::notification_type_v2::NotificationTypeV2;
@@ -319,7 +338,6 @@ mod tests {
     use ring::signature::ECDSA_P256_SHA256_FIXED_SIGNING;
     use serde_json::{Map, Value};
     use std::fs;
-    use crate::primitives::consumption_request_reason::ConsumptionRequestReason;
 
     const ROOT_CA_BASE64_ENCODED: &str = "MIIBgjCCASmgAwIBAgIJALUc5ALiH5pbMAoGCCqGSM49BAMDMDYxCzAJBgNVBAYTAlVTMRMwEQYDVQQIDApDYWxpZm9ybmlhMRIwEAYDVQQHDAlDdXBlcnRpbm8wHhcNMjMwMTA1MjEzMDIyWhcNMzMwMTAyMjEzMDIyWjA2MQswCQYDVQQGEwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTESMBAGA1UEBwwJQ3VwZXJ0aW5vMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEc+/Bl+gospo6tf9Z7io5tdKdrlN1YdVnqEhEDXDShzdAJPQijamXIMHf8xWWTa1zgoYTxOKpbuJtDplz1XriTaMgMB4wDAYDVR0TBAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYwCgYIKoZIzj0EAwMDRwAwRAIgemWQXnMAdTad2JDJWng9U4uBBL5mA7WI05H7oH7c6iQCIHiRqMjNfzUAyiu9h6rOU/K+iTR0I/3Y/NSWsXHX+acc";
 
@@ -354,30 +372,21 @@ mod tests {
     fn test_missing_x5c_header() {
         let verifier = get_signed_data_verifier(Environment::Sandbox, "com.example", None);
         let result = verifier.verify_and_decode_notification(MISSING_X5C_HEADER_CLAIM);
-        assert_eq!(
-            result.err().unwrap(),
-            SignedDataVerifierError::VerificationFailure
-        );
+        assert_eq!(result.err().unwrap(), SignedDataVerifierError::VerificationFailure);
     }
 
     #[test]
     fn test_wrong_bundle_id_for_server_notification() {
         let verifier = get_signed_data_verifier(Environment::Sandbox, "com.example", None);
         let result = verifier.verify_and_decode_notification(WRONG_BUNDLE_ID);
-        assert_eq!(
-            result.err().unwrap(),
-            SignedDataVerifierError::InvalidAppIdentifier
-        );
+        assert_eq!(result.err().unwrap(), SignedDataVerifierError::InvalidAppIdentifier);
     }
 
     #[test]
     fn test_wrong_app_apple_id_for_server_notification() {
         let verifier = get_signed_data_verifier(Environment::Production, "com.example", Some(1235));
         let result = verifier.verify_and_decode_notification(TEST_NOTIFICATION);
-        assert_eq!(
-            result.err().unwrap(),
-            SignedDataVerifierError::InvalidAppIdentifier
-        );
+        assert_eq!(result.err().unwrap(), SignedDataVerifierError::InvalidAppIdentifier);
     }
 
     #[test]
@@ -409,26 +418,43 @@ mod tests {
         let signed_notification =
             create_signed_data_from_json("assets/signedExternalPurchaseTokenNotification.json");
 
-        let signed_data_verifier = get_signed_data_verifier(Environment::LocalTesting, "com.example", Some(55555));
+        let signed_data_verifier =
+            get_signed_data_verifier(Environment::LocalTesting, "com.example", Some(55555));
 
         match signed_data_verifier.verify_and_decode_notification(&signed_notification) {
             Ok(notification) => {
-
-                assert_eq!(NotificationTypeV2::ExternalPurchaseToken, notification.notification_type);
+                assert_eq!(
+                    NotificationTypeV2::ExternalPurchaseToken,
+                    notification.notification_type
+                );
                 assert_eq!(Subtype::Unreported, notification.subtype.expect("Expect subtype"));
                 assert_eq!("002e14d5-51f5-4503-b5a8-c3a1af68eb20", &notification.notification_uuid);
                 assert_eq!("2.0", &notification.version.expect("Expect version"));
                 assert_eq!(
                     1698148900,
-                    notification.signed_date.expect("Expect signed_date").timestamp()
+                    notification
+                        .signed_date
+                        .expect("Expect signed_date")
+                        .timestamp()
                 );
                 assert!(notification.data.is_none());
                 assert!(notification.summary.is_none());
                 assert!(notification.external_purchase_token.is_some());
 
                 if let Some(external_purchase_token) = notification.external_purchase_token {
-                    assert_eq!("b2158121-7af9-49d4-9561-1f588205523e", &external_purchase_token.external_purchase_id.expect("Expect external_purchase_id"));
-                    assert_eq!(1698148950, external_purchase_token.token_creation_date.unwrap().timestamp());
+                    assert_eq!(
+                        "b2158121-7af9-49d4-9561-1f588205523e",
+                        &external_purchase_token
+                            .external_purchase_id
+                            .expect("Expect external_purchase_id")
+                    );
+                    assert_eq!(
+                        1698148950,
+                        external_purchase_token
+                            .token_creation_date
+                            .unwrap()
+                            .timestamp()
+                    );
                     assert_eq!(55555, external_purchase_token.app_apple_id.unwrap());
                     assert_eq!("com.example", &external_purchase_token.bundle_id.unwrap());
                 } else {
@@ -443,29 +469,47 @@ mod tests {
 
     #[test]
     fn test_external_purchase_token_sanbox_notification_decoding() {
-        let signed_notification =
-            create_signed_data_from_json("assets/signedExternalPurchaseTokenSandboxNotification.json");
+        let signed_notification = create_signed_data_from_json(
+            "assets/signedExternalPurchaseTokenSandboxNotification.json",
+        );
 
-        let signed_data_verifier = get_signed_data_verifier(Environment::LocalTesting, "com.example", Some(55555));
+        let signed_data_verifier =
+            get_signed_data_verifier(Environment::LocalTesting, "com.example", Some(55555));
 
         match signed_data_verifier.verify_and_decode_notification(&signed_notification) {
             Ok(notification) => {
-
-                assert_eq!(NotificationTypeV2::ExternalPurchaseToken, notification.notification_type);
+                assert_eq!(
+                    NotificationTypeV2::ExternalPurchaseToken,
+                    notification.notification_type
+                );
                 assert_eq!(Subtype::Unreported, notification.subtype.expect("Expect subtype"));
                 assert_eq!("002e14d5-51f5-4503-b5a8-c3a1af68eb20", &notification.notification_uuid);
                 assert_eq!("2.0", &notification.version.expect("Expect version"));
                 assert_eq!(
                     1698148900,
-                    notification.signed_date.expect("Expect signed_date").timestamp()
+                    notification
+                        .signed_date
+                        .expect("Expect signed_date")
+                        .timestamp()
                 );
                 assert!(notification.data.is_none());
                 assert!(notification.summary.is_none());
                 assert!(notification.external_purchase_token.is_some());
 
                 if let Some(external_purchase_token) = notification.external_purchase_token {
-                    assert_eq!("SANDBOX_b2158121-7af9-49d4-9561-1f588205523e", &external_purchase_token.external_purchase_id.expect("Expect external_purchase_id"));
-                    assert_eq!(1698148950, external_purchase_token.token_creation_date.unwrap().timestamp());
+                    assert_eq!(
+                        "SANDBOX_b2158121-7af9-49d4-9561-1f588205523e",
+                        &external_purchase_token
+                            .external_purchase_id
+                            .expect("Expect external_purchase_id")
+                    );
+                    assert_eq!(
+                        1698148950,
+                        external_purchase_token
+                            .token_creation_date
+                            .unwrap()
+                            .timestamp()
+                    );
                     assert_eq!(55555, external_purchase_token.app_apple_id.unwrap());
                     assert_eq!("com.example", &external_purchase_token.bundle_id.unwrap());
                 } else {
@@ -513,7 +557,7 @@ mod tests {
         environment: Environment,
         bundle_id: &str,
         app_apple_id: Option<i64>,
-    ) -> SignedDataVerifier {
+    ) -> SignedDataVerifier<Vec<Vec<u8>>, String> {
         let verifier = SignedDataVerifier::new(
             vec![ROOT_CA_BASE64_ENCODED.as_der_bytes().unwrap()],
             environment,
@@ -532,18 +576,9 @@ mod tests {
 
         match signed_data_verifier.verify_and_decode_app_transaction(&signed_app_transaction) {
             Ok(app_transaction) => {
-                assert_eq!(
-                    Some(&Environment::LocalTesting),
-                    app_transaction.receipt_type.as_ref()
-                );
-                assert_eq!(
-                    531412,
-                    app_transaction.app_apple_id.expect("Expect app_apple_id")
-                );
-                assert_eq!(
-                    "com.example",
-                    app_transaction.bundle_id.expect("Expect bundle_id")
-                );
+                assert_eq!(Some(&Environment::LocalTesting), app_transaction.receipt_type.as_ref());
+                assert_eq!(531412, app_transaction.app_apple_id.expect("Expect app_apple_id"));
+                assert_eq!("com.example", app_transaction.bundle_id.expect("Expect bundle_id"));
                 assert_eq!(
                     "1.2.3",
                     app_transaction
@@ -757,10 +792,7 @@ mod tests {
                     transaction.environment.expect("Expect environment")
                 );
                 assert_eq!(10990, transaction.price.expect("Expect price"));
-                assert_eq!(
-                    "USD",
-                    transaction.currency.as_deref().expect("Expect currency")
-                );
+                assert_eq!("USD", transaction.currency.as_deref().expect("Expect currency"));
                 assert_eq!(
                     OfferDiscountType::PayAsYouGo,
                     transaction
@@ -911,22 +943,10 @@ mod tests {
 
         match signed_data_verifier.verify_and_decode_notification(&signed_notification) {
             Ok(notification) => {
-                assert_eq!(
-                    NotificationTypeV2::Subscribed,
-                    notification.notification_type
-                );
-                assert_eq!(
-                    Subtype::InitialBuy,
-                    notification.subtype.expect("Expect subtype")
-                );
-                assert_eq!(
-                    "002e14d5-51f5-4503-b5a8-c3a1af68eb20",
-                    notification.notification_uuid
-                );
-                assert_eq!(
-                    "2.0",
-                    notification.version.as_deref().expect("Expect version")
-                );
+                assert_eq!(NotificationTypeV2::Subscribed, notification.notification_type);
+                assert_eq!(Subtype::InitialBuy, notification.subtype.expect("Expect subtype"));
+                assert_eq!("002e14d5-51f5-4503-b5a8-c3a1af68eb20", notification.notification_uuid);
+                assert_eq!("2.0", notification.version.as_deref().expect("Expect version"));
                 assert_eq!(
                     1698148900,
                     notification
@@ -944,10 +964,7 @@ mod tests {
                         data.environment.expect("Expect environment")
                     );
                     assert_eq!(41234, data.app_apple_id.expect("Expect app_apple_id"));
-                    assert_eq!(
-                        "com.example",
-                        data.bundle_id.as_deref().expect("Expect bundle_id")
-                    );
+                    assert_eq!("com.example", data.bundle_id.as_deref().expect("Expect bundle_id"));
                     assert_eq!(
                         "1.2.3",
                         data.bundle_version
@@ -978,7 +995,8 @@ mod tests {
 
     #[test]
     fn test_consumption_request_notification_decoding() {
-        let signed_notification = create_signed_data_from_json("assets/signedConsumptionRequestNotification.json");
+        let signed_notification =
+            create_signed_data_from_json("assets/signedConsumptionRequestNotification.json");
 
         let signed_data_verifier = get_default_signed_data_verifier();
 
@@ -998,16 +1016,21 @@ mod tests {
                     assert_eq!(41234, data.app_apple_id.unwrap());
                     assert_eq!("com.example", data.bundle_id.unwrap());
                     assert_eq!("1.2.3", data.bundle_version.unwrap());
-                    assert_eq!("signed_transaction_info_value", data.signed_transaction_info.unwrap());
+                    assert_eq!(
+                        "signed_transaction_info_value",
+                        data.signed_transaction_info.unwrap()
+                    );
                     assert_eq!("signed_renewal_info_value", data.signed_renewal_info.unwrap());
                     assert_eq!(Status::Active, data.status.unwrap());
-                    assert_eq!(ConsumptionRequestReason::UnintendedPurchase, data.consumption_request_reason.unwrap());
+                    assert_eq!(
+                        ConsumptionRequestReason::UnintendedPurchase,
+                        data.consumption_request_reason.unwrap()
+                    );
                 }
             }
-            Err(err) => panic!(
-                "Failed to verify and decode consumption request notification: {:?}",
-                err
-            ),
+            Err(err) => {
+                panic!("Failed to verify and decode consumption request notification: {:?}", err)
+            }
         }
     }
 
@@ -1020,22 +1043,10 @@ mod tests {
 
         match signed_data_verifier.verify_and_decode_notification(&signed_summary_notification) {
             Ok(notification) => {
-                assert_eq!(
-                    NotificationTypeV2::RenewalExtension,
-                    notification.notification_type
-                );
-                assert_eq!(
-                    Subtype::Summary,
-                    notification.subtype.expect("Expect subtype")
-                );
-                assert_eq!(
-                    "002e14d5-51f5-4503-b5a8-c3a1af68eb20",
-                    notification.notification_uuid
-                );
-                assert_eq!(
-                    "2.0",
-                    notification.version.as_deref().expect("Expect version")
-                );
+                assert_eq!(NotificationTypeV2::RenewalExtension, notification.notification_type);
+                assert_eq!(Subtype::Summary, notification.subtype.expect("Expect subtype"));
+                assert_eq!("002e14d5-51f5-4503-b5a8-c3a1af68eb20", notification.notification_uuid);
+                assert_eq!("2.0", notification.version.as_deref().expect("Expect version"));
                 assert_eq!(
                     1698148900,
                     notification
@@ -1061,10 +1072,7 @@ mod tests {
                         "com.example.product",
                         summary.product_id.as_deref().expect("Expect product_id")
                     );
-                    assert_eq!(
-                        "efb27071-45a4-4aca-9854-2a1e9146f265",
-                        summary.request_identifier
-                    );
+                    assert_eq!("efb27071-45a4-4aca-9854-2a1e9146f265", summary.request_identifier);
                     assert_eq!(vec!["CAN", "USA", "MEX"], summary.storefront_country_codes);
                     assert_eq!(5, summary.succeeded_count);
                     assert_eq!(2, summary.failed_count);
@@ -1072,26 +1080,62 @@ mod tests {
                     panic!("Summary field is expected to be present in the notification");
                 }
             }
-            Err(err) => panic!(
-                "Failed to verify and decode summary notification: {:?}",
-                err
-            ),
+            Err(err) => panic!("Failed to verify and decode summary notification: {:?}", err),
         }
     }
 
     #[test]
     fn test_xcode_signed_app_transaction() {
         let verifier = get_signed_data_verifier(Environment::Xcode, XCODE_BUNDLE_ID, None);
-        let encoded_app_transaction = fs::read_to_string("assets/xcode-signed-app-transaction").expect("Failed to read file");
+        let encoded_app_transaction =
+            fs::read_to_string("assets/xcode-signed-app-transaction").expect("Failed to read file");
 
-        if let Ok(app_transaction) = verifier.verify_and_decode_app_transaction(&encoded_app_transaction) {
-            assert_eq!(XCODE_BUNDLE_ID, app_transaction.bundle_id.as_deref().expect("Expect bundle_id"));
-            assert_eq!("1", app_transaction.application_version.as_deref().expect("Expect application_version"));
+        if let Ok(app_transaction) =
+            verifier.verify_and_decode_app_transaction(&encoded_app_transaction)
+        {
+            assert_eq!(
+                XCODE_BUNDLE_ID,
+                app_transaction
+                    .bundle_id
+                    .as_deref()
+                    .expect("Expect bundle_id")
+            );
+            assert_eq!(
+                "1",
+                app_transaction
+                    .application_version
+                    .as_deref()
+                    .expect("Expect application_version")
+            );
             assert_eq!(None, app_transaction.version_external_identifier);
-            assert_eq!(-62135769600000, app_transaction.original_purchase_date.expect("Expect value").timestamp_millis());
-            assert_eq!("1", app_transaction.original_application_version.as_deref().expect("Expect original_application_version"));
-            assert_eq!("cYUsXc53EbYc0pOeXG5d6/31LGHeVGf84sqSN0OrJi5u/j2H89WWKgS8N0hMsMlf", app_transaction.device_verification.as_deref().expect("Expect device_verification"));
-            assert_eq!("48c8b92d-ce0d-4229-bedf-e61b4f9cfc92", app_transaction.device_verification_nonce.expect("Expect device_verification_nonce").to_string());
+            assert_eq!(
+                -62135769600000,
+                app_transaction
+                    .original_purchase_date
+                    .expect("Expect value")
+                    .timestamp_millis()
+            );
+            assert_eq!(
+                "1",
+                app_transaction
+                    .original_application_version
+                    .as_deref()
+                    .expect("Expect original_application_version")
+            );
+            assert_eq!(
+                "cYUsXc53EbYc0pOeXG5d6/31LGHeVGf84sqSN0OrJi5u/j2H89WWKgS8N0hMsMlf",
+                app_transaction
+                    .device_verification
+                    .as_deref()
+                    .expect("Expect device_verification")
+            );
+            assert_eq!(
+                "48c8b92d-ce0d-4229-bedf-e61b4f9cfc92",
+                app_transaction
+                    .device_verification_nonce
+                    .expect("Expect device_verification_nonce")
+                    .to_string()
+            );
             assert_eq!(None, app_transaction.preorder_date);
             assert_eq!(Environment::Xcode, app_transaction.receipt_type.unwrap());
         } else {
@@ -1102,32 +1146,96 @@ mod tests {
     #[test]
     fn test_xcode_signed_transaction() {
         let verifier = get_signed_data_verifier(Environment::Xcode, XCODE_BUNDLE_ID, None);
-        let encoded_app_transaction = fs::read_to_string("assets/xcode-signed-transaction").expect("Failed to read file");
+        let encoded_app_transaction =
+            fs::read_to_string("assets/xcode-signed-transaction").expect("Failed to read file");
 
-        if let Ok(transaction) = verifier.verify_and_decode_signed_transaction(&encoded_app_transaction) {
-            assert_eq!("0", transaction.original_transaction_id.as_deref().expect("Expect original_transaction_id"));
-            assert_eq!("0", transaction.transaction_id.as_deref().expect("Expect transaction_id"));
-            assert_eq!("0", transaction.web_order_line_item_id.as_deref().expect("Expect web_order_line_item_id"));
-            assert_eq!(XCODE_BUNDLE_ID, transaction.bundle_id.as_deref().expect("Expect bundle_id"));
-            assert_eq!("pass.premium", transaction.product_id.as_deref().expect("Expect product_id"));
-            assert_eq!("6F3A93AB", transaction.subscription_group_identifier.as_deref().expect("Expect subscription_group_identifier"));
+        if let Ok(transaction) =
+            verifier.verify_and_decode_signed_transaction(&encoded_app_transaction)
+        {
+            assert_eq!(
+                "0",
+                transaction
+                    .original_transaction_id
+                    .as_deref()
+                    .expect("Expect original_transaction_id")
+            );
+            assert_eq!(
+                "0",
+                transaction
+                    .transaction_id
+                    .as_deref()
+                    .expect("Expect transaction_id")
+            );
+            assert_eq!(
+                "0",
+                transaction
+                    .web_order_line_item_id
+                    .as_deref()
+                    .expect("Expect web_order_line_item_id")
+            );
+            assert_eq!(
+                XCODE_BUNDLE_ID,
+                transaction.bundle_id.as_deref().expect("Expect bundle_id")
+            );
+            assert_eq!(
+                "pass.premium",
+                transaction
+                    .product_id
+                    .as_deref()
+                    .expect("Expect product_id")
+            );
+            assert_eq!(
+                "6F3A93AB",
+                transaction
+                    .subscription_group_identifier
+                    .as_deref()
+                    .expect("Expect subscription_group_identifier")
+            );
             assert_eq!(1697679936049, transaction.purchase_date.unwrap().timestamp_millis());
-            assert_eq!(1697679936049, transaction.original_purchase_date.unwrap().timestamp_millis());
+            assert_eq!(
+                1697679936049,
+                transaction
+                    .original_purchase_date
+                    .unwrap()
+                    .timestamp_millis()
+            );
             assert_eq!(1700358336049, transaction.expires_date.unwrap().timestamp_millis());
             assert_eq!(1, transaction.quantity.expect("Expect quantity"));
-            assert_eq!(ProductType::AutoRenewableSubscription, transaction.r#type.expect("Expect type"));
+            assert_eq!(
+                ProductType::AutoRenewableSubscription,
+                transaction.r#type.expect("Expect type")
+            );
             assert_eq!(None, transaction.app_account_token);
-            assert_eq!(InAppOwnershipType::Purchased, transaction.in_app_ownership_type.expect("Expect in_app_ownership_type"));
+            assert_eq!(
+                InAppOwnershipType::Purchased,
+                transaction
+                    .in_app_ownership_type
+                    .expect("Expect in_app_ownership_type")
+            );
             assert_eq!(1697679936056, transaction.signed_date.unwrap().timestamp_millis());
             assert_eq!(None, transaction.revocation_reason);
             assert_eq!(None, transaction.revocation_date);
             assert!(!transaction.is_upgraded.unwrap_or(false));
-            assert_eq!(OfferType::IntroductoryOffer, transaction.offer_type.expect("Expect offer_type"));
+            assert_eq!(
+                OfferType::IntroductoryOffer,
+                transaction.offer_type.expect("Expect offer_type")
+            );
             assert_eq!(None, transaction.offer_identifier);
             assert_eq!(Environment::Xcode, transaction.environment.expect("Expect environment"));
             assert_eq!("USA", transaction.storefront.expect("Expect storefront"));
-            assert_eq!("143441", transaction.storefront_id.as_deref().expect("Expect storefront_id"));
-            assert_eq!(TransactionReason::Purchase, transaction.transaction_reason.expect("Expect transaction_reason"));
+            assert_eq!(
+                "143441",
+                transaction
+                    .storefront_id
+                    .as_deref()
+                    .expect("Expect storefront_id")
+            );
+            assert_eq!(
+                TransactionReason::Purchase,
+                transaction
+                    .transaction_reason
+                    .expect("Expect transaction_reason")
+            );
         } else {
             panic!("Failed to verify and decode signed transaction");
         }
@@ -1136,14 +1244,38 @@ mod tests {
     #[test]
     fn test_xcode_signed_renewal_info() {
         let verifier = get_signed_data_verifier(Environment::Xcode, XCODE_BUNDLE_ID, None);
-        let encoded_renewal_info = fs::read_to_string("assets/xcode-signed-renewal-info").expect("Failed to read file");
+        let encoded_renewal_info =
+            fs::read_to_string("assets/xcode-signed-renewal-info").expect("Failed to read file");
 
         if let Ok(renewal_info) = verifier.verify_and_decode_renewal_info(&encoded_renewal_info) {
             assert_eq!(None, renewal_info.expiration_intent);
-            assert_eq!("0", renewal_info.original_transaction_id.as_deref().expect("Expect original_transaction_id"));
-            assert_eq!("pass.premium", renewal_info.auto_renew_product_id.as_deref().expect("Expect auto_renew_product_id"));
-            assert_eq!("pass.premium", renewal_info.product_id.as_deref().expect("Expect product_id"));
-            assert_eq!(AutoRenewStatus::On, renewal_info.auto_renew_status.expect("Expect auto_renew_status"));
+            assert_eq!(
+                "0",
+                renewal_info
+                    .original_transaction_id
+                    .as_deref()
+                    .expect("Expect original_transaction_id")
+            );
+            assert_eq!(
+                "pass.premium",
+                renewal_info
+                    .auto_renew_product_id
+                    .as_deref()
+                    .expect("Expect auto_renew_product_id")
+            );
+            assert_eq!(
+                "pass.premium",
+                renewal_info
+                    .product_id
+                    .as_deref()
+                    .expect("Expect product_id")
+            );
+            assert_eq!(
+                AutoRenewStatus::On,
+                renewal_info
+                    .auto_renew_status
+                    .expect("Expect auto_renew_status")
+            );
             assert_eq!(None, renewal_info.is_in_billing_retry_period);
             assert_eq!(None, renewal_info.price_increase_status);
             assert_eq!(None, renewal_info.grace_period_expires_date);
@@ -1151,7 +1283,13 @@ mod tests {
             assert_eq!(None, renewal_info.offer_identifier);
             assert_eq!(1697679936711, renewal_info.signed_date.unwrap().timestamp_millis());
             assert_eq!(Environment::Xcode, renewal_info.environment.expect("Expect environment"));
-            assert_eq!(1697679936049, renewal_info.recent_subscription_start_date.unwrap().timestamp_millis());
+            assert_eq!(
+                1697679936049,
+                renewal_info
+                    .recent_subscription_start_date
+                    .unwrap()
+                    .timestamp_millis()
+            );
             assert_eq!(1700358336049, renewal_info.renewal_date.unwrap().timestamp_millis());
         } else {
             panic!("Failed to verify and decode signed renewal info");
@@ -1161,7 +1299,8 @@ mod tests {
     #[test]
     fn test_xcode_signed_app_transaction_with_production_environment() {
         let verifier = get_signed_data_verifier(Environment::Production, XCODE_BUNDLE_ID, None);
-        let encoded_app_transaction = fs::read_to_string("assets/xcode-signed-app-transaction").expect("Failed to read file");
+        let encoded_app_transaction =
+            fs::read_to_string("assets/xcode-signed-app-transaction").expect("Failed to read file");
 
         if let Err(_) = verifier.verify_and_decode_app_transaction(&encoded_app_transaction) {
             return;
@@ -1169,7 +1308,7 @@ mod tests {
         panic!("Expected VerificationException, but no exception was raised");
     }
 
-    fn get_default_signed_data_verifier() -> SignedDataVerifier {
+    fn get_default_signed_data_verifier() -> SignedDataVerifier<Vec<Vec<u8>>, String> {
         return get_signed_data_verifier(Environment::LocalTesting, "com.example", None);
     }
 
