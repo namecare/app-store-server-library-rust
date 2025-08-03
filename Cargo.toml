@@ -30,7 +30,7 @@ base64 = "0.22.1"
 asn1-rs = { version = "0.7.0", optional = true }
 
 # Networking
-reqwest = { version = "0.12.12", features = ["json"], optional = true }
+reqwest = { version = "0.12.12", default-features = false, features = ["json"], optional = true }
 
 # Utils
 thiserror = "2.0.11"
@@ -44,6 +44,7 @@ tokio = { version = "1.43.0", features = ["test-util", "macros"] }
 jsonwebtoken = { version = "9.3.0", features = ["use_pem"] }
 
 [features]
-api-client = ["dep:reqwest"]
+api-client = ["dep:reqwest", "reqwest/rustls-tls-native-roots"]
+api-client-native-tls = ["dep:reqwest", "reqwest/default-tls"]
 receipt-utility = ["dep:asn1-rs", "dep:regex"]
 
