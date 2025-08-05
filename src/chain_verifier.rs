@@ -1,4 +1,6 @@
-use crate::chain_verifier::ChainVerificationFailureReason::{CertificateExpired, InvalidCertificate, InvalidChainLength, InvalidEffectiveDate};
+use crate::chain_verifier::ChainVerificationFailureReason::{
+    CertificateExpired, InvalidCertificate, InvalidChainLength, InvalidEffectiveDate,
+};
 use thiserror::Error;
 
 use x509_parser::certificate::X509Certificate;
@@ -78,12 +80,15 @@ const EXPECTED_CHAIN_LENGTH: usize = 3;
 /// ```
 ///
 /// TODO: Implement issuer checking
-pub fn verify_chain(
+pub fn verify_chain<C>(
     certificates: &Vec<Vec<u8>>,
-    root_certificates: &Vec<Vec<u8>>,
+    root_certificates: &C,
     effective_date: Option<u64>,
-) -> Result<Vec<u8>, ChainVerifierError> {
-    if root_certificates.is_empty() {
+) -> Result<Vec<u8>, ChainVerifierError>
+where
+    C: AsRef<[Vec<u8>]>,
+{
+    if root_certificates.as_ref().is_empty() {
         return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
     }
 
@@ -97,7 +102,7 @@ pub fn verify_chain(
     };
     let leaf_certificate = leaf_certificate.1;
 
-    let Some(_) = leaf_certificate.get_extension_unique(&oid!(1.2.840.113635.100.6.11.1))?
+    let Some(_) = leaf_certificate.get_extension_unique(&oid!(1.2.840 .113635 .100 .6 .11 .1))?
     else {
         return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
     };
@@ -111,14 +116,14 @@ pub fn verify_chain(
     let intermediate_certificate = intermediate_certificate.1;
 
     let Some(_) =
-        intermediate_certificate.get_extension_unique(&oid!(1.2.840.113635.100.6.2.1))?
+        intermediate_certificate.get_extension_unique(&oid!(1.2.840 .113635 .100 .6 .2 .1))?
     else {
         return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
     };
 
     let mut root_certificate: Option<X509Certificate> = None;
 
-    for cert in root_certificates {
+    for cert in root_certificates.as_ref() {
         let Ok(cert) = X509Certificate::from_der(&cert) else {
             return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
         };
@@ -139,9 +144,7 @@ pub fn verify_chain(
 
     if let Some(date) = effective_date {
         let Ok(time) = ASN1Time::from_timestamp(i64::try_from(date).unwrap()) else {
-            return Err(ChainVerifierError::VerificationFailure(
-                InvalidEffectiveDate,
-            ));
+            return Err(ChainVerifierError::VerificationFailure(InvalidEffectiveDate));
         };
 
         if !(root_certificate.validity.is_valid_at(time)
@@ -193,10 +196,7 @@ mod tests {
         let chain = vec![leaf.clone(), intermediate, root.clone()];
 
         let public_key = verify_chain(&chain, &vec![root], Some(EFFECTIVE_DATE))?;
-        assert_eq!(
-            LEAF_CERT_PUBLIC_KEY_BASE64_ENCODED.as_der_bytes().unwrap(),
-            public_key
-        );
+        assert_eq!(LEAF_CERT_PUBLIC_KEY_BASE64_ENCODED.as_der_bytes().unwrap(), public_key);
         Ok(())
     }
 
@@ -253,10 +253,7 @@ mod tests {
 
     #[test]
     fn test_invalid_base64_in_certificate_list() -> Result<(), ChainVerifierError> {
-        assert_eq!(
-            "abc".as_der_bytes().expect_err("Expect Error"),
-            DecodeError::InvalidPadding
-        );
+        assert_eq!("abc".as_der_bytes().expect_err("Expect Error"), DecodeError::InvalidPadding);
         Ok(())
     }
 
@@ -340,10 +337,8 @@ mod tests {
     #[test]
     fn test_apple_chain_is_valid_multi_root() -> Result<(), ChainVerifierError> {
         let root = REAL_APPLE_ROOT_BASE64_ENCODED.as_der_bytes()?;
-        let leaf = REAL_APPLE_SIGNING_CERTIFICATE_BASE64_ENCODED
-            .as_der_bytes()?;
-        let intermediate = REAL_APPLE_INTERMEDIATE_BASE64_ENCODED
-            .as_der_bytes()?;
+        let leaf = REAL_APPLE_SIGNING_CERTIFICATE_BASE64_ENCODED.as_der_bytes()?;
+        let intermediate = REAL_APPLE_INTERMEDIATE_BASE64_ENCODED.as_der_bytes()?;
         let chain = vec![leaf.clone(), intermediate, root.clone()];
 
         let multi_root: Vec<_> = REAL_APPLE_MULTI_ROOT_BASE64_ENCODED
