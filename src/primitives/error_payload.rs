@@ -172,6 +172,21 @@ pub enum APIError {
     /// [AppTransactionIdNotSupportedError](https://developer.apple.com/documentation/appstoreserverapi/apptransactionidnotsupportederror)
     AppTransactionIdNotSupportedError = 4000048,
 
+    /// An error that indicates the app account token value is not a valid UUID.
+    ///
+    /// [InvalidAppAccountTokenUUID](https://developer.apple.com/documentation/appstoreserverapi/invalidappaccounttokenuuiderror)
+    InvalidAppAccountTokenUUID = 4000183,
+
+    /// An error that indicates the transaction is for a product the customer obtains through Family Sharing, which the endpoint doesn't support.
+    ///
+    /// [FamilyTransactionNotSupported](https://developer.apple.com/documentation/appstoreserverapi/familytransactionnotsupportederror)
+    FamilyTransactionNotSupported = 4000185,
+
+    /// An error that indicates the endpoint expects an original transaction identifier.
+    ///
+    /// [TransactionIdNotOriginalTransactionId](https://developer.apple.com/documentation/appstoreserverapi/transactionidnotoriginaltransactioniderror)
+    TransactionIdNotOriginalTransactionId = 4000187,
+
     /// An error that indicates the subscription doesn't qualify for a renewal-date extension due to its subscription state.
     /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/subscriptionextensionineligibleerror)
     SubscriptionExtensionIneligible = 4030004,
