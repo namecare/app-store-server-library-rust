@@ -148,7 +148,7 @@ mod tests {
 
     #[test]
     fn test_promotional_offer_signature_creator() {
-        let private_key = include_str!("../assets/SubscriptionKey_L256SYR32L.p8");
+        let private_key = include_str!("../resources/certs/testSigningKey.p8");
         let creator = PromotionalOfferSignatureCreator::new(
             private_key,
             "L256SYR32L".to_string(),
@@ -170,7 +170,7 @@ mod tests {
 
     #[test]
     fn test_promotional_offer_signature_creator_verified() {
-        let private_key = include_str!("../assets/SubscriptionKey_L256SYR32L.p8");
+        let private_key = include_str!("../resources/certs/testSigningKey.p8");
         let creator = PromotionalOfferSignatureCreator::new(
             private_key,
             "L256SYR32L".to_string(),
