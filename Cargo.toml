@@ -1,14 +1,14 @@
 [package]
 name = "app-store-server-library"
 description = "The Rust server library for the App Store Server API and App Store Server Notifications"
-version = "3.0.0"
+version = "3.1.0"
 repository = "https://github.com/namecare/app-store-server-library-rust"
 homepage = "https://github.com/namecare/app-store-server-library-rust"
 authors = ["tkhp", "namecare"]
 license = "MIT"
 readme = "README.md"
 documentation = "https://docs.rs/app-store-server-library"
-keywords = ["apple", "appstore"]
+keywords = ["apple", "appstore", "appstore-server-api", "appstore-library", "appstore-receipt"]
 edition = "2021"
 
 [dependencies]
