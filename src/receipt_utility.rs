@@ -72,18 +72,36 @@ pub fn extract_transaction_id_from_app_receipt(app_receipt: &str) -> Result<Opti
 fn extract_transaction_id_from_app_receipt_inner(app_receipt_content: &[u8]) -> Result<Option<String>, asn1_rs::Err<Error>> {
     const IN_APP_TYPE_ID: u64 = 17u64;
 
-    let (_, octet_string) = OctetString::from_ber(app_receipt_content)?;
-    let (_, set) = Set::from_ber(octet_string.as_ref())?;
+    // Try parsing as OctetString first
+    if let Ok((_, octet_string)) = OctetString::from_ber(app_receipt_content) {
+        let (_, set) = Set::from_ber(octet_string.as_ref())?;
+        
+        for (_, item) in set.ber_iter::<Sequence, Error>().enumerate() {
+            if let Ok(seq) = item {
+                let (ii, t) = Integer::from_ber(&seq.content)?;
+                let (ii, _) = Integer::from_ber(&ii)?;
 
-    for (_, item) in set.ber_iter::<Sequence, Error>().enumerate() {
-        if let Ok(seq) = item {
-            let (ii, t) = Integer::from_ber(&seq.content)?;
-            let (ii, _) = Integer::from_ber(&ii)?;
+                let t = t.as_u64()?;
 
-            let t = t.as_u64()?;
+                if t == IN_APP_TYPE_ID {
+                    return extract_transaction_id_from_in_app_receipt(ii);
+                }
+            }
+        }
+    } else {
+        // Otherwise parse directly as Set (some receipts have this structure)
+        let (_, set) = Set::from_ber(app_receipt_content)?;
+        
+        for (_, item) in set.ber_iter::<Sequence, Error>().enumerate() {
+            if let Ok(seq) = item {
+                let (ii, t) = Integer::from_ber(&seq.content)?;
+                let (ii, _) = Integer::from_ber(&ii)?;
 
-            if t == IN_APP_TYPE_ID {
-                return extract_transaction_id_from_in_app_receipt(ii);
+                let t = t.as_u64()?;
+
+                if t == IN_APP_TYPE_ID {
+                    return extract_transaction_id_from_in_app_receipt(ii);
+                }
             }
         }
     }
@@ -180,7 +198,7 @@ mod tests {
 
         assert_eq!(
             Some(APP_RECEIPT_EXPECTED_TRANSACTION_ID),
-            extracted_transaction_id.expect("REASON").as_deref()
+            extracted_transaction_id.expect("Expect Result").as_deref()
         );
     }
 
@@ -192,7 +210,18 @@ mod tests {
 
         assert_eq!(
             Some(TRANSACTION_RECEIPT_EXPECTED_TRANSACTION_ID),
-            extracted_transaction_id.expect("REASON").as_deref()
+            extracted_transaction_id.expect("Expect Result").as_deref()
+        );
+    }
+
+    #[test]
+    fn test_extract_transaction_id_from_app_receipt() {
+        let receipt = fs::read_to_string("resources/xcode/xcode-app-receipt-legacy")
+            .expect("Failed to read file");
+        let extracted_transaction_id = extract_transaction_id_from_app_receipt(&receipt);
+        assert_eq!(
+            Some("2000000909538865"),
+            extracted_transaction_id.expect("Expect Result").as_deref()
         );
     }
 }
