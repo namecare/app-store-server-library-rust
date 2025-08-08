@@ -22,6 +22,7 @@ use crate::primitives::status::Status;
 use crate::primitives::status_response::StatusResponse;
 use crate::primitives::transaction_history_request::TransactionHistoryRequest;
 use crate::primitives::transaction_info_response::TransactionInfoResponse;
+use crate::primitives::update_app_account_token_request::UpdateAppAccountTokenRequest;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct APIException {
@@ -576,6 +577,30 @@ impl AppStoreServerAPIClient {
             .json(consumption_request);
         self.make_request_without_response_body(req).await
     }
+
+    /// Sets the app account token value for a purchase the customer makes outside your app, 
+    /// or updates its value in an existing transaction.
+    ///
+    /// [Set App Account Token](https://developer.apple.com/documentation/appstoreserverapi/set-app-account-token)
+    ///
+    /// # Arguments
+    ///
+    /// * `original_transaction_id` - The original transaction identifier of the transaction to receive the app account token update.
+    /// * `update_app_account_token_request` - The request body that contains a valid app account token value.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - The request was successful.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIException` if the request could not be processed.
+    pub async fn set_app_account_token(&self, original_transaction_id: &str, update_app_account_token_request: &UpdateAppAccountTokenRequest) -> Result<(), APIException> {
+        let path = format!("/inApps/v1/transactions/{}/appAccountToken", original_transaction_id);
+        let req = self.build_request(path.as_str(), Method::PUT)
+            .json(update_app_account_token_request);
+        self.make_request_without_response_body(req).await
+    }
 }
 
 /// Represents the version of the Get Transaction History endpoint to use.
@@ -1038,6 +1063,82 @@ mod tests {
         };
 
         let _ = client.send_consumption_data("49571273", &consumption_request).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_set_app_account_token() {
+        let client = app_store_server_api_client("".to_string(), StatusCode::OK, Some(|req, body| {
+            assert_eq!(Method::PUT, req.method());
+            assert_eq!("https://local-testing-base-url/inApps/v1/transactions/555555/appAccountToken", req.url().as_str());
+            
+            let decoded_json: HashMap<&str, Value> = serde_json::from_slice(body.unwrap()).unwrap();
+            assert_eq!("550e8400-e29b-41d4-a716-446655440000", decoded_json["appAccountToken"].as_str().unwrap());
+        }));
+        
+        let token = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+        let request = UpdateAppAccountTokenRequest::new(token);
+        
+        let _ = client.set_app_account_token("555555", &request).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_invalid_app_account_token_uuid_error() {
+        let client = app_store_server_api_client_with_body_from_file("resources/models/invalidAppAccountTokenUUIDError.json", StatusCode::BAD_REQUEST, None);
+        
+        let token = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+        let request = UpdateAppAccountTokenRequest::new(token);
+        let result = client.set_app_account_token("555555", &request).await;
+        
+        match result {
+            Ok(_) => {
+                assert!(false, "Unexpected response type");
+            }
+            Err(error) => {
+                assert_eq!(400, error.http_status_code);
+                assert_eq!(APIError::InvalidAppAccountTokenUUID, error.api_error.unwrap());
+                assert_eq!("Invalid request. The app account token field must be a valid UUID.", error.error_message.unwrap());
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_family_transaction_not_supported_error() {
+        let client = app_store_server_api_client_with_body_from_file("resources/models/familyTransactionNotSupportedError.json", StatusCode::BAD_REQUEST, None);
+        
+        let token = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+        let request = UpdateAppAccountTokenRequest::new(token);
+        let result = client.set_app_account_token("555555", &request).await;
+        
+        match result {
+            Ok(_) => {
+                assert!(false, "Unexpected response type");
+            }
+            Err(error) => {
+                assert_eq!(400, error.http_status_code);
+                assert_eq!(APIError::FamilyTransactionNotSupported, error.api_error.unwrap());
+                assert_eq!("Invalid request. Family Sharing transactions aren't supported by this endpoint.", error.error_message.unwrap());
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_transaction_id_not_original_transaction_id_error() {
+        let client = app_store_server_api_client_with_body_from_file("resources/models/transactionIdNotOriginalTransactionId.json", StatusCode::BAD_REQUEST, None);
+        
+        let token = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+        let request = UpdateAppAccountTokenRequest::new(token);
+        let result = client.set_app_account_token("555555", &request).await;
+        
+        match result {
+            Ok(_) => {
+                assert!(false, "Unexpected response type");
+            }
+            Err(error) => {
+                assert_eq!(400, error.http_status_code);
+                assert_eq!(APIError::TransactionIdNotOriginalTransactionId, error.api_error.unwrap());
+                assert_eq!("Invalid request. The transaction ID provided is not an original transaction ID.", error.error_message.unwrap());
+            }
+        }
     }
 
     #[tokio::test]

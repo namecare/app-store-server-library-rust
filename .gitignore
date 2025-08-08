@@ -99,3 +99,4 @@ sdk/lib/Cargo.lock
 **/*.rs.bk
 
 .env
+.claude

@@ -50,6 +50,7 @@ pub mod summary;
 pub mod transaction_history_request;
 pub mod transaction_info_response;
 pub mod transaction_reason;
+pub mod update_app_account_token_request;
 pub mod user_status;
 pub mod external_purchase_token;
 pub mod consumption_request_reason;
