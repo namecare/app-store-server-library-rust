@@ -323,7 +323,7 @@ mod tests {
 
     #[test]
     fn test_promotional_offer_v2_signature_creator() {
-        let test_signing_key = include_str!("../assets/testSigningKey.p8");
+        let test_signing_key = include_str!("../resources/certs/testSigningKey.p8");
         let creator = PromotionalOfferV2SignatureCreator::new(
             test_signing_key,
             "keyId".to_string(),
@@ -369,7 +369,7 @@ mod tests {
 
     #[test]
     fn test_promotional_offer_v2_signature_creator_without_transaction_id() {
-        let test_signing_key = include_str!("../assets/testSigningKey.p8");
+        let test_signing_key = include_str!("../resources/certs/testSigningKey.p8");
         let creator = PromotionalOfferV2SignatureCreator::new(
             test_signing_key,
             "keyId".to_string(),
@@ -394,7 +394,7 @@ mod tests {
 
     #[test]
     fn test_introductory_offer_eligibility_signature_creator() {
-        let test_signing_key = include_str!("../assets/testSigningKey.p8");
+        let test_signing_key = include_str!("../resources/certs/testSigningKey.p8");
         let creator = IntroductoryOfferEligibilitySignatureCreator::new(
             test_signing_key,
             "keyId".to_string(),
@@ -448,7 +448,7 @@ mod tests {
 
     #[test]
     fn test_advanced_commerce_in_app_signature_creator() {
-        let test_signing_key = include_str!("../assets/testSigningKey.p8");
+        let test_signing_key = include_str!("../resources/certs/testSigningKey.p8");
         let creator = AdvancedCommerceInAppSignatureCreator::new(
             test_signing_key,
             "keyId".to_string(),

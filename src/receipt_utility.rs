@@ -165,7 +165,7 @@ mod tests {
 
     #[test]
     fn test_xcode_app_receipt_extraction_with_no_transactions() {
-        let receipt = fs::read_to_string("assets/xcode-app-receipt-empty")
+        let receipt = fs::read_to_string("resources/xcode/xcode-app-receipt-empty")
             .expect("Failed to read file");
         let extracted_transaction_id = extract_transaction_id_from_app_receipt(&receipt);
 
@@ -174,7 +174,7 @@ mod tests {
 
     #[test]
     fn test_xcode_app_receipt_extraction_with_transactions() {
-        let receipt = fs::read_to_string("assets/xcode-app-receipt-with-transaction")
+        let receipt = fs::read_to_string("resources/xcode/xcode-app-receipt-with-transaction")
             .expect("Failed to read file");
         let extracted_transaction_id = extract_transaction_id_from_app_receipt(&receipt);
 
@@ -186,7 +186,7 @@ mod tests {
 
     #[test]
     fn test_transaction_receipt_extraction() {
-        let receipt = fs::read_to_string("assets/legacyTransaction")
+        let receipt = fs::read_to_string("resources/mock_signed_data/legacyTransaction")
             .expect("Failed to read file");
         let extracted_transaction_id = extract_transaction_id_from_transaction_receipt(&receipt);
 

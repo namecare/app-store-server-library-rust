@@ -1,8 +1,8 @@
 {
     "revision": "revision_output",
-    "hasMore": 1,
+    "hasMore": true,
     "bundleId": "com.example",
-    "appAppleId": "hi",
+    "appAppleId": "blue",
     "environment": "LocalTesting",
     "signedTransactions": [
       "signed_transaction_value",

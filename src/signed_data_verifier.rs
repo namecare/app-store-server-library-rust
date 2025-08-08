@@ -407,7 +407,7 @@ mod tests {
     #[test]
     fn test_external_purchase_token_notification_decoding() {
         let signed_notification =
-            create_signed_data_from_json("assets/signedExternalPurchaseTokenNotification.json");
+            create_signed_data_from_json("resources/models/signedExternalPurchaseTokenNotification.json");
 
         let signed_data_verifier = get_signed_data_verifier(Environment::LocalTesting, "com.example", Some(55555));
 
@@ -444,7 +444,7 @@ mod tests {
     #[test]
     fn test_external_purchase_token_sanbox_notification_decoding() {
         let signed_notification =
-            create_signed_data_from_json("assets/signedExternalPurchaseTokenSandboxNotification.json");
+            create_signed_data_from_json("resources/models/signedExternalPurchaseTokenSandboxNotification.json");
 
         let signed_data_verifier = get_signed_data_verifier(Environment::LocalTesting, "com.example", Some(55555));
 
@@ -526,7 +526,7 @@ mod tests {
 
     #[test]
     fn test_decoded_payloads_app_transaction_decoding() {
-        let signed_app_transaction = create_signed_data_from_json("assets/appTransaction.json");
+        let signed_app_transaction = create_signed_data_from_json("resources/models/appTransaction.json");
 
         let signed_data_verifier = get_default_signed_data_verifier();
 
@@ -616,7 +616,7 @@ mod tests {
 
     #[test]
     fn test_decoded_payloads_transaction_decoding() {
-        let signed_transaction = create_signed_data_from_json("assets/signedTransaction.json");
+        let signed_transaction = create_signed_data_from_json("resources/models/signedTransaction.json");
 
         let signed_data_verifier = get_default_signed_data_verifier();
 
@@ -788,7 +788,7 @@ mod tests {
 
     #[test]
     fn test_decoded_payloads_renewal_info_decoding() {
-        let signed_renewal_info = create_signed_data_from_json("assets/signedRenewalInfo.json");
+        let signed_renewal_info = create_signed_data_from_json("resources/models/signedRenewalInfo.json");
 
         let signed_data_verifier = get_default_signed_data_verifier();
 
@@ -905,7 +905,7 @@ mod tests {
 
     #[test]
     fn test_decoded_payloads_notification_decoding() {
-        let signed_notification = create_signed_data_from_json("assets/signedNotification.json");
+        let signed_notification = create_signed_data_from_json("resources/models/signedNotification.json");
 
         let signed_data_verifier = get_default_signed_data_verifier();
 
@@ -978,7 +978,7 @@ mod tests {
 
     #[test]
     fn test_consumption_request_notification_decoding() {
-        let signed_notification = create_signed_data_from_json("assets/signedConsumptionRequestNotification.json");
+        let signed_notification = create_signed_data_from_json("resources/models/signedConsumptionRequestNotification.json");
 
         let signed_data_verifier = get_default_signed_data_verifier();
 
@@ -1014,7 +1014,7 @@ mod tests {
     #[test]
     fn test_summary_notification_decoding() {
         let signed_summary_notification =
-            create_signed_data_from_json("assets/signedSummaryNotification.json");
+            create_signed_data_from_json("resources/models/signedSummaryNotification.json");
 
         let signed_data_verifier = get_default_signed_data_verifier();
 
@@ -1082,7 +1082,7 @@ mod tests {
     #[test]
     fn test_xcode_signed_app_transaction() {
         let verifier = get_signed_data_verifier(Environment::Xcode, XCODE_BUNDLE_ID, None);
-        let encoded_app_transaction = fs::read_to_string("assets/xcode-signed-app-transaction").expect("Failed to read file");
+        let encoded_app_transaction = fs::read_to_string("resources/xcode/xcode-signed-app-transaction").expect("Failed to read file");
 
         if let Ok(app_transaction) = verifier.verify_and_decode_app_transaction(&encoded_app_transaction) {
             assert_eq!(XCODE_BUNDLE_ID, app_transaction.bundle_id.as_deref().expect("Expect bundle_id"));
@@ -1102,7 +1102,7 @@ mod tests {
     #[test]
     fn test_xcode_signed_transaction() {
         let verifier = get_signed_data_verifier(Environment::Xcode, XCODE_BUNDLE_ID, None);
-        let encoded_app_transaction = fs::read_to_string("assets/xcode-signed-transaction").expect("Failed to read file");
+        let encoded_app_transaction = fs::read_to_string("resources/xcode/xcode-signed-transaction").expect("Failed to read file");
 
         if let Ok(transaction) = verifier.verify_and_decode_signed_transaction(&encoded_app_transaction) {
             assert_eq!("0", transaction.original_transaction_id.as_deref().expect("Expect original_transaction_id"));
@@ -1136,7 +1136,7 @@ mod tests {
     #[test]
     fn test_xcode_signed_renewal_info() {
         let verifier = get_signed_data_verifier(Environment::Xcode, XCODE_BUNDLE_ID, None);
-        let encoded_renewal_info = fs::read_to_string("assets/xcode-signed-renewal-info").expect("Failed to read file");
+        let encoded_renewal_info = fs::read_to_string("resources/xcode/xcode-signed-renewal-info").expect("Failed to read file");
 
         if let Ok(renewal_info) = verifier.verify_and_decode_renewal_info(&encoded_renewal_info) {
             assert_eq!(None, renewal_info.expiration_intent);
@@ -1161,7 +1161,7 @@ mod tests {
     #[test]
     fn test_xcode_signed_app_transaction_with_production_environment() {
         let verifier = get_signed_data_verifier(Environment::Production, XCODE_BUNDLE_ID, None);
-        let encoded_app_transaction = fs::read_to_string("assets/xcode-signed-app-transaction").expect("Failed to read file");
+        let encoded_app_transaction = fs::read_to_string("resources/xcode/xcode-signed-app-transaction").expect("Failed to read file");
 
         if let Err(_) = verifier.verify_and_decode_app_transaction(&encoded_app_transaction) {
             return;
