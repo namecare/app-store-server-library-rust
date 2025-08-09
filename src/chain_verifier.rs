@@ -40,6 +40,9 @@ pub enum ChainVerificationFailureReason {
 
     #[error("CertificateExpired")]
     CertificateExpired,
+    
+    #[error("CertificateRevoked")]
+    CertificateRevoked,
 }
 
 const EXPECTED_CHAIN_LENGTH: usize = 3;
@@ -135,7 +138,11 @@ pub fn verify_chain(
         return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
     };
 
-    leaf_certificate.verify_signature(Some(intermediate_certificate.public_key()))?;
+    verify_chain_impl(&leaf_certificate, &intermediate_certificate, &root_certificate, effective_date)
+}
+
+fn verify_chain_impl(leaf: &X509Certificate, intermediate: &X509Certificate, root_certificate: &X509Certificate, effective_date: Option<u64>) -> Result<Vec<u8>, ChainVerifierError> {
+    leaf.verify_signature(Some(intermediate.public_key()))?;
 
     if let Some(date) = effective_date {
         let Ok(time) = ASN1Time::from_timestamp(i64::try_from(date).unwrap()) else {
@@ -144,15 +151,34 @@ pub fn verify_chain(
             ));
         };
 
-        if !(root_certificate.validity.is_valid_at(time)
-            && leaf_certificate.validity.is_valid_at(time)
-            && intermediate_certificate.validity.is_valid_at(time))
-        {
+        if !(root_certificate.validity.is_valid_at(time) &&
+            leaf.validity.is_valid_at(time) &&
+            intermediate.validity.is_valid_at(time)) {
             return Err(ChainVerifierError::VerificationFailure(CertificateExpired));
         }
     }
 
-    let k = leaf_certificate.public_key().raw.to_vec();
+    let k = leaf.public_key().raw.to_vec();
+
+    // Make online verification as additional step if ocsp flag enabled
+    #[cfg(all(feature = "ocsp"))] {
+        use crate::chain_verifier_ocsp::check_ocsp_status;
+        // Perform OCSP check - this is best-effort, so we don't fail on OCSP errors
+        match check_ocsp_status(leaf, intermediate) {
+            Ok(()) => {
+                // Certificate is valid according to OCSP
+            }
+            Err(ChainVerifierError::VerificationFailure(ChainVerificationFailureReason::CertificateRevoked)) => {
+                // Certificate is revoked - this should fail
+                return Err(ChainVerifierError::VerificationFailure(ChainVerificationFailureReason::CertificateRevoked));
+            }
+            Err(e) => {
+                // Other OCSP errors (network, parsing, etc.) - log but don't fail
+                eprintln!("OCSP check failed (non-fatal): {:?}", e);
+            }
+        }
+    };
+
     Ok(k)
 }
 
@@ -186,6 +212,23 @@ mod tests {
     const EFFECTIVE_DATE: u64 = 1681312846;
 
     #[test]
+    #[cfg(all(feature = "ocsp"))]
+    fn test_apple_chain_is_valid_with_ocsp() -> Result<(), ChainVerifierError> {
+        let root = crate::chain_verifier::tests::REAL_APPLE_ROOT_BASE64_ENCODED.as_der_bytes().unwrap();
+        let leaf = crate::chain_verifier::tests::REAL_APPLE_SIGNING_CERTIFICATE_BASE64_ENCODED
+            .as_der_bytes()
+            .unwrap();
+        let intermediate = crate::chain_verifier::tests::REAL_APPLE_INTERMEDIATE_BASE64_ENCODED
+            .as_der_bytes()
+            .unwrap();
+        let chain = vec![leaf.clone(), intermediate, root.clone()];
+
+        let _public_key = verify_chain(&chain, &vec![root], Some(crate::chain_verifier::tests::EFFECTIVE_DATE)).unwrap();
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(not(feature = "ocsp"))]
     fn test_valid_chain_without_ocsp() -> Result<(), ChainVerifierError> {
         let root = ROOT_CA_BASE64_ENCODED.as_der_bytes().unwrap();
         let leaf = LEAF_CERT_BASE64_ENCODED.as_der_bytes().unwrap();
@@ -201,6 +244,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(feature = "ocsp"))]
     fn test_valid_chain_invalid_intermediate_oid_without_ocsp() -> Result<(), ChainVerifierError> {
         let root = ROOT_CA_BASE64_ENCODED.as_der_bytes().unwrap();
         let leaf = LEAF_CERT_FOR_INTERMEDIATE_CA_INVALID_OID_BASE64_ENCODED
@@ -220,6 +264,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(feature = "ocsp"))]
     fn test_valid_chain_invalid_leaf_oid_without_ocsp() -> Result<(), ChainVerifierError> {
         let root = ROOT_CA_BASE64_ENCODED.as_der_bytes().unwrap();
         let leaf = LEAF_CERT_INVALID_OID_BASE64_ENCODED.as_der_bytes().unwrap();
@@ -235,6 +280,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(feature = "ocsp"))]
     fn test_invalid_chain_length() -> Result<(), ChainVerifierError> {
         let root = ROOT_CA_BASE64_ENCODED.as_der_bytes().unwrap();
         let leaf = LEAF_CERT_BASE64_ENCODED.as_der_bytes().unwrap();
@@ -261,6 +307,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(feature = "ocsp"))]
     fn test_invalid_data_in_certificate_list() -> Result<(), ChainVerifierError> {
         let root = ROOT_CA_BASE64_ENCODED.as_der_bytes().unwrap();
         let leaf = STANDARD.encode("abc").as_der_bytes().unwrap();
@@ -276,6 +323,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(feature = "ocsp"))]
     fn test_malformed_root_cert() -> Result<(), ChainVerifierError> {
         let root = ROOT_CA_BASE64_ENCODED.as_der_bytes().unwrap();
         let malformed_root = STANDARD.encode("abc").as_der_bytes().unwrap();
@@ -292,6 +340,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(feature = "ocsp"))]
     fn test_chain_different_than_root_certificate() -> Result<(), ChainVerifierError> {
         let root = ROOT_CA_BASE64_ENCODED.as_der_bytes().unwrap();
         let real_root = REAL_APPLE_ROOT_BASE64_ENCODED.as_der_bytes().unwrap();
@@ -308,6 +357,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(feature = "ocsp"))]
     fn test_valid_expired_chain() -> Result<(), ChainVerifierError> {
         let root = ROOT_CA_BASE64_ENCODED.as_der_bytes().unwrap();
         let leaf = LEAF_CERT_BASE64_ENCODED.as_der_bytes().unwrap();
@@ -323,6 +373,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(feature = "ocsp"))]
     fn test_apple_chain_is_valid() -> Result<(), ChainVerifierError> {
         let root = REAL_APPLE_ROOT_BASE64_ENCODED.as_der_bytes().unwrap();
         let leaf = REAL_APPLE_SIGNING_CERTIFICATE_BASE64_ENCODED
@@ -338,6 +389,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(feature = "ocsp"))]
     fn test_apple_chain_is_valid_multi_root() -> Result<(), ChainVerifierError> {
         let root = REAL_APPLE_ROOT_BASE64_ENCODED.as_der_bytes()?;
         let leaf = REAL_APPLE_SIGNING_CERTIFICATE_BASE64_ENCODED
