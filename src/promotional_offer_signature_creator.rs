@@ -1,10 +1,11 @@
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
-use pem::{parse, PemError};
+use pem_rfc7468::{decode};
 use ring::signature::{EcdsaKeyPair, Signature, ECDSA_P256_SHA256_ASN1_SIGNING};
 use ring::{error, rand};
 use std::fmt::{Display, Formatter};
 use thiserror::Error;
+use x509_parser::nom::AsBytes;
 
 #[derive(Error, Debug)]
 pub struct KeyRejectedWrapped(error::KeyRejected);
@@ -30,7 +31,7 @@ pub enum PromotionalOfferSignatureCreatorError {
     KeyRejectedError(#[from] KeyRejectedWrapped),
 
     #[error("InternalPemError: [{0}]")]
-    InternalPemError(#[from] PemError),
+    InternalPemError(#[from] pem_rfc7468::Error),
 }
 
 /// Struct responsible for creating promotional offer signatures.
@@ -57,8 +58,8 @@ impl PromotionalOfferSignatureCreator {
         key_id: String,
         bundle_id: String,
     ) -> Result<Self, PromotionalOfferSignatureCreatorError> {
-        let pem = parse(private_key)?;
-        let private_key = pem.contents();
+        let mut buf = [0u8; 2048];
+        let (label, private_key) = pem_rfc7468::decode(private_key.as_bytes(), &mut buf)?;
         let alg = &ECDSA_P256_SHA256_ASN1_SIGNING;
         let rng = rand::SystemRandom::new();
 
