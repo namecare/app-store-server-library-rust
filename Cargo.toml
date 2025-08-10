@@ -17,7 +17,10 @@ edition = "2021"
 x509-parser = { version = "0.17.0", features = ["verify", "validate"] }
 jsonwebtoken = { version = "9.3.1" }
 ring = "0.17.14"
-pem = "3.0.5"
+pem-rfc7468 = "1.0.0-rc.3"
+der = { version = "0.7.10", features = ["alloc", "oid"], optional = true }
+x509-ocsp = { version = "0.2.1", optional = true}
+x509-cert = { version = "0.2.5", optional = true }
 
 # Serialization
 serde = { version = "1.0.219", features = ["derive"] }
@@ -27,7 +30,6 @@ serde_repr = "0.1.20"
 uuid = { version = "1.17.0", features = ["serde", "v4"] }
 chrono = { version = "0.4.41", features = ["serde"] }
 base64 = "0.22.1"
-asn1-rs = { version = "0.7.1", optional = true }
 
 # Networking
 reqwest = { version = "0.12.22", default-features = false, features = ["json"], optional = true }
@@ -46,5 +48,5 @@ jsonwebtoken = { version = "9.3.1", features = ["use_pem"] }
 [features]
 api-client = ["dep:reqwest", "reqwest/rustls-tls-native-roots"]
 api-client-native-tls = ["dep:reqwest", "reqwest/default-tls"]
-receipt-utility = ["dep:asn1-rs", "dep:regex"]
-
+receipt-utility = ["dep:regex"]
+ocsp = ["dep:x509-ocsp", "dep:x509-cert", "dep:reqwest", "reqwest/blocking", "dep:der"]
