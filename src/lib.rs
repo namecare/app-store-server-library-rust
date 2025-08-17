@@ -3,7 +3,7 @@ pub mod jws_signature_creator;
 pub mod primitives;
 pub mod promotional_offer_signature_creator;
 pub mod signed_data_verifier;
-mod utils;
+pub mod utils;
 
 #[cfg(feature = "receipt-utility")]
 pub mod receipt_utility;

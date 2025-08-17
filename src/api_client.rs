@@ -767,7 +767,7 @@ mod tests {
     #[tokio::test]
     async fn test_extend_renewal_date_for_all_active_subscribers() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/extendRenewalDateForAllActiveSubscribersResponse.json",
+            "tests/resources/models/extendRenewalDateForAllActiveSubscribersResponse.json",
             StatusCode::OK,
             Some(|req, body| {
                 assert_eq!(Method::POST, req.method());
@@ -834,7 +834,7 @@ mod tests {
     #[tokio::test]
     async fn test_extend_subscription_renewal_date() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/extendSubscriptionRenewalDateResponse.json",
+            "tests/resources/models/extendSubscriptionRenewalDateResponse.json",
             StatusCode::OK,
             Some(|req, body| {
                 assert_eq!(Method::PUT, req.method());
@@ -889,7 +889,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_all_subscription_statuses() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/getAllSubscriptionStatusesResponse.json",
+            "tests/resources/models/getAllSubscriptionStatusesResponse.json",
             StatusCode::OK,
             Some(|req, _body| {
                 assert_eq!(Method::GET, req.method());
@@ -946,7 +946,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_refund_history() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/getRefundHistoryResponse.json",
+            "tests/resources/models/getRefundHistoryResponse.json",
             StatusCode::OK,
             Some(|req, _body| {
                 assert_eq!(Method::GET, req.method());
@@ -974,7 +974,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_status_of_subscription_renewal_date_extensions() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/getStatusOfSubscriptionRenewalDateExtensionsResponse.json",
+            "tests/resources/models/getStatusOfSubscriptionRenewalDateExtensionsResponse.json",
             StatusCode::OK,
             Some(|req, _body| {
                 assert_eq!(Method::GET, req.method());
@@ -1007,7 +1007,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_test_notification_status() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/getTestNotificationStatusResponse.json",
+            "tests/resources/models/getTestNotificationStatusResponse.json",
             StatusCode::OK,
             Some(|req, _body| {
                 assert_eq!(Method::GET, req.method());
@@ -1041,7 +1041,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_notification_history() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/getNotificationHistoryResponse.json",
+            "tests/resources/models/getNotificationHistoryResponse.json",
             StatusCode::OK,
             Some(|req, body| {
                 assert_eq!(Method::POST, req.method());
@@ -1121,7 +1121,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_transaction_history_v1() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/transactionHistoryResponse.json",
+            "tests/resources/models/transactionHistoryResponse.json",
             StatusCode::OK,
             Some(|req, _body| {
                 assert_eq!(Method::GET, req.method());
@@ -1166,7 +1166,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_transaction_history_v2() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/transactionHistoryResponse.json",
+            "tests/resources/models/transactionHistoryResponse.json",
             StatusCode::OK,
             Some(|req, _body| {
                 assert_eq!(Method::GET, req.method());
@@ -1251,7 +1251,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_transaction_info() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/transactionInfoResponse.json",
+            "tests/resources/models/transactionInfoResponse.json",
             StatusCode::OK,
             Some(|req, _body| {
                 assert_eq!(Method::GET, req.method());
@@ -1273,7 +1273,7 @@ mod tests {
     #[tokio::test]
     async fn test_look_up_order_id() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/lookupOrderIdResponse.json",
+            "tests/resources/models/lookupOrderIdResponse.json",
             StatusCode::OK,
             Some(|req, _body| {
                 assert_eq!(Method::GET, req.method());
@@ -1296,7 +1296,7 @@ mod tests {
     #[tokio::test]
     async fn test_request_test_notification() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/requestTestNotificationResponse.json",
+            "tests/resources/models/requestTestNotificationResponse.json",
             StatusCode::OK,
             Some(|req, _body| {
                 assert_eq!(Method::POST, req.method());
@@ -1412,7 +1412,7 @@ mod tests {
     #[tokio::test]
     async fn test_invalid_app_account_token_uuid_error() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/invalidAppAccountTokenUUIDError.json",
+            "tests/resources/models/invalidAppAccountTokenUUIDError.json",
             StatusCode::BAD_REQUEST,
             None,
         );
@@ -1443,7 +1443,7 @@ mod tests {
     #[tokio::test]
     async fn test_family_transaction_not_supported_error() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/familyTransactionNotSupportedError.json",
+            "tests/resources/models/familyTransactionNotSupportedError.json",
             StatusCode::BAD_REQUEST,
             None,
         );
@@ -1474,7 +1474,7 @@ mod tests {
     #[tokio::test]
     async fn test_transaction_id_not_original_transaction_id_error() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/transactionIdNotOriginalTransactionId.json",
+            "tests/resources/models/transactionIdNotOriginalTransactionId.json",
             StatusCode::BAD_REQUEST,
             None,
         );
@@ -1505,7 +1505,7 @@ mod tests {
     #[tokio::test]
     async fn test_headers() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/transactionInfoResponse.json",
+            "tests/resources/models/transactionInfoResponse.json",
             StatusCode::OK,
             Some(|req, _body| {
                 let headers = req.headers();
@@ -1538,7 +1538,7 @@ mod tests {
     #[tokio::test]
     async fn test_api_error() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/apiException.json",
+            "tests/resources/models/apiException.json",
             StatusCode::INTERNAL_SERVER_ERROR,
             None,
         );
@@ -1560,7 +1560,7 @@ mod tests {
     #[tokio::test]
     async fn test_api_too_many_requests() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/apiTooManyRequestsException.json",
+            "tests/resources/models/apiTooManyRequestsException.json",
             StatusCode::TOO_MANY_REQUESTS,
             None,
         );
@@ -1582,7 +1582,7 @@ mod tests {
     #[tokio::test]
     async fn test_api_unknown_error() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/apiUnknownError.json",
+            "tests/resources/models/apiUnknownError.json",
             StatusCode::BAD_REQUEST,
             None,
         );
@@ -1607,7 +1607,7 @@ mod tests {
     #[tokio::test]
     async fn test_decoding_with_unknown_enum_value() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/transactionHistoryResponseWithMalformedEnvironment.json",
+            "tests/resources/models/transactionHistoryResponseWithMalformedEnvironment.json",
             StatusCode::OK,
             None,
         );
@@ -1633,7 +1633,7 @@ mod tests {
     #[tokio::test]
     async fn test_decoding_with_malformed_json() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/transactionHistoryResponseWithMalformedAppAppleId.json",
+            "tests/resources/models/transactionHistoryResponseWithMalformedAppAppleId.json",
             StatusCode::OK,
             None,
         );
@@ -1735,7 +1735,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_notification_history_with_microsecond_values() {
         let client = app_store_server_api_client_with_body_from_file(
-            "resources/models/getNotificationHistoryResponse.json",
+            "tests/resources/models/getNotificationHistoryResponse.json",
             StatusCode::OK,
             Some(|_req, body| {
                 let decoded_json: HashMap<String, Value> = serde_json::from_slice(body.unwrap()).unwrap();
@@ -1770,7 +1770,7 @@ mod tests {
         // This test ensures we don't accidentally allow it in the future
         // Note: In Rust, we handle this at compile time with the Environment enum,
         // but we can test that LocalTesting environment (which maps to Xcode in some contexts) works
-        let key = fs::read("resources/certs/testSigningKey.p8").expect("Failed to read file");
+        let key = fs::read("tests/resources/certs/testSigningKey.p8").expect("Failed to read file");
 
         // LocalTesting environment should work (it's our equivalent of Xcode for testing)
         let client = AppStoreServerAPIClient::new(
@@ -1806,7 +1806,7 @@ mod tests {
         status: http::StatusCode,
         request_verifier: Option<RequestVerifier>,
     ) -> AppStoreServerAPIClient {
-        let key = fs::read("resources/certs/testSigningKey.p8").expect("Failed to read file");
+        let key = fs::read("tests/resources/certs/testSigningKey.p8").expect("Failed to read file");
 
         let request_overrider = move |req: &reqwest::Request, request_body: Option<&[u8]>| {
             if let Some(request_verifier) = request_verifier {

@@ -248,7 +248,7 @@ mod tests {
     #[test]
     fn test_extract_ocsp_url_missing_aia() {
         // Create a minimal certificate without AIA extension
-        let cert_der = include_bytes!("../resources/certs/testCA.der");
+        let cert_der = include_bytes!("../tests/resources/certs/testCA.der");
         let cert = X509Certificate::from_der(cert_der).unwrap().1;
 
         let result = extract_ocsp_url(&cert);
@@ -259,7 +259,7 @@ mod tests {
     fn test_extract_ocsp_url_with_aia() {
         // This test would need a certificate with an AIA extension
         // For now, we'll test the error case
-        let cert_der = include_bytes!("../resources/certs/testCA.der");
+        let cert_der = include_bytes!("../tests/resources/certs/testCA.der");
         let cert = X509Certificate::from_der(cert_der).unwrap().1;
 
         let result = extract_ocsp_url(&cert);

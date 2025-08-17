@@ -141,34 +141,11 @@ impl PromotionalOfferSignatureCreator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::system_timestamp;
     use ring::signature::{UnparsedPublicKey, ECDSA_P256_SHA256_ASN1};
 
     #[test]
-    fn test_promotional_offer_signature_creator() {
-        let private_key = include_str!("../resources/certs/testSigningKey.p8");
-        let creator = PromotionalOfferSignatureCreator::new(
-            private_key,
-            "L256SYR32L".to_string(),
-            "com.test.app".to_string(),
-        )
-        .unwrap();
-        let r = creator
-            .create_signature(
-                "com.test.product",
-                "com.test.offer",
-                uuid::Uuid::new_v4().to_string().as_str(),
-                &uuid::Uuid::new_v4(),
-                i64::try_from(system_timestamp()).unwrap(),
-            )
-            .unwrap();
-
-        assert!(!r.is_empty())
-    }
-
-    #[test]
     fn test_promotional_offer_signature_creator_verified() {
-        let private_key = include_str!("../resources/certs/testSigningKey.p8");
+        let private_key = include_str!("../tests/resources/certs/testSigningKey.p8");
         let creator = PromotionalOfferSignatureCreator::new(
             private_key,
             "L256SYR32L".to_string(),
@@ -180,7 +157,7 @@ mod tests {
             "com.test.offer",
             uuid::Uuid::new_v4().to_string().as_str(),
             &uuid::Uuid::new_v4(),
-            i64::try_from(system_timestamp()).unwrap(),
+            12345,
         );
         let signature = creator.sign(payload.as_str()).unwrap();
 
