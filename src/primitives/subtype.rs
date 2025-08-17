@@ -39,4 +39,8 @@ pub enum Subtype {
     Failure,
     #[serde(rename = "UNREPORTED")]
     Unreported,
+    #[serde(rename = "ACTIVE_TOKEN_REMINDER")]
+    ActiveTokenReminder,
+    #[serde(rename = "CREATED")]
+    Created,
 }
