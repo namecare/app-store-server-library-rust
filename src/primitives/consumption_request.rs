@@ -5,10 +5,10 @@ use crate::primitives::lifetime_dollars_purchased::LifetimeDollarsPurchased;
 use crate::primitives::lifetime_dollars_refunded::LifetimeDollarsRefunded;
 use crate::primitives::platform::Platform;
 use crate::primitives::play_time::PlayTime;
+use crate::primitives::refund_preference::RefundPreference;
 use crate::primitives::user_status::UserStatus;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::primitives::refund_preference::RefundPreference;
 
 /// The request body containing consumption information.
 ///

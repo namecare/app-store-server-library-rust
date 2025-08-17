@@ -1,7 +1,7 @@
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD;
-use regex::Regex;
 use crate::asn1::asn1_basics::*;
+use base64::engine::general_purpose::STANDARD;
+use base64::Engine;
+use regex::Regex;
 
 // ASN.1 Type IDs for receipt attributes
 const IN_APP_TYPE_ID: u64 = 17;
@@ -32,60 +32,63 @@ pub enum ReceiptUtilityError {
 /// * `Option<String>`: A transaction id from the array of in-app purchases, none if the receipt contains no in-app purchases
 pub fn extract_transaction_id_from_app_receipt(app_receipt: &str) -> Result<Option<String>, ReceiptUtilityError> {
     let app_receipt_bytes = STANDARD.decode(app_receipt)?;
-    
+
     // Parse the outer PKCS7 structure using custom BER parser
     let mut offset = 0;
-    
+
     // Read SEQUENCE
     let (content_offset, _) = read_sequence(&app_receipt_bytes, offset)?;
     offset = content_offset;
-    
+
     // Skip OID
     let _ = read_oid(&app_receipt_bytes, offset)?;
     offset = skip(&app_receipt_bytes, offset)?;
-    
+
     // Read context-specific [0]
     let (content_offset, _) = read_context_specific_0(&app_receipt_bytes, offset)?;
     offset = content_offset;
-    
+
     // Read inner SEQUENCE
     let (content_offset, _) = read_sequence(&app_receipt_bytes, offset)?;
     offset = content_offset;
-    
+
     // Skip two items
     offset = skip(&app_receipt_bytes, offset)?;
     offset = skip(&app_receipt_bytes, offset)?;
-    
+
     // Read receipt content SEQUENCE
     let (content_offset, _) = read_sequence(&app_receipt_bytes, offset)?;
     offset = content_offset;
-    
+
     // Skip OID
     offset = skip(&app_receipt_bytes, offset)?;
-    
+
     // Read context-specific [0] with receipt data
     let (content_offset, _) = read_context_specific_0(&app_receipt_bytes, offset)?;
     offset = content_offset;
-    
+
     // Read indefinite-length content starting with 0x24 0x80 or direct OCTET STRING
     let (tag, length, content_offset) = read_tlv(&app_receipt_bytes, offset)?;
     if tag == TAG_CONTEXT_SPECIFIC_CONSTRUCTED_4 {
         // BIT STRING with indefinite length
         offset = content_offset;
-        
+
         // Read OCTET STRING
         let (content_offset, length) = read_octet_string(&app_receipt_bytes, offset)?;
-        
+
         // Read the receipt data - if indefinite length, look for end marker
         let receipt_data = get_content(&app_receipt_bytes, content_offset, length)?;
-        
+
         extract_transaction_id_from_app_receipt_inner(receipt_data)
     } else if tag == TAG_OCTET_STRING {
         // Direct OCTET STRING
         let receipt_data = get_content(&app_receipt_bytes, content_offset, length)?;
         extract_transaction_id_from_app_receipt_inner(receipt_data)
     } else {
-        Err(ReceiptUtilityError::DecodeError(format!("Unexpected tag: 0x{:02x}", tag)))
+        Err(ReceiptUtilityError::DecodeError(format!(
+            "Unexpected tag: 0x{:02x}",
+            tag
+        )))
     }
 }
 
@@ -112,15 +115,15 @@ fn parse_attribute(data: &[u8], offset: usize) -> Result<(u64, usize), ReceiptUt
 
 /// Helper function to find an attribute with a specific type ID in a SET
 fn find_attribute_in_set<F>(
-    set_data: &[u8], 
+    set_data: &[u8],
     target_type_ids: &[u64],
-    processor: F
+    processor: F,
 ) -> Result<Option<String>, ReceiptUtilityError>
 where
-    F: Fn(&[u8], usize) -> Result<Option<String>, ReceiptUtilityError>
+    F: Fn(&[u8], usize) -> Result<Option<String>, ReceiptUtilityError>,
 {
     let mut offset = 0;
-    
+
     // Parse as SET
     let (content_offset, set_length) = read_set(set_data, offset)?;
     offset = content_offset;
@@ -129,18 +132,18 @@ where
     } else {
         content_offset + set_length
     };
-    
+
     while offset < set_end {
         let (tag, seq_length, content_offset) = read_tlv(set_data, offset)?;
         if tag == TAG_SEQUENCE {
             let (type_int, after_version_offset) = parse_attribute(set_data, content_offset)?;
-            
+
             if target_type_ids.contains(&type_int) {
                 if let Some(result) = processor(set_data, after_version_offset)? {
                     return Ok(Some(result));
                 }
             }
-            
+
             // Move to next item
             offset = if seq_length == usize::MAX {
                 find_end_of_contents(set_data, content_offset)?
@@ -155,14 +158,16 @@ where
             offset = skip(set_data, offset)?;
         }
     }
-    
+
     Ok(None)
 }
 
-fn extract_transaction_id_from_app_receipt_inner(app_receipt_content: &[u8]) -> Result<Option<String>, ReceiptUtilityError> {
+fn extract_transaction_id_from_app_receipt_inner(
+    app_receipt_content: &[u8],
+) -> Result<Option<String>, ReceiptUtilityError> {
     // Unwrap if wrapped in OCTET STRING
     let content_to_parse = unwrap_octet_string(app_receipt_content);
-    
+
     find_attribute_in_set(content_to_parse, &[IN_APP_TYPE_ID], |data, offset| {
         // Read OCTET STRING containing in-app data
         if let Ok((content_offset, length)) = read_octet_string(data, offset) {
@@ -174,12 +179,14 @@ fn extract_transaction_id_from_app_receipt_inner(app_receipt_content: &[u8]) -> 
     })
 }
 
-fn extract_transaction_id_from_in_app_receipt(app_receipt_content: &[u8]) -> Result<Option<String>, ReceiptUtilityError> {
+fn extract_transaction_id_from_in_app_receipt(
+    app_receipt_content: &[u8],
+) -> Result<Option<String>, ReceiptUtilityError> {
     // Unwrap if wrapped in OCTET STRING
     let set_data = unwrap_octet_string(app_receipt_content);
-    
+
     find_attribute_in_set(
-        set_data, 
+        set_data,
         &[TRANSACTION_IDENTIFIER_TYPE_ID, ORIGINAL_TRANSACTION_IDENTIFIER_TYPE_ID],
         |data, offset| {
             // Read OCTET STRING containing the transaction ID
@@ -191,7 +198,7 @@ fn extract_transaction_id_from_in_app_receipt(app_receipt_content: &[u8]) -> Res
                 }
             }
             Ok(None)
-        }
+        },
     )
 }
 
@@ -215,13 +222,10 @@ pub fn extract_transaction_id_from_transaction_receipt(
             if let Some(encoded_transaction_id) = purchase_info_match.get(1) {
                 if let Ok(decoded_inner_level) = STANDARD.decode(encoded_transaction_id.as_str()) {
                     if let Ok(decoded_inner_level_str) = String::from_utf8(decoded_inner_level) {
-                        let transaction_id_regex_str =
-                            r#""transaction-id"\s+=\s+"([a-zA-Z0-9+/=]+)";"#;
+                        let transaction_id_regex_str = r#""transaction-id"\s+=\s+"([a-zA-Z0-9+/=]+)";"#;
                         let transaction_id_regex = Regex::new(transaction_id_regex_str)?;
 
-                        if let Some(transaction_id_match) =
-                            transaction_id_regex.captures(&decoded_inner_level_str)
-                        {
+                        if let Some(transaction_id_match) = transaction_id_regex.captures(&decoded_inner_level_str) {
                             if let Some(encoded_transaction_id) = transaction_id_match.get(1) {
                                 return Ok(Some(encoded_transaction_id.as_str().to_string()));
                             }
@@ -244,8 +248,7 @@ mod tests {
 
     #[test]
     fn test_xcode_app_receipt_extraction_with_no_transactions() {
-        let receipt = fs::read_to_string("resources/xcode/xcode-app-receipt-empty")
-            .expect("Failed to read file");
+        let receipt = fs::read_to_string("resources/xcode/xcode-app-receipt-empty").expect("Failed to read file");
         let extracted_transaction_id = extract_transaction_id_from_app_receipt(&receipt);
 
         assert!(extracted_transaction_id.expect("Expect Result").is_none());
@@ -253,8 +256,8 @@ mod tests {
 
     #[test]
     fn test_xcode_app_receipt_extraction_with_transactions() {
-        let receipt = fs::read_to_string("resources/xcode/xcode-app-receipt-with-transaction")
-            .expect("Failed to read file");
+        let receipt =
+            fs::read_to_string("resources/xcode/xcode-app-receipt-with-transaction").expect("Failed to read file");
         let extracted_transaction_id = extract_transaction_id_from_app_receipt(&receipt);
 
         assert_eq!(
@@ -265,8 +268,7 @@ mod tests {
 
     #[test]
     fn test_transaction_receipt_extraction() {
-        let receipt = fs::read_to_string("resources/mock_signed_data/legacyTransaction")
-            .expect("Failed to read file");
+        let receipt = fs::read_to_string("resources/mock_signed_data/legacyTransaction").expect("Failed to read file");
         let extracted_transaction_id = extract_transaction_id_from_transaction_receipt(&receipt);
 
         assert_eq!(
@@ -277,8 +279,7 @@ mod tests {
 
     #[test]
     fn test_extract_transaction_id_from_app_receipt() {
-        let receipt = fs::read_to_string("resources/xcode/xcode-app-receipt-legacy")
-            .expect("Failed to read file");
+        let receipt = fs::read_to_string("resources/xcode/xcode-app-receipt-legacy").expect("Failed to read file");
         let extracted_transaction_id = extract_transaction_id_from_app_receipt(&receipt);
         assert_eq!(
             Some("2000000909538865"),

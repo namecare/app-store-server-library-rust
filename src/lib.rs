@@ -12,6 +12,3 @@ mod asn1;
 #[cfg(feature = "api-client")]
 pub mod api_client;
 mod chain_verifier_ocsp;
-
-
-

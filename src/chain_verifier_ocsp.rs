@@ -3,14 +3,13 @@
 //! This module provides functionality to verify certificate revocation status using OCSP.
 //! It's only compiled when the `ocsp` feature is enabled.
 
-
 #![cfg(feature = "ocsp")]
 
+use crate::chain_verifier::ChainVerificationFailureReason::InvalidCertificate;
+use crate::chain_verifier::{ChainVerificationFailureReason, ChainVerifierError};
 use x509_parser::certificate::X509Certificate;
 use x509_parser::extensions::{GeneralName, ParsedExtension};
 use x509_parser::oid_registry::Oid;
-use crate::chain_verifier::ChainVerificationFailureReason::InvalidCertificate;
-use crate::chain_verifier::{ChainVerificationFailureReason, ChainVerifierError};
 
 /// Checks the OCSP (Online Certificate Status Protocol) revocation status of a certificate.
 ///
@@ -42,20 +41,17 @@ use crate::chain_verifier::{ChainVerificationFailureReason, ChainVerifierError};
 /// ```ignore
 /// let leaf_cert = X509Certificate::from_der(&leaf_der)?;
 /// let issuer_cert = X509Certificate::from_der(&issuer_der)?;
-/// 
+///
 /// match check_ocsp_status(&leaf_cert, &issuer_cert) {
 ///     Ok(()) => println!("Certificate is valid"),
 ///     Err(e) => println!("Certificate validation failed: {:?}", e),
 /// }
 /// ```
-pub fn check_ocsp_status(
-    leaf: &X509Certificate<'_>,
-    issuer: &X509Certificate<'_>
-) -> Result<(), ChainVerifierError> {
-    use x509_ocsp::{OcspRequest, OcspResponse, CertId, TbsRequest, Request, BasicOcspResponse, CertStatus};
-    use der::{Encode, Decode, asn1::OctetString};
-    use x509_cert::spki::AlgorithmIdentifierOwned;
+pub fn check_ocsp_status(leaf: &X509Certificate<'_>, issuer: &X509Certificate<'_>) -> Result<(), ChainVerifierError> {
     use der::asn1::ObjectIdentifier;
+    use der::{asn1::OctetString, Decode, Encode};
+    use x509_cert::spki::AlgorithmIdentifierOwned;
+    use x509_ocsp::{BasicOcspResponse, CertId, CertStatus, OcspRequest, OcspResponse, Request, TbsRequest};
 
     let ocsp_url = extract_ocsp_url(leaf)?;
 
@@ -65,8 +61,7 @@ pub fn check_ocsp_status(
         // Get the raw DER encoding of the issuer's distinguished name
         let issuer_name = issuer.subject().as_raw();
         let hash = digest::digest(&digest::SHA1_FOR_LEGACY_USE_ONLY, issuer_name);
-        OctetString::new(hash.as_ref())
-            .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?
+        OctetString::new(hash.as_ref()).map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?
     };
 
     // Extract and use the issuer's Subject Key Identifier as the key hash
@@ -108,7 +103,8 @@ pub fn check_ocsp_status(
         optional_signature: None,
     };
 
-    let request_bytes = ocsp_request.to_der()
+    let request_bytes = ocsp_request
+        .to_der()
         .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
 
     let client = reqwest::blocking::Client::builder()
@@ -127,7 +123,8 @@ pub fn check_ocsp_status(
         return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
     }
 
-    let response_bytes = response.bytes()
+    let response_bytes = response
+        .bytes()
         .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
 
     let ocsp_response = OcspResponse::from_der(&response_bytes)
@@ -135,11 +132,12 @@ pub fn check_ocsp_status(
 
     use x509_ocsp::OcspResponseStatus;
     match ocsp_response.response_status {
-        OcspResponseStatus::Successful => {}, // Continue processing
+        OcspResponseStatus::Successful => {} // Continue processing
         _ => return Err(ChainVerifierError::VerificationFailure(InvalidCertificate)),
     }
 
-    let response_bytes = ocsp_response.response_bytes
+    let response_bytes = ocsp_response
+        .response_bytes
         .ok_or(ChainVerifierError::VerificationFailure(InvalidCertificate))?;
 
     const ID_PKIX_OCSP_BASIC: &str = "1.3.6.1.5.5.7.48.1.1";
@@ -153,11 +151,11 @@ pub fn check_ocsp_status(
     for single_response in &basic_response.tbs_response_data.responses {
         // TODO: Verify the CertId matches our request to ensure this response is for our certificate
         match &single_response.cert_status {
-            CertStatus::Good(_) => return Ok(()),  // Certificate is valid
+            CertStatus::Good(_) => return Ok(()), // Certificate is valid
             CertStatus::Revoked(_) => {
                 // Certificate has been revoked
                 return Err(ChainVerifierError::VerificationFailure(
-                    ChainVerificationFailureReason::CertificateRevoked
+                    ChainVerificationFailureReason::CertificateRevoked,
                 ));
             }
             CertStatus::Unknown(_) => {
@@ -188,13 +186,14 @@ pub fn check_ocsp_status(
 fn extract_ski(issuer: &X509Certificate<'_>) -> Result<Vec<u8>, ChainVerifierError> {
     // Subject Key Identifier OID: 2.5.29.14
     let ski_oid = Oid::from(&[2, 5, 29, 14]).unwrap();
-    let ski_ext = issuer.get_extension_unique(&ski_oid)
+    let ski_ext = issuer
+        .get_extension_unique(&ski_oid)
         .ok()
         .flatten()
         .ok_or(ChainVerifierError::VerificationFailure(InvalidCertificate))?;
 
     if let ParsedExtension::SubjectKeyIdentifier(ski) = ski_ext.parsed_extension() {
-        return Ok(ski.0.to_vec())
+        return Ok(ski.0.to_vec());
     }
 
     Err(ChainVerifierError::VerificationFailure(InvalidCertificate))
@@ -219,7 +218,8 @@ fn extract_ski(issuer: &X509Certificate<'_>) -> Result<Vec<u8>, ChainVerifierErr
 fn extract_ocsp_url(cert: &X509Certificate<'_>) -> Result<String, ChainVerifierError> {
     // AIA extension OID: 1.3.6.1.5.5.7.1.1
     let aia_oid = Oid::from(&[1, 3, 6, 1, 5, 5, 7, 1, 1]).unwrap();
-    let aia_ext = cert.get_extension_unique(&aia_oid)
+    let aia_ext = cert
+        .get_extension_unique(&aia_oid)
         .ok()
         .flatten()
         .ok_or(ChainVerifierError::VerificationFailure(InvalidCertificate))?;
@@ -250,18 +250,18 @@ mod tests {
         // Create a minimal certificate without AIA extension
         let cert_der = include_bytes!("../resources/certs/testCA.der");
         let cert = X509Certificate::from_der(cert_der).unwrap().1;
-        
+
         let result = extract_ocsp_url(&cert);
         assert!(result.is_err());
     }
 
-    #[test] 
+    #[test]
     fn test_extract_ocsp_url_with_aia() {
         // This test would need a certificate with an AIA extension
         // For now, we'll test the error case
         let cert_der = include_bytes!("../resources/certs/testCA.der");
         let cert = X509Certificate::from_der(cert_der).unwrap().1;
-        
+
         let result = extract_ocsp_url(&cert);
         // Most test certificates don't have OCSP URLs
         assert!(result.is_err());
@@ -269,47 +269,47 @@ mod tests {
 
     #[test]
     fn test_ocsp_response_parsing() {
-        use x509_ocsp::{OcspResponse, OcspResponseStatus};
         use der::{Decode, Encode};
-        
+        use x509_ocsp::{OcspResponse, OcspResponseStatus};
+
         // Create a minimal OCSP response for testing
         let response = OcspResponse {
             response_status: OcspResponseStatus::Successful,
             response_bytes: None,
         };
-        
+
         let encoded = response.to_der().unwrap();
         let decoded = OcspResponse::from_der(&encoded).unwrap();
-        
+
         assert_eq!(decoded.response_status, OcspResponseStatus::Successful);
     }
 
     #[test]
     fn test_cert_id_creation() {
-        use x509_ocsp::CertId;
-        use x509_cert::spki::AlgorithmIdentifierOwned;
         use der::asn1::{ObjectIdentifier, OctetString};
         use x509_cert::serial_number::SerialNumber;
-        
+        use x509_cert::spki::AlgorithmIdentifierOwned;
+        use x509_ocsp::CertId;
+
         // SHA-1 OID
         let sha1_oid = ObjectIdentifier::new_unwrap("1.3.14.3.2.26");
         let hash_algorithm = AlgorithmIdentifierOwned {
             oid: sha1_oid,
             parameters: None,
         };
-        
+
         // SHA-1 produces 20-byte hashes
         let issuer_name_hash = OctetString::new(&[0u8; 20]).unwrap();
         let issuer_key_hash = OctetString::new(&[0u8; 20]).unwrap();
         let serial = SerialNumber::new(&[1, 2, 3]).unwrap();
-        
+
         let cert_id = CertId {
             hash_algorithm,
             issuer_name_hash,
             issuer_key_hash,
             serial_number: serial,
         };
-        
+
         // Basic sanity check for SHA-1 hash length
         assert_eq!(cert_id.issuer_name_hash.as_bytes().len(), 20);
         assert_eq!(cert_id.issuer_key_hash.as_bytes().len(), 20);
@@ -317,42 +317,42 @@ mod tests {
 
     #[test]
     fn test_ocsp_request_creation() {
-        use x509_ocsp::{OcspRequest, TbsRequest, Request, CertId};
-        use x509_cert::spki::AlgorithmIdentifierOwned;
         use der::asn1::{ObjectIdentifier, OctetString};
-        use x509_cert::serial_number::SerialNumber;
         use der::Encode;
-        
+        use x509_cert::serial_number::SerialNumber;
+        use x509_cert::spki::AlgorithmIdentifierOwned;
+        use x509_ocsp::{CertId, OcspRequest, Request, TbsRequest};
+
         let sha1_oid = ObjectIdentifier::new_unwrap("1.3.14.3.2.26");
         let hash_algorithm = AlgorithmIdentifierOwned {
             oid: sha1_oid,
             parameters: None,
         };
-        
+
         let cert_id = CertId {
             hash_algorithm,
             issuer_name_hash: OctetString::new(&[0u8; 20]).unwrap(),
             issuer_key_hash: OctetString::new(&[0u8; 20]).unwrap(),
             serial_number: SerialNumber::new(&[1]).unwrap(),
         };
-        
+
         let request = Request {
             req_cert: cert_id,
             single_request_extensions: None,
         };
-        
+
         let tbs_request = TbsRequest {
             version: x509_ocsp::Version::V1,
             requestor_name: None,
             request_list: vec![request],
             request_extensions: None,
         };
-        
+
         let ocsp_request = OcspRequest {
             tbs_request,
             optional_signature: None,
         };
-        
+
         // Test that we can encode the request
         let encoded = ocsp_request.to_der();
         assert!(encoded.is_ok());

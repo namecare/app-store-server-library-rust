@@ -1,4 +1,6 @@
-use crate::chain_verifier::ChainVerificationFailureReason::{CertificateExpired, InvalidCertificate, InvalidChainLength, InvalidEffectiveDate};
+use crate::chain_verifier::ChainVerificationFailureReason::{
+    CertificateExpired, InvalidCertificate, InvalidChainLength, InvalidEffectiveDate,
+};
 use thiserror::Error;
 
 use x509_parser::certificate::X509Certificate;
@@ -40,7 +42,7 @@ pub enum ChainVerificationFailureReason {
 
     #[error("CertificateExpired")]
     CertificateExpired,
-    
+
     #[error("CertificateRevoked")]
     CertificateRevoked,
 }
@@ -100,22 +102,17 @@ pub fn verify_chain(
     };
     let leaf_certificate = leaf_certificate.1;
 
-    let Some(_) = leaf_certificate.get_extension_unique(&oid!(1.2.840.113635.100.6.11.1))?
-    else {
+    let Some(_) = leaf_certificate.get_extension_unique(&oid!(1.2.840.113635.100.6.11.1))? else {
         return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
     };
 
     let intermediate_certificate = &certificates[1];
-    let Ok(intermediate_certificate) =
-        X509Certificate::from_der(intermediate_certificate.as_slice())
-    else {
+    let Ok(intermediate_certificate) = X509Certificate::from_der(intermediate_certificate.as_slice()) else {
         return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
     };
     let intermediate_certificate = intermediate_certificate.1;
 
-    let Some(_) =
-        intermediate_certificate.get_extension_unique(&oid!(1.2.840.113635.100.6.2.1))?
-    else {
+    let Some(_) = intermediate_certificate.get_extension_unique(&oid!(1.2.840.113635.100.6.2.1))? else {
         return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
     };
 
@@ -138,10 +135,20 @@ pub fn verify_chain(
         return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
     };
 
-    verify_chain_impl(&leaf_certificate, &intermediate_certificate, &root_certificate, effective_date)
+    verify_chain_impl(
+        &leaf_certificate,
+        &intermediate_certificate,
+        &root_certificate,
+        effective_date,
+    )
 }
 
-fn verify_chain_impl(leaf: &X509Certificate, intermediate: &X509Certificate, root_certificate: &X509Certificate, effective_date: Option<u64>) -> Result<Vec<u8>, ChainVerifierError> {
+fn verify_chain_impl(
+    leaf: &X509Certificate,
+    intermediate: &X509Certificate,
+    root_certificate: &X509Certificate,
+    effective_date: Option<u64>,
+) -> Result<Vec<u8>, ChainVerifierError> {
     leaf.verify_signature(Some(intermediate.public_key()))?;
 
     if let Some(date) = effective_date {
@@ -153,7 +160,8 @@ fn verify_chain_impl(leaf: &X509Certificate, intermediate: &X509Certificate, roo
 
         if !(root_certificate.validity.is_valid_at(time) &&
             leaf.validity.is_valid_at(time) &&
-            intermediate.validity.is_valid_at(time)) {
+            intermediate.validity.is_valid_at(time))
+        {
             return Err(ChainVerifierError::VerificationFailure(CertificateExpired));
         }
     }
@@ -161,7 +169,8 @@ fn verify_chain_impl(leaf: &X509Certificate, intermediate: &X509Certificate, roo
     let k = leaf.public_key().raw.to_vec();
 
     // Make online verification as additional step if ocsp flag enabled
-    #[cfg(all(feature = "ocsp"))] {
+    #[cfg(all(feature = "ocsp"))]
+    {
         use crate::chain_verifier_ocsp::check_ocsp_status;
         // Perform OCSP check - this is best-effort, so we don't fail on OCSP errors
         match check_ocsp_status(leaf, intermediate) {
@@ -170,7 +179,9 @@ fn verify_chain_impl(leaf: &X509Certificate, intermediate: &X509Certificate, roo
             }
             Err(ChainVerifierError::VerificationFailure(ChainVerificationFailureReason::CertificateRevoked)) => {
                 // Certificate is revoked - this should fail
-                return Err(ChainVerifierError::VerificationFailure(ChainVerificationFailureReason::CertificateRevoked));
+                return Err(ChainVerifierError::VerificationFailure(
+                    ChainVerificationFailureReason::CertificateRevoked,
+                ));
             }
             Err(e) => {
                 // Other OCSP errors (network, parsing, etc.) - log but don't fail
@@ -214,7 +225,9 @@ mod tests {
     #[test]
     #[cfg(all(feature = "ocsp"))]
     fn test_apple_chain_is_valid_with_ocsp() -> Result<(), ChainVerifierError> {
-        let root = crate::chain_verifier::tests::REAL_APPLE_ROOT_BASE64_ENCODED.as_der_bytes().unwrap();
+        let root = crate::chain_verifier::tests::REAL_APPLE_ROOT_BASE64_ENCODED
+            .as_der_bytes()
+            .unwrap();
         let leaf = crate::chain_verifier::tests::REAL_APPLE_SIGNING_CERTIFICATE_BASE64_ENCODED
             .as_der_bytes()
             .unwrap();
@@ -223,7 +236,12 @@ mod tests {
             .unwrap();
         let chain = vec![leaf.clone(), intermediate, root.clone()];
 
-        let _public_key = verify_chain(&chain, &vec![root], Some(crate::chain_verifier::tests::EFFECTIVE_DATE)).unwrap();
+        let _public_key = verify_chain(
+            &chain,
+            &vec![root],
+            Some(crate::chain_verifier::tests::EFFECTIVE_DATE),
+        )
+        .unwrap();
         Ok(())
     }
 
@@ -392,10 +410,8 @@ mod tests {
     #[cfg(not(feature = "ocsp"))]
     fn test_apple_chain_is_valid_multi_root() -> Result<(), ChainVerifierError> {
         let root = REAL_APPLE_ROOT_BASE64_ENCODED.as_der_bytes()?;
-        let leaf = REAL_APPLE_SIGNING_CERTIFICATE_BASE64_ENCODED
-            .as_der_bytes()?;
-        let intermediate = REAL_APPLE_INTERMEDIATE_BASE64_ENCODED
-            .as_der_bytes()?;
+        let leaf = REAL_APPLE_SIGNING_CERTIFICATE_BASE64_ENCODED.as_der_bytes()?;
+        let intermediate = REAL_APPLE_INTERMEDIATE_BASE64_ENCODED.as_der_bytes()?;
         let chain = vec![leaf.clone(), intermediate, root.clone()];
 
         let multi_root: Vec<_> = REAL_APPLE_MULTI_ROOT_BASE64_ENCODED

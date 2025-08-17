@@ -31,7 +31,7 @@ mod tests {
     fn test_serialization() {
         let token = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
         let request = UpdateAppAccountTokenRequest::new(token);
-        
+
         let json = serde_json::to_string(&request).unwrap();
         let expected = r#"{"appAccountToken":"550e8400-e29b-41d4-a716-446655440000"}"#;
         assert_eq!(json, expected);
@@ -41,7 +41,7 @@ mod tests {
     fn test_deserialization() {
         let json = r#"{"appAccountToken":"550e8400-e29b-41d4-a716-446655440000"}"#;
         let request: UpdateAppAccountTokenRequest = serde_json::from_str(json).unwrap();
-        
+
         assert_eq!(
             request.app_account_token.to_string(),
             "550e8400-e29b-41d4-a716-446655440000"

@@ -10,10 +10,10 @@ use uuid::Uuid;
 pub enum JWSSignatureCreatorError {
     #[error("InvalidPrivateKey")]
     InvalidPrivateKey,
-    
+
     #[error("JWTEncodingError: [{0}]")]
     JWTEncodingError(#[from] jsonwebtoken::errors::Error),
-    
+
     #[error("SerializationError: [{0}]")]
     SerializationError(#[from] serde_json::Error),
 }
@@ -80,7 +80,7 @@ impl JWSSignatureCreator {
     ) -> Result<Self, JWSSignatureCreatorError> {
         let key = EncodingKey::from_ec_pem(signing_key.as_bytes())
             .map_err(|_| JWSSignatureCreatorError::InvalidPrivateKey)?;
-        
+
         Ok(Self {
             audience,
             signing_key: key,
@@ -104,7 +104,7 @@ impl JWSSignatureCreator {
         let mut header = Header::new(Algorithm::ES256);
         header.kid = Some(self.key_id.clone());
         header.typ = Some("JWT".to_string());
-        
+
         let token = encode(&header, payload, &self.signing_key)?;
         Ok(token)
     }
@@ -141,7 +141,7 @@ impl PromotionalOfferV2SignatureCreator {
             issuer_id,
             bundle_id,
         )?;
-        
+
         Ok(Self { base })
     }
 
@@ -152,7 +152,7 @@ impl PromotionalOfferV2SignatureCreator {
     /// * `product_id` - The unique identifier of the product
     /// * `offer_identifier` - The promotional offer identifier that you set up in App Store Connect
     /// * `transaction_id` - The unique identifier of any transaction that belongs to the customer.
-    ///   You can use the customer's appTransactionId, even for customers who haven't made any 
+    ///   You can use the customer's appTransactionId, even for customers who haven't made any
     ///   In-App Purchases in your app. This field is optional, but recommended.
     ///
     /// # Returns
@@ -175,7 +175,7 @@ impl PromotionalOfferV2SignatureCreator {
             offer_identifier: offer_identifier.to_string(),
             transaction_id,
         };
-        
+
         self.base.create_signature(&payload)
     }
 }
@@ -211,7 +211,7 @@ impl IntroductoryOfferEligibilitySignatureCreator {
             issuer_id,
             bundle_id,
         )?;
-        
+
         Ok(Self { base })
     }
 
@@ -220,10 +220,10 @@ impl IntroductoryOfferEligibilitySignatureCreator {
     /// # Arguments
     ///
     /// * `product_id` - The unique identifier of the product
-    /// * `allow_introductory_offer` - A boolean value that determines whether the customer 
+    /// * `allow_introductory_offer` - A boolean value that determines whether the customer
     ///   is eligible for an introductory offer
     /// * `transaction_id` - The unique identifier of any transaction that belongs to the customer.
-    ///   You can use the customer's appTransactionId, even for customers who haven't made any 
+    ///   You can use the customer's appTransactionId, even for customers who haven't made any
     ///   In-App Purchases in your app.
     ///
     /// # Returns
@@ -246,7 +246,7 @@ impl IntroductoryOfferEligibilitySignatureCreator {
             allow_introductory_offer,
             transaction_id: transaction_id.to_string(),
         };
-        
+
         self.base.create_signature(&payload)
     }
 }
@@ -282,7 +282,7 @@ impl AdvancedCommerceInAppSignatureCreator {
             issuer_id,
             bundle_id,
         )?;
-        
+
         Ok(Self { base })
     }
 
@@ -305,13 +305,13 @@ impl AdvancedCommerceInAppSignatureCreator {
     ) -> Result<String, JWSSignatureCreatorError> {
         let json_data = serde_json::to_vec(advanced_commerce_in_app_request)?;
         let base64_encoded_body = BASE64.encode(&json_data);
-        
+
         let base_payload = self.base.get_base_payload();
         let payload = AdvancedCommerceInAppPayload {
             base: base_payload,
             request: base64_encoded_body,
         };
-        
+
         self.base.create_signature(&payload)
     }
 }
@@ -329,13 +329,16 @@ mod tests {
             "keyId".to_string(),
             "issuerId".to_string(),
             "bundleId".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
-        let signature = creator.create_signature(
-            "productId",
-            "offerIdentifier",
-            Some("transactionId".to_string()),
-        ).unwrap();
+        let signature = creator
+            .create_signature(
+                "productId",
+                "offerIdentifier",
+                Some("transactionId".to_string()),
+            )
+            .unwrap();
 
         let parts: Vec<&str> = signature.split('.').collect();
         assert_eq!(parts.len(), 3);
@@ -345,7 +348,7 @@ mod tests {
             .decode(parts[0])
             .unwrap();
         let header: Value = serde_json::from_slice(&header_bytes).unwrap();
-        
+
         assert_eq!(header["typ"], "JWT");
         assert_eq!(header["alg"], "ES256");
         assert_eq!(header["kid"], "keyId");
@@ -375,13 +378,12 @@ mod tests {
             "keyId".to_string(),
             "issuerId".to_string(),
             "bundleId".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
-        let signature = creator.create_signature(
-            "productId",
-            "offerIdentifier",
-            None,
-        ).unwrap();
+        let signature = creator
+            .create_signature("productId", "offerIdentifier", None)
+            .unwrap();
 
         let parts: Vec<&str> = signature.split('.').collect();
         let payload_bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
@@ -400,13 +402,12 @@ mod tests {
             "keyId".to_string(),
             "issuerId".to_string(),
             "bundleId".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
-        let signature = creator.create_signature(
-            "productId",
-            true,
-            "transactionId",
-        ).unwrap();
+        let signature = creator
+            .create_signature("productId", true, "transactionId")
+            .unwrap();
 
         let parts: Vec<&str> = signature.split('.').collect();
         assert_eq!(parts.len(), 3);
@@ -416,7 +417,7 @@ mod tests {
             .decode(parts[0])
             .unwrap();
         let header: Value = serde_json::from_slice(&header_bytes).unwrap();
-        
+
         assert_eq!(header["typ"], "JWT");
         assert_eq!(header["alg"], "ES256");
         assert_eq!(header["kid"], "keyId");
@@ -454,7 +455,8 @@ mod tests {
             "keyId".to_string(),
             "issuerId".to_string(),
             "bundleId".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let in_app_request = TestInAppRequest {
             test_data: "testData".to_string(),
@@ -470,7 +472,7 @@ mod tests {
             .decode(parts[0])
             .unwrap();
         let header: Value = serde_json::from_slice(&header_bytes).unwrap();
-        
+
         assert_eq!(header["typ"], "JWT");
         assert_eq!(header["alg"], "ES256");
         assert_eq!(header["kid"], "keyId");
@@ -487,12 +489,11 @@ mod tests {
         assert_eq!(payload["aud"], "advanced-commerce-api");
         assert_eq!(payload["bid"], "bundleId");
         assert!(payload["nonce"].is_string());
-        
+
         // Verify the request field
         let base64_encoded_request = payload["request"].as_str().unwrap();
         let request_data = BASE64.decode(base64_encoded_request).unwrap();
         let decoded_request: Value = serde_json::from_slice(&request_data).unwrap();
         assert_eq!(decoded_request["testData"], "testData");
     }
-
 }

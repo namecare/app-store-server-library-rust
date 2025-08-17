@@ -1,11 +1,11 @@
 use crate::primitives::data::Data;
+use crate::primitives::external_purchase_token::ExternalPurchaseToken;
 use crate::primitives::notification_type_v2::NotificationTypeV2;
 use crate::primitives::subtype::Subtype;
 use crate::primitives::summary::Summary;
 use ::chrono::{DateTime, Utc};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
-use crate::primitives::external_purchase_token::ExternalPurchaseToken;
 
 /// A decoded payload containing the version 2 notification data.
 ///
@@ -60,5 +60,5 @@ pub struct ResponseBodyV2DecodedPayload {
     ///
     /// [externalPurchaseToken](https://developer.apple.com/documentation/appstoreservernotifications/externalpurchasetoken)
     #[serde(rename = "externalPurchaseToken")]
-    pub external_purchase_token: Option<ExternalPurchaseToken>
+    pub external_purchase_token: Option<ExternalPurchaseToken>,
 }

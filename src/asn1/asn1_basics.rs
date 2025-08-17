@@ -2,7 +2,7 @@
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum ASN1Error {
     #[error("ASN1DecodeError: [{0}]")]
-    ASN1DecodeError(String)
+    ASN1DecodeError(String),
 }
 
 // ASN.1 Universal Tags
@@ -17,18 +17,22 @@ pub const TAG_CONTEXT_SPECIFIC_0: u8 = 0xA0;
 pub const TAG_CONTEXT_SPECIFIC_CONSTRUCTED_4: u8 = 0x24;
 
 /// Reads ASN.1 TLV (Tag-Length-Value) structure from data
-/// 
+///
 /// Returns: (tag, length, next_offset)
 pub fn read_tlv(data: &[u8], offset: usize) -> Result<(u8, usize, usize), ASN1Error> {
     if offset >= data.len() {
-        return Err(ASN1Error::ASN1DecodeError("Unexpected end of data".to_string()));
+        return Err(ASN1Error::ASN1DecodeError(
+            "Unexpected end of data".to_string(),
+        ));
     }
 
     let tag = data[offset];
     let mut current_offset = offset + 1;
 
     if current_offset >= data.len() {
-        return Err(ASN1Error::ASN1DecodeError("Unexpected end of data".to_string()));
+        return Err(ASN1Error::ASN1DecodeError(
+            "Unexpected end of data".to_string(),
+        ));
     }
 
     let first_length_byte = data[current_offset];
@@ -41,7 +45,9 @@ pub fn read_tlv(data: &[u8], offset: usize) -> Result<(u8, usize, usize), ASN1Er
         // Long form
         let num_octets = (first_length_byte & 0x7F) as usize;
         if current_offset + num_octets > data.len() {
-            return Err(ASN1Error::ASN1DecodeError("Invalid length encoding".to_string()));
+            return Err(ASN1Error::ASN1DecodeError(
+                "Invalid length encoding".to_string(),
+            ));
         }
         let mut len = 0usize;
         for i in 0..num_octets {
@@ -72,7 +78,10 @@ pub fn skip(data: &[u8], offset: usize) -> Result<usize, ASN1Error> {
 pub fn read_sequence(data: &[u8], offset: usize) -> Result<(usize, usize), ASN1Error> {
     let (tag, length, content_offset) = read_tlv(data, offset)?;
     if tag != TAG_SEQUENCE {
-        return Err(ASN1Error::ASN1DecodeError(format!("Expected SEQUENCE (0x30), got 0x{:02x}", tag)));
+        return Err(ASN1Error::ASN1DecodeError(format!(
+            "Expected SEQUENCE (0x30), got 0x{:02x}",
+            tag
+        )));
     }
     Ok((content_offset, length))
 }
@@ -81,7 +90,10 @@ pub fn read_sequence(data: &[u8], offset: usize) -> Result<(usize, usize), ASN1E
 pub fn read_set(data: &[u8], offset: usize) -> Result<(usize, usize), ASN1Error> {
     let (tag, length, content_offset) = read_tlv(data, offset)?;
     if tag != TAG_SET {
-        return Err(ASN1Error::ASN1DecodeError(format!("Expected SET (0x31), got 0x{:02x}", tag)));
+        return Err(ASN1Error::ASN1DecodeError(format!(
+            "Expected SET (0x31), got 0x{:02x}",
+            tag
+        )));
     }
     Ok((content_offset, length))
 }
@@ -90,7 +102,10 @@ pub fn read_set(data: &[u8], offset: usize) -> Result<(usize, usize), ASN1Error>
 pub fn read_octet_string(data: &[u8], offset: usize) -> Result<(usize, usize), ASN1Error> {
     let (tag, length, content_offset) = read_tlv(data, offset)?;
     if tag != TAG_OCTET_STRING {
-        return Err(ASN1Error::ASN1DecodeError(format!("Expected OCTET STRING (0x04), got 0x{:02x}", tag)));
+        return Err(ASN1Error::ASN1DecodeError(format!(
+            "Expected OCTET STRING (0x04), got 0x{:02x}",
+            tag
+        )));
     }
     Ok((content_offset, length))
 }
@@ -99,7 +114,10 @@ pub fn read_octet_string(data: &[u8], offset: usize) -> Result<(usize, usize), A
 pub fn read_bit_string(data: &[u8], offset: usize) -> Result<(usize, usize), ASN1Error> {
     let (tag, length, content_offset) = read_tlv(data, offset)?;
     if tag != TAG_BIT_STRING && tag != TAG_CONTEXT_SPECIFIC_CONSTRUCTED_4 {
-        return Err(ASN1Error::ASN1DecodeError(format!("Expected BIT STRING (0x03 or 0x24), got 0x{:02x}", tag)));
+        return Err(ASN1Error::ASN1DecodeError(format!(
+            "Expected BIT STRING (0x03 or 0x24), got 0x{:02x}",
+            tag
+        )));
     }
     Ok((content_offset, length))
 }
@@ -108,7 +126,10 @@ pub fn read_bit_string(data: &[u8], offset: usize) -> Result<(usize, usize), ASN
 pub fn read_oid(data: &[u8], offset: usize) -> Result<(usize, usize), ASN1Error> {
     let (tag, length, content_offset) = read_tlv(data, offset)?;
     if tag != TAG_OID {
-        return Err(ASN1Error::ASN1DecodeError(format!("Expected OID (0x06), got 0x{:02x}", tag)));
+        return Err(ASN1Error::ASN1DecodeError(format!(
+            "Expected OID (0x06), got 0x{:02x}",
+            tag
+        )));
     }
     Ok((content_offset, length))
 }
@@ -117,7 +138,10 @@ pub fn read_oid(data: &[u8], offset: usize) -> Result<(usize, usize), ASN1Error>
 pub fn read_context_specific_0(data: &[u8], offset: usize) -> Result<(usize, usize), ASN1Error> {
     let (tag, length, content_offset) = read_tlv(data, offset)?;
     if tag != TAG_CONTEXT_SPECIFIC_0 {
-        return Err(ASN1Error::ASN1DecodeError(format!("Expected context-specific [0] (0xA0), got 0x{:02x}", tag)));
+        return Err(ASN1Error::ASN1DecodeError(format!(
+            "Expected context-specific [0] (0xA0), got 0x{:02x}",
+            tag
+        )));
     }
     Ok((content_offset, length))
 }
@@ -126,9 +150,12 @@ pub fn read_context_specific_0(data: &[u8], offset: usize) -> Result<(usize, usi
 pub fn read_utf8_string(data: &[u8], offset: usize) -> Result<String, ASN1Error> {
     let (tag, length, content_offset) = read_tlv(data, offset)?;
     if tag != TAG_UTF8_STRING {
-        return Err(ASN1Error::ASN1DecodeError(format!("Expected UTF8String (0x0C), got 0x{:02x}", tag)));
+        return Err(ASN1Error::ASN1DecodeError(format!(
+            "Expected UTF8String (0x0C), got 0x{:02x}",
+            tag
+        )));
     }
-    
+
     let utf8_bytes = &data[content_offset..content_offset + length];
     std::str::from_utf8(utf8_bytes)
         .map(|s| s.to_string())
@@ -147,7 +174,9 @@ pub fn read_integer(data: &[u8], offset: usize) -> Result<u64, ASN1Error> {
     }
 
     if length > 8 {
-        return Err(ASN1Error::ASN1DecodeError("Integer too large for u64".to_string()));
+        return Err(ASN1Error::ASN1DecodeError(
+            "Integer too large for u64".to_string(),
+        ));
     }
 
     let mut result = 0u64;
@@ -180,14 +209,16 @@ pub fn get_content<'a>(data: &'a [u8], content_offset: usize, length: usize) -> 
         }
     } else {
         if content_offset + length > data.len() {
-            return Err(ASN1Error::ASN1DecodeError("Data too short for specified length".to_string()));
+            return Err(ASN1Error::ASN1DecodeError(
+                "Data too short for specified length".to_string(),
+            ));
         }
         Ok(&data[content_offset..content_offset + length])
     }
 }
 
 /// Finds the end-of-contents marker for indefinite length encoding
-/// 
+///
 /// Returns the offset after the end-of-contents marker
 pub fn find_end_of_contents(data: &[u8], start_offset: usize) -> Result<usize, ASN1Error> {
     let mut offset = start_offset;
@@ -213,7 +244,9 @@ pub fn find_end_of_contents(data: &[u8], start_offset: usize) -> Result<usize, A
         }
     }
 
-    Err(ASN1Error::ASN1DecodeError("Missing end-of-contents marker".to_string()))
+    Err(ASN1Error::ASN1DecodeError(
+        "Missing end-of-contents marker".to_string(),
+    ))
 }
 
 #[cfg(test)]
@@ -231,7 +264,7 @@ mod tests {
 
     #[test]
     fn test_read_tlv_long_form_single_octet() {
-        let data = vec![0x02, 0x81, 0x80, /* 128 bytes of content */];
+        let data = vec![0x02, 0x81, 0x80 /* 128 bytes of content */];
         let (tag, length, offset) = read_tlv(&data, 0).unwrap();
         assert_eq!(tag, 0x02);
         assert_eq!(length, 0x80);
@@ -240,7 +273,7 @@ mod tests {
 
     #[test]
     fn test_read_tlv_long_form_two_octets() {
-        let data = vec![0x02, 0x82, 0x01, 0x00, /* 256 bytes of content */];
+        let data = vec![0x02, 0x82, 0x01, 0x00 /* 256 bytes of content */];
         let (tag, length, offset) = read_tlv(&data, 0).unwrap();
         assert_eq!(tag, 0x02);
         assert_eq!(length, 0x0100);
@@ -249,7 +282,7 @@ mod tests {
 
     #[test]
     fn test_read_tlv_indefinite_length() {
-        let data = vec![0x02, 0x80, /* content */];
+        let data = vec![0x02, 0x80 /* content */];
         let (tag, length, offset) = read_tlv(&data, 0).unwrap();
         assert_eq!(tag, 0x02);
         assert_eq!(length, usize::MAX);
@@ -261,7 +294,10 @@ mod tests {
         let data = vec![0x02, 0x03, 0x01, 0x02, 0x03];
         let result = read_tlv(&data, 10);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), ASN1Error::ASN1DecodeError("Unexpected end of data".to_string()));
+        assert_eq!(
+            result.unwrap_err(),
+            ASN1Error::ASN1DecodeError("Unexpected end of data".to_string())
+        );
     }
 
     #[test]
@@ -269,7 +305,10 @@ mod tests {
         let data = vec![0x02];
         let result = read_tlv(&data, 0);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), ASN1Error::ASN1DecodeError("Unexpected end of data".to_string()));
+        assert_eq!(
+            result.unwrap_err(),
+            ASN1Error::ASN1DecodeError("Unexpected end of data".to_string())
+        );
     }
 
     #[test]
@@ -277,7 +316,10 @@ mod tests {
         let data = vec![0x02, 0x82, 0x01]; // Missing second length octet
         let result = read_tlv(&data, 0);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), ASN1Error::ASN1DecodeError("Invalid length encoding".to_string()));
+        assert_eq!(
+            result.unwrap_err(),
+            ASN1Error::ASN1DecodeError("Invalid length encoding".to_string())
+        );
     }
 
     #[test]
@@ -313,7 +355,10 @@ mod tests {
         let data = vec![0x03, 0x01, 0x05]; // Wrong tag (BIT STRING instead of INTEGER)
         let result = read_integer(&data, 0);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), ASN1Error::ASN1DecodeError("Expected INTEGER".to_string()));
+        assert_eq!(
+            result.unwrap_err(),
+            ASN1Error::ASN1DecodeError("Expected INTEGER".to_string())
+        );
     }
 
     #[test]
@@ -321,7 +366,10 @@ mod tests {
         let data = vec![0x02, 0x09, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
         let result = read_integer(&data, 0);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), ASN1Error::ASN1DecodeError("Integer too large for u64".to_string()));
+        assert_eq!(
+            result.unwrap_err(),
+            ASN1Error::ASN1DecodeError("Integer too large for u64".to_string())
+        );
     }
 
     #[test]
@@ -365,11 +413,14 @@ mod tests {
         let data = vec![
             0x30, 0x80, // SEQUENCE with indefinite length
             0x02, 0x01, 0x05, // INTEGER 5
-            // Missing end-of-contents marker
+                  // Missing end-of-contents marker
         ];
         let result = find_end_of_contents(&data, 2);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), ASN1Error::ASN1DecodeError("Missing end-of-contents marker".to_string()));
+        assert_eq!(
+            result.unwrap_err(),
+            ASN1Error::ASN1DecodeError("Missing end-of-contents marker".to_string())
+        );
     }
 
     #[test]
@@ -383,7 +434,7 @@ mod tests {
         let data = vec![0x02, 0x03, 0x01, 0x02, 0x03, 0x04, 0x01, 0x05];
         let next_offset = skip(&data, 0).unwrap();
         assert_eq!(next_offset, 5);
-        
+
         // Verify we can read the next element
         let (tag, length, _) = read_tlv(&data, next_offset).unwrap();
         assert_eq!(tag, 0x04);
@@ -400,7 +451,7 @@ mod tests {
         ];
         let next_offset = skip(&data, 0).unwrap();
         assert_eq!(next_offset, 7);
-        
+
         // Verify we can read the next element
         let (tag, _, _) = read_tlv(&data, next_offset).unwrap();
         assert_eq!(tag, 0x04);
