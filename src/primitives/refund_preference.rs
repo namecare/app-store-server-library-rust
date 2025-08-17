@@ -11,4 +11,3 @@ pub enum RefundPreference {
     PreferDecline = 2,
     NoPreference = 3,
 }
-

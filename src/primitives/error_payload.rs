@@ -159,7 +159,7 @@ pub enum APIError {
 
     /// An error that indicates the transaction is not consumable.
     /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/transactionnotconsumableerror)
-    #[deprecated(since="2.1.0")]
+    #[deprecated(since = "2.1.0")]
     InvalidTransactionNotConsumable = 4000043,
 
     /// An error that indicates the transaction identifier represents an unsupported in-app purchase type.
@@ -251,7 +251,7 @@ pub enum APIError {
     /// An error response that indicates an unknown error occurred, but you can try again.
     ///
     /// [GeneralInternalRetryableError](https://developer.apple.com/documentation/appstoreserverapi/generalinternalretryableerror)
-    GeneralInternalRetryable = 5000001
+    GeneralInternalRetryable = 5000001,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Hash)]
@@ -268,18 +268,15 @@ impl ErrorPayload {
     pub fn raw_error_code(&self) -> Option<i64> {
         match &self.error_code {
             None => return None,
-            Some(code) => return Some(code.clone() as i64)
+            Some(code) => return Some(code.clone() as i64),
         }
     }
 }
-// custom deserializer function
-fn deserialize_maybe_none<'de, D, T: Deserialize<'de>>(
-    deserializer: D,
-) -> Result<Option<T>, D::Error>
-    where
-        D: Deserializer<'de>,
+
+fn deserialize_maybe_none<'de, D, T: Deserialize<'de>>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    D: Deserializer<'de>,
 {
-    // deserialize into local enum
     if let Ok(value) = Deserialize::deserialize(deserializer) {
         Ok(value)
     } else {

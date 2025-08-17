@@ -11,7 +11,7 @@ pub enum Environment {
     #[serde(rename = "LocalTesting")]
     LocalTesting, // Used for unit testing
     #[serde(other)]
-    Unknown
+    Unknown,
 }
 
 impl Environment {

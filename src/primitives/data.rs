@@ -1,7 +1,7 @@
+use crate::primitives::consumption_request_reason::ConsumptionRequestReason;
 use crate::primitives::environment::Environment;
 use crate::primitives::status::Status;
 use serde::{Deserialize, Serialize};
-use crate::primitives::consumption_request_reason::ConsumptionRequestReason;
 
 /// The app metadata and the signed renewal and transaction information.
 ///

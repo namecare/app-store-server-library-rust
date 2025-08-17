@@ -1,11 +1,9 @@
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
-use pem_rfc7468::{decode};
 use ring::signature::{EcdsaKeyPair, Signature, ECDSA_P256_SHA256_ASN1_SIGNING};
 use ring::{error, rand};
 use std::fmt::{Display, Formatter};
 use thiserror::Error;
-use x509_parser::nom::AsBytes;
 
 #[derive(Error, Debug)]
 pub struct KeyRejectedWrapped(error::KeyRejected);
@@ -59,12 +57,11 @@ impl PromotionalOfferSignatureCreator {
         bundle_id: String,
     ) -> Result<Self, PromotionalOfferSignatureCreatorError> {
         let mut buf = [0u8; 2048];
-        let (label, private_key) = pem_rfc7468::decode(private_key.as_bytes(), &mut buf)?;
+        let (_, private_key) = pem_rfc7468::decode(private_key.as_bytes(), &mut buf)?;
         let alg = &ECDSA_P256_SHA256_ASN1_SIGNING;
         let rng = rand::SystemRandom::new();
 
-        let ec_private_key =
-            EcdsaKeyPair::from_pkcs8(alg, private_key, &rng).map_err(KeyRejectedWrapped)?;
+        let ec_private_key = EcdsaKeyPair::from_pkcs8(alg, private_key, &rng).map_err(KeyRejectedWrapped)?;
 
         Ok(PromotionalOfferSignatureCreator {
             ec_private_key,
