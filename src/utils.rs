@@ -13,7 +13,9 @@ use base64::{DecodeError, Engine};
 /// assert_eq!(result, "aGVsbG8gd29ybGQh==");
 /// ```
 pub(crate) fn base64_url_to_base64(encoded_string: &str) -> String {
-    let replaced_string = encoded_string.replace('/', "+").replace('_', "-");
+    let replaced_string = encoded_string
+        .replace('/', "+")
+        .replace('_', "-");
 
     if replaced_string.len() % 4 != 0 {
         return replaced_string.clone() + &"=".repeat(4 - replaced_string.len() % 4);

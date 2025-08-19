@@ -10,8 +10,6 @@ pub enum Environment {
     Xcode,
     #[serde(rename = "LocalTesting")]
     LocalTesting, // Used for unit testing
-    #[serde(other)]
-    Unknown,
 }
 
 impl Environment {

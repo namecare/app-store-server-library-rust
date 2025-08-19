@@ -155,8 +155,12 @@ impl SignedDataVerifier {
             app_apple_id = summary.app_apple_id.clone();
             environment = summary.environment.clone();
         } else if let Some(external_purchase_token) = &decoded_signed_notification.external_purchase_token {
-            bundle_id = external_purchase_token.bundle_id.clone();
-            app_apple_id = external_purchase_token.app_apple_id.clone();
+            bundle_id = external_purchase_token
+                .bundle_id
+                .clone();
+            app_apple_id = external_purchase_token
+                .app_apple_id
+                .clone();
 
             if let Some(external_purchase_id) = &external_purchase_token.external_purchase_id {
                 if external_purchase_id.starts_with("SANDBOX") {
@@ -223,11 +227,19 @@ impl SignedDataVerifier {
     ) -> Result<AppTransaction, SignedDataVerifierError> {
         let decoded_app_transaction: AppTransaction = self.decode_signed_object(signed_app_transaction)?;
 
-        if decoded_app_transaction.bundle_id.as_ref() != Some(&self.bundle_id) {
+        if decoded_app_transaction
+            .bundle_id
+            .as_ref()
+            != Some(&self.bundle_id)
+        {
             return Err(SignedDataVerifierError::InvalidAppIdentifier);
         }
 
-        if decoded_app_transaction.receipt_type.as_ref() != Some(&self.environment) {
+        if decoded_app_transaction
+            .receipt_type
+            .as_ref()
+            != Some(&self.environment)
+        {
             return Err(SignedDataVerifierError::InvalidEnvironment);
         }
 
@@ -271,7 +283,10 @@ impl SignedDataVerifier {
             return Err(SignedDataVerifierError::VerificationFailure);
         }
 
-        let x5c: Result<Vec<Vec<u8>>, DecodeError> = x5c.iter().map(|c| c.as_der_bytes()).collect();
+        let x5c: Result<Vec<Vec<u8>>, DecodeError> = x5c
+            .iter()
+            .map(|c| c.as_der_bytes())
+            .collect();
         let chain = x5c?;
 
         if header.alg != Algorithm::ES256 {

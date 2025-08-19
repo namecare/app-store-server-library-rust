@@ -59,7 +59,6 @@ async fn main() {
     }
 }
 ```
-> Note: To extract transaction id from app/tx receipt, `api-client` feature must be enabled.
 
 ### Verification Usage
 

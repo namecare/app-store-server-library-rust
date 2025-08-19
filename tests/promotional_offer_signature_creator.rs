@@ -8,12 +8,14 @@ fn test_promotional_offer_signature_creator() {
         "L256SYR32L".to_string(),
         "com.test.app".to_string(),
     )
-        .unwrap();
+    .unwrap();
     let r = creator
         .create_signature(
             "com.test.product",
             "com.test.offer",
-            uuid::Uuid::new_v4().to_string().as_str(),
+            uuid::Uuid::new_v4()
+                .to_string()
+                .as_str(),
             &uuid::Uuid::new_v4(),
             12345,
         )

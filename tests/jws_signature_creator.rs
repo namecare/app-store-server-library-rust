@@ -1,8 +1,11 @@
-use base64::Engine;
+use app_store_server_library::jws_signature_creator::{
+    AdvancedCommerceInAppRequest, AdvancedCommerceInAppSignatureCreator, IntroductoryOfferEligibilitySignatureCreator,
+    PromotionalOfferV2SignatureCreator,
+};
 use base64::prelude::BASE64_STANDARD;
+use base64::Engine;
 use serde::Serialize;
 use serde_json::Value;
-use app_store_server_library::jws_signature_creator::{AdvancedCommerceInAppRequest, AdvancedCommerceInAppSignatureCreator, IntroductoryOfferEligibilitySignatureCreator, PromotionalOfferV2SignatureCreator};
 
 #[test]
 fn test_promotional_offer_v2_signature_creator() {
@@ -13,7 +16,7 @@ fn test_promotional_offer_v2_signature_creator() {
         "issuerId".to_string(),
         "bundleId".to_string(),
     )
-        .unwrap();
+    .unwrap();
 
     let signature = creator
         .create_signature(
@@ -62,7 +65,7 @@ fn test_promotional_offer_v2_signature_creator_without_transaction_id() {
         "issuerId".to_string(),
         "bundleId".to_string(),
     )
-        .unwrap();
+    .unwrap();
 
     let signature = creator
         .create_signature("productId", "offerIdentifier", None)
@@ -86,7 +89,7 @@ fn test_introductory_offer_eligibility_signature_creator() {
         "issuerId".to_string(),
         "bundleId".to_string(),
     )
-        .unwrap();
+    .unwrap();
 
     let signature = creator
         .create_signature("productId", true, "transactionId")
@@ -139,13 +142,15 @@ fn test_advanced_commerce_in_app_signature_creator() {
         "issuerId".to_string(),
         "bundleId".to_string(),
     )
-        .unwrap();
+    .unwrap();
 
     let in_app_request = TestInAppRequest {
         test_data: "testData".to_string(),
     };
 
-    let signature = creator.create_signature(&in_app_request).unwrap();
+    let signature = creator
+        .create_signature(&in_app_request)
+        .unwrap();
 
     let parts: Vec<&str> = signature.split('.').collect();
     assert_eq!(parts.len(), 3);
@@ -175,7 +180,9 @@ fn test_advanced_commerce_in_app_signature_creator() {
 
     // Verify the request field
     let base64_encoded_request = payload["request"].as_str().unwrap();
-    let request_data = BASE64_STANDARD.decode(base64_encoded_request).unwrap();
+    let request_data = BASE64_STANDARD
+        .decode(base64_encoded_request)
+        .unwrap();
     let decoded_request: Value = serde_json::from_slice(&request_data).unwrap();
     assert_eq!(decoded_request["testData"], "testData");
 }
