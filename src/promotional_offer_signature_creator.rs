@@ -134,7 +134,11 @@ impl PromotionalOfferSignatureCreator {
     fn public_key(&self) -> Vec<u8> {
         use ring::signature::KeyPair;
 
-        return self.ec_private_key.public_key().as_ref().to_vec();
+        return self
+            .ec_private_key
+            .public_key()
+            .as_ref()
+            .to_vec();
     }
 }
 
@@ -155,7 +159,9 @@ mod tests {
         let payload = creator.payload(
             "com.test.product",
             "com.test.offer",
-            uuid::Uuid::new_v4().to_string().as_str(),
+            uuid::Uuid::new_v4()
+                .to_string()
+                .as_str(),
             &uuid::Uuid::new_v4(),
             12345,
         );

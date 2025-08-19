@@ -1,7 +1,3 @@
-use ring::signature::ECDSA_P256_SHA256_FIXED_SIGNING;
-use serde_json::{Map, Value};
-use std::fs;
-use jsonwebtoken::Algorithm;
 use app_store_server_library::primitives::auto_renew_status::AutoRenewStatus;
 use app_store_server_library::primitives::consumption_request_reason::ConsumptionRequestReason;
 use app_store_server_library::primitives::environment::Environment;
@@ -19,6 +15,10 @@ use app_store_server_library::primitives::subtype::Subtype;
 use app_store_server_library::primitives::transaction_reason::TransactionReason;
 use app_store_server_library::signed_data_verifier::{SignedDataVerifier, SignedDataVerifierError};
 use app_store_server_library::utils::StringExt;
+use jsonwebtoken::Algorithm;
+use ring::signature::ECDSA_P256_SHA256_FIXED_SIGNING;
+use serde_json::{Map, Value};
+use std::fs;
 
 const ROOT_CA_BASE64_ENCODED: &str = "MIIBgjCCASmgAwIBAgIJALUc5ALiH5pbMAoGCCqGSM49BAMDMDYxCzAJBgNVBAYTAlVTMRMwEQYDVQQIDApDYWxpZm9ybmlhMRIwEAYDVQQHDAlDdXBlcnRpbm8wHhcNMjMwMTA1MjEzMDIyWhcNMzMwMTAyMjEzMDIyWjA2MQswCQYDVQQGEwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTESMBAGA1UEBwwJQ3VwZXJ0aW5vMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEc+/Bl+gospo6tf9Z7io5tdKdrlN1YdVnqEhEDXDShzdAJPQijamXIMHf8xWWTa1zgoYTxOKpbuJtDplz1XriTaMgMB4wDAYDVR0TBAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYwCgYIKoZIzj0EAwMDRwAwRAIgemWQXnMAdTad2JDJWng9U4uBBL5mA7WI05H7oH7c6iQCIHiRqMjNfzUAyiu9h6rOU/K+iTR0I/3Y/NSWsXHX+acc";
 const XCODE_BUNDLE_ID: &str = "com.example.naturelab.backyardbirds.example";
@@ -106,13 +106,20 @@ fn test_external_purchase_token_notification_decoding() {
             );
             assert_eq!(
                 Subtype::Unreported,
-                notification.subtype.expect("Expect subtype")
+                notification
+                    .subtype
+                    .expect("Expect subtype")
             );
             assert_eq!(
                 "002e14d5-51f5-4503-b5a8-c3a1af68eb20",
                 &notification.notification_uuid
             );
-            assert_eq!("2.0", &notification.version.expect("Expect version"));
+            assert_eq!(
+                "2.0",
+                &notification
+                    .version
+                    .expect("Expect version")
+            );
             assert_eq!(
                 1698148900,
                 notification
@@ -122,7 +129,9 @@ fn test_external_purchase_token_notification_decoding() {
             );
             assert!(notification.data.is_none());
             assert!(notification.summary.is_none());
-            assert!(notification.external_purchase_token.is_some());
+            assert!(notification
+                .external_purchase_token
+                .is_some());
 
             if let Some(external_purchase_token) = notification.external_purchase_token {
                 assert_eq!(
@@ -138,8 +147,18 @@ fn test_external_purchase_token_notification_decoding() {
                         .unwrap()
                         .timestamp()
                 );
-                assert_eq!(55555, external_purchase_token.app_apple_id.unwrap());
-                assert_eq!("com.example", &external_purchase_token.bundle_id.unwrap());
+                assert_eq!(
+                    55555,
+                    external_purchase_token
+                        .app_apple_id
+                        .unwrap()
+                );
+                assert_eq!(
+                    "com.example",
+                    &external_purchase_token
+                        .bundle_id
+                        .unwrap()
+                );
             } else {
                 panic!("External purchase token is expected to be Some, but it was None");
             }
@@ -163,13 +182,20 @@ fn test_external_purchase_token_sanbox_notification_decoding() {
             );
             assert_eq!(
                 Subtype::Unreported,
-                notification.subtype.expect("Expect subtype")
+                notification
+                    .subtype
+                    .expect("Expect subtype")
             );
             assert_eq!(
                 "002e14d5-51f5-4503-b5a8-c3a1af68eb20",
                 &notification.notification_uuid
             );
-            assert_eq!("2.0", &notification.version.expect("Expect version"));
+            assert_eq!(
+                "2.0",
+                &notification
+                    .version
+                    .expect("Expect version")
+            );
             assert_eq!(
                 1698148900,
                 notification
@@ -179,7 +205,9 @@ fn test_external_purchase_token_sanbox_notification_decoding() {
             );
             assert!(notification.data.is_none());
             assert!(notification.summary.is_none());
-            assert!(notification.external_purchase_token.is_some());
+            assert!(notification
+                .external_purchase_token
+                .is_some());
 
             if let Some(external_purchase_token) = notification.external_purchase_token {
                 assert_eq!(
@@ -195,8 +223,18 @@ fn test_external_purchase_token_sanbox_notification_decoding() {
                         .unwrap()
                         .timestamp()
                 );
-                assert_eq!(55555, external_purchase_token.app_apple_id.unwrap());
-                assert_eq!("com.example", &external_purchase_token.bundle_id.unwrap());
+                assert_eq!(
+                    55555,
+                    external_purchase_token
+                        .app_apple_id
+                        .unwrap()
+                );
+                assert_eq!(
+                    "com.example",
+                    &external_purchase_token
+                        .bundle_id
+                        .unwrap()
+                );
             } else {
                 panic!("External purchase token is expected to be Some, but it was None");
             }
@@ -246,7 +284,9 @@ fn get_signed_data_verifier(
     app_apple_id: Option<i64>,
 ) -> SignedDataVerifier {
     let verifier = SignedDataVerifier::new(
-        vec![ROOT_CA_BASE64_ENCODED.as_der_bytes().unwrap()],
+        vec![ROOT_CA_BASE64_ENCODED
+            .as_der_bytes()
+            .unwrap()],
         environment,
         bundle_id.to_string(),
         app_apple_id.or(Some(1234)),
@@ -269,11 +309,15 @@ fn test_decoded_payloads_app_transaction_decoding() {
             );
             assert_eq!(
                 531412,
-                app_transaction.app_apple_id.expect("Expect app_apple_id")
+                app_transaction
+                    .app_apple_id
+                    .expect("Expect app_apple_id")
             );
             assert_eq!(
                 "com.example",
-                app_transaction.bundle_id.expect("Expect bundle_id")
+                app_transaction
+                    .bundle_id
+                    .expect("Expect bundle_id")
             );
             assert_eq!(
                 "1.2.3",
@@ -376,7 +420,10 @@ fn test_decoded_payloads_transaction_decoding() {
             );
             assert_eq!(
                 "com.example",
-                transaction.bundle_id.as_deref().expect("Expect bundle_id")
+                transaction
+                    .bundle_id
+                    .as_deref()
+                    .expect("Expect bundle_id")
             );
             assert_eq!(
                 "com.example.product",
@@ -420,7 +467,12 @@ fn test_decoded_payloads_transaction_decoding() {
                     .expect("Expect expires_date")
                     .timestamp()
             );
-            assert_eq!(1, transaction.quantity.expect("Expect quantity"));
+            assert_eq!(
+                1,
+                transaction
+                    .quantity
+                    .expect("Expect quantity")
+            );
             assert_eq!(
                 ProductType::AutoRenewableSubscription,
                 transaction.r#type.expect("Expect type")
@@ -458,10 +510,14 @@ fn test_decoded_payloads_transaction_decoding() {
                     .as_deref()
                     .expect("Expect offer_identifier")
             );
-            assert!(transaction.is_upgraded.unwrap_or_default());
+            assert!(transaction
+                .is_upgraded
+                .unwrap_or_default());
             assert_eq!(
                 OfferType::IntroductoryOffer,
-                transaction.offer_type.expect("Expect offer_type")
+                transaction
+                    .offer_type
+                    .expect("Expect offer_type")
             );
             assert_eq!(
                 "USA",
@@ -485,12 +541,17 @@ fn test_decoded_payloads_transaction_decoding() {
             );
             assert_eq!(
                 Environment::LocalTesting,
-                transaction.environment.expect("Expect environment")
+                transaction
+                    .environment
+                    .expect("Expect environment")
             );
             assert_eq!(10990, transaction.price.expect("Expect price"));
             assert_eq!(
                 "USD",
-                transaction.currency.as_deref().expect("Expect currency")
+                transaction
+                    .currency
+                    .as_deref()
+                    .expect("Expect currency")
             );
             assert_eq!(
                 OfferDiscountType::PayAsYouGo,
@@ -558,7 +619,9 @@ fn test_decoded_payloads_renewal_info_decoding() {
                     .auto_renew_status
                     .expect("Expect auto_renew_status")
             );
-            assert!(renewal_info.is_in_billing_retry_period.unwrap_or_default());
+            assert!(renewal_info
+                .is_in_billing_retry_period
+                .unwrap_or_default());
             assert_eq!(
                 PriceIncreaseStatus::CustomerHasNotResponded,
                 renewal_info
@@ -574,7 +637,9 @@ fn test_decoded_payloads_renewal_info_decoding() {
             );
             assert_eq!(
                 OfferType::PromotionalOffer,
-                renewal_info.offer_type.expect("Expect offer_type")
+                renewal_info
+                    .offer_type
+                    .expect("Expect offer_type")
             );
             assert_eq!(
                 "abc.123",
@@ -592,7 +657,9 @@ fn test_decoded_payloads_renewal_info_decoding() {
             );
             assert_eq!(
                 Environment::LocalTesting,
-                renewal_info.environment.expect("Expect environment")
+                renewal_info
+                    .environment
+                    .expect("Expect environment")
             );
             assert_eq!(
                 1698148800,
@@ -648,7 +715,9 @@ fn test_decoded_payloads_notification_decoding() {
             );
             assert_eq!(
                 Subtype::InitialBuy,
-                notification.subtype.expect("Expect subtype")
+                notification
+                    .subtype
+                    .expect("Expect subtype")
             );
             assert_eq!(
                 "002e14d5-51f5-4503-b5a8-c3a1af68eb20",
@@ -656,7 +725,10 @@ fn test_decoded_payloads_notification_decoding() {
             );
             assert_eq!(
                 "2.0",
-                notification.version.as_deref().expect("Expect version")
+                notification
+                    .version
+                    .as_deref()
+                    .expect("Expect version")
             );
             assert_eq!(
                 1698148900,
@@ -667,17 +739,26 @@ fn test_decoded_payloads_notification_decoding() {
             );
             assert!(notification.data.is_some());
             assert!(notification.summary.is_none());
-            assert!(notification.external_purchase_token.is_none());
+            assert!(notification
+                .external_purchase_token
+                .is_none());
 
             if let Some(data) = notification.data {
                 assert_eq!(
                     Environment::LocalTesting,
-                    data.environment.expect("Expect environment")
+                    data.environment
+                        .expect("Expect environment")
                 );
-                assert_eq!(41234, data.app_apple_id.expect("Expect app_apple_id"));
+                assert_eq!(
+                    41234,
+                    data.app_apple_id
+                        .expect("Expect app_apple_id")
+                );
                 assert_eq!(
                     "com.example",
-                    data.bundle_id.as_deref().expect("Expect bundle_id")
+                    data.bundle_id
+                        .as_deref()
+                        .expect("Expect bundle_id")
                 );
                 assert_eq!(
                     "1.2.3",
@@ -698,7 +779,9 @@ fn test_decoded_payloads_notification_decoding() {
                         .expect("Expect signed_renewal_info")
                 );
                 assert_eq!(Status::Active, data.status.expect("Expect status"));
-                assert!(data.consumption_request_reason.is_none());
+                assert!(data
+                    .consumption_request_reason
+                    .is_none());
             } else {
                 panic!("Data field is expected to be present in the notification");
             }
@@ -725,10 +808,18 @@ fn test_consumption_request_notification_decoding() {
                 notification.notification_uuid
             );
             assert_eq!("2.0", notification.version.unwrap());
-            assert_eq!(1698148900, notification.signed_date.unwrap().timestamp());
+            assert_eq!(
+                1698148900,
+                notification
+                    .signed_date
+                    .unwrap()
+                    .timestamp()
+            );
             assert!(notification.data.is_some());
             assert!(notification.summary.is_none());
-            assert!(notification.external_purchase_token.is_none());
+            assert!(notification
+                .external_purchase_token
+                .is_none());
 
             if let Some(data) = notification.data {
                 assert_eq!(Environment::LocalTesting, data.environment.unwrap());
@@ -771,7 +862,9 @@ fn test_summary_notification_decoding() {
             );
             assert_eq!(
                 Subtype::Summary,
-                notification.subtype.expect("Expect subtype")
+                notification
+                    .subtype
+                    .expect("Expect subtype")
             );
             assert_eq!(
                 "002e14d5-51f5-4503-b5a8-c3a1af68eb20",
@@ -779,7 +872,10 @@ fn test_summary_notification_decoding() {
             );
             assert_eq!(
                 "2.0",
-                notification.version.as_deref().expect("Expect version")
+                notification
+                    .version
+                    .as_deref()
+                    .expect("Expect version")
             );
             assert_eq!(
                 1698148900,
@@ -790,21 +886,36 @@ fn test_summary_notification_decoding() {
             );
             assert!(notification.data.is_none());
             assert!(notification.summary.is_some());
-            assert!(notification.external_purchase_token.is_none());
+            assert!(notification
+                .external_purchase_token
+                .is_none());
 
             if let Some(summary) = notification.summary {
                 assert_eq!(
                     Environment::LocalTesting,
-                    summary.environment.expect("Expect environment")
+                    summary
+                        .environment
+                        .expect("Expect environment")
                 );
-                assert_eq!(41234, summary.app_apple_id.expect("Expect app_apple_id"));
+                assert_eq!(
+                    41234,
+                    summary
+                        .app_apple_id
+                        .expect("Expect app_apple_id")
+                );
                 assert_eq!(
                     "com.example",
-                    summary.bundle_id.as_deref().expect("Expect bundle_id")
+                    summary
+                        .bundle_id
+                        .as_deref()
+                        .expect("Expect bundle_id")
                 );
                 assert_eq!(
                     "com.example.product",
-                    summary.product_id.as_deref().expect("Expect product_id")
+                    summary
+                        .product_id
+                        .as_deref()
+                        .expect("Expect product_id")
                 );
                 assert_eq!(
                     "efb27071-45a4-4aca-9854-2a1e9146f265",
@@ -911,7 +1022,10 @@ fn test_xcode_signed_transaction() {
         );
         assert_eq!(
             XCODE_BUNDLE_ID,
-            transaction.bundle_id.as_deref().expect("Expect bundle_id")
+            transaction
+                .bundle_id
+                .as_deref()
+                .expect("Expect bundle_id")
         );
         assert_eq!(
             "pass.premium",
@@ -929,7 +1043,10 @@ fn test_xcode_signed_transaction() {
         );
         assert_eq!(
             1697679936049,
-            transaction.purchase_date.unwrap().timestamp_millis()
+            transaction
+                .purchase_date
+                .unwrap()
+                .timestamp_millis()
         );
         assert_eq!(
             1697679936049,
@@ -940,9 +1057,17 @@ fn test_xcode_signed_transaction() {
         );
         assert_eq!(
             1700358336049,
-            transaction.expires_date.unwrap().timestamp_millis()
+            transaction
+                .expires_date
+                .unwrap()
+                .timestamp_millis()
         );
-        assert_eq!(1, transaction.quantity.expect("Expect quantity"));
+        assert_eq!(
+            1,
+            transaction
+                .quantity
+                .expect("Expect quantity")
+        );
         assert_eq!(
             ProductType::AutoRenewableSubscription,
             transaction.r#type.expect("Expect type")
@@ -956,21 +1081,33 @@ fn test_xcode_signed_transaction() {
         );
         assert_eq!(
             1697679936056,
-            transaction.signed_date.unwrap().timestamp_millis()
+            transaction
+                .signed_date
+                .unwrap()
+                .timestamp_millis()
         );
         assert_eq!(None, transaction.revocation_reason);
         assert_eq!(None, transaction.revocation_date);
         assert!(!transaction.is_upgraded.unwrap_or(false));
         assert_eq!(
             OfferType::IntroductoryOffer,
-            transaction.offer_type.expect("Expect offer_type")
+            transaction
+                .offer_type
+                .expect("Expect offer_type")
         );
         assert_eq!(None, transaction.offer_identifier);
         assert_eq!(
             Environment::Xcode,
-            transaction.environment.expect("Expect environment")
+            transaction
+                .environment
+                .expect("Expect environment")
         );
-        assert_eq!("USA", transaction.storefront.expect("Expect storefront"));
+        assert_eq!(
+            "USA",
+            transaction
+                .storefront
+                .expect("Expect storefront")
+        );
         assert_eq!(
             "143441",
             transaction
@@ -1031,11 +1168,16 @@ fn test_xcode_signed_renewal_info() {
         assert_eq!(None, renewal_info.offer_identifier);
         assert_eq!(
             1697679936711,
-            renewal_info.signed_date.unwrap().timestamp_millis()
+            renewal_info
+                .signed_date
+                .unwrap()
+                .timestamp_millis()
         );
         assert_eq!(
             Environment::Xcode,
-            renewal_info.environment.expect("Expect environment")
+            renewal_info
+                .environment
+                .expect("Expect environment")
         );
         assert_eq!(
             1697679936049,
@@ -1046,7 +1188,10 @@ fn test_xcode_signed_renewal_info() {
         );
         assert_eq!(
             1700358336049,
-            renewal_info.renewal_date.unwrap().timestamp_millis()
+            renewal_info
+                .renewal_date
+                .unwrap()
+                .timestamp_millis()
         );
     } else {
         panic!("Failed to verify and decode signed renewal info");

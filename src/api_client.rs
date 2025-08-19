@@ -1,3 +1,7 @@
+pub mod reqwest_transport;
+pub mod transport;
+pub mod error;
+
 use crate::primitives::check_test_notification_response::CheckTestNotificationResponse;
 use crate::primitives::consumption_request::ConsumptionRequest;
 use crate::primitives::environment::Environment;
@@ -16,101 +20,70 @@ use crate::primitives::status_response::StatusResponse;
 use crate::primitives::transaction_history_request::TransactionHistoryRequest;
 use crate::primitives::transaction_info_response::TransactionInfoResponse;
 use crate::primitives::update_app_account_token_request::UpdateAppAccountTokenRequest;
+use crate::primitives::error_payload::ErrorPayload;
+use crate::api_client::transport::Transport;
+use crate::api_client::error::{APIException, ConfigurationError};
+
 use chrono::Utc;
+use http::Method;
+use http::{Request, Response};
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
-use reqwest::header::HeaderMap;
-use reqwest::{Client, Method, RequestBuilder};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fmt;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct APIException {
-    pub http_status_code: u16,
-    pub api_error: Option<APIError>,
-    #[serde(rename = "errorCode")]
-    pub raw_api_error: Option<i64>,
-    pub error_message: Option<String>,
-}
-
-impl fmt::Display for APIException {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "APIException: HTTP Status Code {}",
-            self.http_status_code
-        )?;
-        if let Some(api_error) = &self.api_error {
-            write!(f, ", API Error: {:?}", api_error)?;
-        }
-        if let Some(raw_api_error) = &self.raw_api_error {
-            write!(f, ", Raw API Error: {}", raw_api_error)?;
-        }
-        if let Some(error_message) = &self.error_message {
-            write!(f, ", Error Message: {}", error_message)?;
-        }
-        Ok(())
-    }
-}
-
-#[cfg(test)]
-use http::Response;
 use serde_json::Value;
-use crate::primitives::error_payload::{APIError, ErrorPayload};
 
-impl std::error::Error for APIException {}
-
-#[cfg(test)]
-type RequestVerifier = fn(&reqwest::Request, Option<&[u8]>) -> ();
-#[cfg(test)]
-type RequestOverride = dyn Fn(&reqwest::Request, Option<&[u8]>) -> http::Response<Vec<u8>>;
-
-pub struct AppStoreServerAPIClient {
+pub struct AppStoreServerAPIClient<T: Transport> {
     base_url: String,
     signing_key: Vec<u8>,
     key_id: String,
     issuer_id: String,
     bundle_id: String,
-    client: Client,
-    #[cfg(test)]
-    request_override: Box<RequestOverride>,
+    transport: T,
 }
 
-impl AppStoreServerAPIClient {
-    #[cfg(not(test))]
-    pub fn new(signing_key: Vec<u8>, key_id: &str, issuer_id: &str, bundle_id: &str, environment: Environment) -> Self {
-        let base_url = environment.base_url();
-        let client = Client::new();
-        Self {
-            base_url,
-            signing_key,
-            key_id: key_id.to_string(),
-            issuer_id: issuer_id.to_string(),
-            bundle_id: bundle_id.to_string(),
-            client,
-        }
-    }
+unsafe impl<T: Transport> Send for AppStoreServerAPIClient<T> {}
+unsafe impl<T: Transport> Sync for AppStoreServerAPIClient<T> {}
 
-    #[cfg(test)]
+impl<T: Transport> AppStoreServerAPIClient<T> {
+    /// Creates a new App Store Server API client.
+    ///
+    /// # Arguments
+    ///
+    /// * `signing_key` - The private key used for signing JWT tokens
+    /// * `key_id` - The key identifier from App Store Connect
+    /// * `issuer_id` - The issuer ID from App Store Connect
+    /// * `bundle_id` - The app's bundle identifier
+    /// * `environment` - The environment to use (Production or Sandbox). Xcode environment is not supported for API calls.
+    /// * `transport` - The HTTP transport implementation
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the Xcode environment is provided, as it's only for local receipt validation.
     pub fn new(
         signing_key: Vec<u8>,
         key_id: &str,
         issuer_id: &str,
         bundle_id: &str,
         environment: Environment,
-        request_override: Box<RequestOverride>,
-    ) -> Self {
+        transport: T,
+    ) -> Result<Self, ConfigurationError> {
+        // Xcode environment is only for local receipt validation and cannot be used with the API
+        if matches!(environment, Environment::Xcode) {
+            return Err(ConfigurationError::InvalidEnvironment(
+                "Xcode environment is not supported for App Store Server API calls. Use Sandbox or Production instead."
+                    .to_string(),
+            ));
+        }
+
         let base_url = environment.base_url();
-        let client = Client::new();
-        Self {
+        Ok(Self {
             base_url,
             signing_key,
             key_id: key_id.to_string(),
             issuer_id: issuer_id.to_string(),
             bundle_id: bundle_id.to_string(),
-            client,
-            request_override,
-        }
+            transport,
+        })
     }
 
     fn generate_token(&self) -> String {
@@ -135,29 +108,50 @@ impl AppStoreServerAPIClient {
         .unwrap()
     }
 
-    fn build_request(&self, path: &str, method: Method) -> RequestBuilder {
+    fn build_request<B: serde::Serialize>(
+        &self,
+        path: &str,
+        method: Method,
+        body: Option<&B>,
+    ) -> Result<Request<Vec<u8>>, APIException> {
         let url = format!("{}{}", self.base_url, path);
 
-        let mut headers = HeaderMap::new();
-        headers.append(
-            "User-Agent",
-            "app-store-server-library/rust/1.0.0".parse().unwrap(),
-        );
-        headers.append(
-            "Authorization",
-            format!("Bearer {}", self.generate_token()).parse().unwrap(),
-        );
-        headers.append("Accept", "application/json".parse().unwrap());
+        let mut request_builder = Request::builder()
+            .method(method)
+            .uri(url)
+            .header("User-Agent", "app-store-server-library/rust/1.0.0")
+            .header("Authorization", format!("Bearer {}", self.generate_token()))
+            .header("Accept", "application/json");
 
-        self.client.request(method, url).headers(headers)
+        let body_bytes = if let Some(body_data) = body {
+            request_builder = request_builder.header("Content-Type", "application/json");
+            serde_json::to_vec(body_data).map_err(|_| APIException {
+                http_status_code: 400,
+                api_error: None,
+                raw_api_error: None,
+                error_message: Some("Failed to serialize request body".to_string()),
+            })?
+        } else {
+            Vec::new()
+        };
+
+        request_builder
+            .body(body_bytes)
+            .map_err(|e| APIException {
+                http_status_code: 500,
+                api_error: None,
+                raw_api_error: None,
+                error_message: Some(format!("Failed to build request: {}", e)),
+            })
     }
 
-    async fn make_request_with_response_body<Res>(&self, request: RequestBuilder) -> Result<Res, APIException>
+    async fn make_request_with_response_body<Res>(&self, request: Request<Vec<u8>>) -> Result<Res, APIException>
     where
         Res: for<'de> Deserialize<'de>,
     {
         let response = self.make_request(request).await?;
-        let json_result = response.json::<Res>().await.map_err(|_| APIException {
+        let body = response.into_body();
+        let json_result = serde_json::from_slice::<Res>(&body).map_err(|_| APIException {
             http_status_code: 500,
             api_error: None,
             raw_api_error: None,
@@ -166,79 +160,44 @@ impl AppStoreServerAPIClient {
         Ok(json_result)
     }
 
-    async fn make_request_without_response_body(&self, request: RequestBuilder) -> Result<(), APIException> {
+    async fn make_request_without_response_body(&self, request: Request<Vec<u8>>) -> Result<(), APIException> {
         let _ = self.make_request(request).await?;
         Ok(())
     }
 
-    #[cfg(not(test))]
-    async fn make_request(&self, request: RequestBuilder) -> Result<reqwest::Response, APIException> {
-        let response = request.send().await;
-
-        match response {
-            Ok(response) => {
-                let status_code = response.status().as_u16();
-
-                if status_code >= 200 && status_code < 300 {
-                    Ok(response)
-                } else if let Ok(json_error) = response.json::<ErrorPayload>().await {
-                    let error_code = json_error.error_code.clone();
-                    let error_message = json_error.error_message.clone();
-                    Err(APIException {
-                        http_status_code: status_code,
-                        api_error: error_code,
-                        raw_api_error: (&json_error).raw_error_code(),
-                        error_message: error_message,
-                    })
-                } else {
-                    Err(APIException {
-                        http_status_code: 500,
-                        api_error: None,
-                        raw_api_error: None,
-                        error_message: Some("Failed to send HTTP request".to_string()),
-                    })
-                }
-            }
-            Err(_) => Err(APIException {
-                http_status_code: 500,
-                api_error: None,
-                raw_api_error: None,
-                error_message: Some("Failed to send HTTP request".to_string()),
-            }),
-        }
-    }
-
-    #[cfg(test)]
-    async fn make_request(&self, request: RequestBuilder) -> Result<Response<Vec<u8>>, APIException> {
-        let request = request.build().unwrap();
-        let body_encoded = match request.body() {
-            None => None,
-            Some(body) => body.as_bytes(),
-        };
-        let response = (self.request_override)(&request, body_encoded);
+    async fn make_request(&self, request: Request<Vec<u8>>) -> Result<Response<Vec<u8>>, APIException> {
+        let response = self
+            .transport
+            .send(request).await?;
 
         let status_code = response.status().as_u16();
 
         if status_code >= 200 && status_code < 300 {
             Ok(response)
-        } else if let Ok(json_error) = response.json::<ErrorPayload>().await {
-            let error_code = json_error.error_code.clone();
-            let error_message = json_error.error_message.clone();
-
-            Err(APIException {
-                http_status_code: status_code,
-                api_error: error_code,
-                raw_api_error: (&json_error).raw_error_code(),
-                error_message: error_message,
-            })
         } else {
-            Err(APIException {
-                http_status_code: 500,
+            Err(self.extract_error(&response))
+        }
+    }
+
+    fn extract_error(&self, response: &Response<Vec<u8>>) -> APIException {
+        let status_code = response.status().as_u16();
+
+        serde_json::from_slice::<ErrorPayload>(response.body())
+            .map(|payload| {
+                let raw_api_error = payload.raw_error_code();
+                APIException {
+                    http_status_code: status_code,
+                    api_error: payload.error_code,
+                    raw_api_error,
+                    error_message: payload.error_message,
+                }
+            })
+            .unwrap_or_else(|_| APIException {
+                http_status_code: status_code,
                 api_error: None,
                 raw_api_error: None,
-                error_message: Some("Failed to send HTTP request".to_string()),
+                error_message: None,
             })
-        }
     }
 
     /// Uses a subscription's product identifier to extend the renewal date for all of its eligible active subscribers.
@@ -260,9 +219,11 @@ impl AppStoreServerAPIClient {
         &self,
         mass_extend_renewal_date_request: &MassExtendRenewalDateRequest,
     ) -> Result<MassExtendRenewalDateStatusResponse, APIException> {
-        let req = self
-            .build_request("/inApps/v1/subscriptions/extend/mass", Method::POST)
-            .json(&mass_extend_renewal_date_request);
+        let req = self.build_request(
+            "/inApps/v1/subscriptions/extend/mass",
+            Method::POST,
+            Some(mass_extend_renewal_date_request),
+        )?;
         self.make_request_with_response_body(req).await
     }
 
@@ -291,9 +252,11 @@ impl AppStoreServerAPIClient {
             "/inApps/v1/subscriptions/extend/{}",
             original_transaction_id
         );
-        let req = self
-            .build_request(path.as_str(), Method::PUT)
-            .json(&extend_renewal_date_request);
+        let req = self.build_request(
+            path.as_str(),
+            Method::PUT,
+            Some(extend_renewal_date_request),
+        )?;
         self.make_request_with_response_body(req).await
     }
 
@@ -318,18 +281,20 @@ impl AppStoreServerAPIClient {
         transaction_id: &str,
         status: Option<&Vec<Status>>,
     ) -> Result<StatusResponse, APIException> {
-        let mut query_parameters: Vec<(&str, String)> = vec![];
+        let mut path = format!("/inApps/v1/subscriptions/{}", transaction_id);
+
         if let Some(status) = status {
-            for item in status {
-                let value = ("status", item.raw_value().to_string());
-                query_parameters.push(value);
+            let query_params: Vec<String> = status
+                .iter()
+                .map(|item| format!("status={}", item.raw_value()))
+                .collect();
+            if !query_params.is_empty() {
+                path.push_str("?");
+                path.push_str(&query_params.join("&"));
             }
         }
 
-        let path = format!("/inApps/v1/subscriptions/{}", transaction_id);
-        let req = self
-            .build_request(path.as_str(), Method::GET)
-            .query(&query_parameters);
+        let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
         self.make_request_with_response_body(req).await
     }
 
@@ -357,14 +322,11 @@ impl AppStoreServerAPIClient {
         transaction_id: &str,
         revision: &str,
     ) -> Result<RefundHistoryResponse, APIException> {
-        let mut query_parameters: HashMap<&str, &str> = HashMap::new();
+        let mut path = format!("/inApps/v2/refund/lookup/{}", transaction_id);
         if !revision.is_empty() {
-            query_parameters.insert("revision", revision);
+            path.push_str(&format!("?revision={}", revision));
         }
-        let path = format!("/inApps/v2/refund/lookup/{}", transaction_id);
-        let req = self
-            .build_request(path.as_str(), Method::GET)
-            .query(&query_parameters);
+        let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
         self.make_request_with_response_body(req).await
     }
 
@@ -395,7 +357,7 @@ impl AppStoreServerAPIClient {
             "/inApps/v1/subscriptions/extend/mass/{}/{}",
             product_id, request_identifier
         );
-        let req = self.build_request(path.as_str(), Method::GET);
+        let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
         self.make_request_with_response_body(req).await
     }
 
@@ -421,7 +383,7 @@ impl AppStoreServerAPIClient {
         test_notification_token: &str,
     ) -> Result<CheckTestNotificationResponse, APIException> {
         let path = format!("/inApps/v1/notifications/test/{}", test_notification_token);
-        let req = self.build_request(path.as_str(), Method::GET);
+        let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
         self.make_request_with_response_body(req).await
     }
 
@@ -486,10 +448,16 @@ impl AppStoreServerAPIClient {
             query_parameters.insert("paginationToken", pagination_token);
         }
 
-        let req = self
-            .build_request("/inApps/v1/notifications/history", Method::POST)
-            .query(&query_parameters)
-            .json(&notification_history_request);
+        let mut path = "/inApps/v1/notifications/history".to_string();
+        if !pagination_token.is_empty() {
+            path.push_str(&format!("?paginationToken={}", pagination_token));
+        }
+
+        let req = self.build_request(
+            path.as_str(),
+            Method::POST,
+            Some(notification_history_request),
+        )?;
         self.make_request_with_response_body(req).await
     }
 
@@ -526,7 +494,9 @@ impl AppStoreServerAPIClient {
         }
 
         if let Some(start_date) = transaction_history_request.start_date {
-            let start_date = start_date.timestamp_millis().to_string();
+            let start_date = start_date
+                .timestamp_millis()
+                .to_string();
             query_parameters.push(("startDate", start_date.into()));
         }
 
@@ -560,7 +530,10 @@ impl AppStoreServerAPIClient {
         if let Some(ownership_type) = &transaction_history_request.in_app_ownership_type {
             query_parameters.push((
                 "inAppOwnershipType",
-                ownership_type.raw_value().to_string().into(),
+                ownership_type
+                    .raw_value()
+                    .to_string()
+                    .into(),
             ));
         }
 
@@ -568,10 +541,21 @@ impl AppStoreServerAPIClient {
             query_parameters.push(("revoked", revoked.to_string().into()));
         }
 
-        let path = format!("/inApps/{}/history/{}", version.as_str(), transaction_id);
-        let req = self
-            .build_request(path.as_str(), Method::GET)
-            .query(&query_parameters);
+        let mut path = format!("/inApps/{}/history/{}", version.as_str(), transaction_id);
+
+        let mut query_strings: Vec<String> = vec![];
+        for (key, value) in query_parameters {
+            if let Value::String(s) = value {
+                query_strings.push(format!("{}={}", key, s));
+            }
+        }
+
+        if !query_strings.is_empty() {
+            path.push_str("?");
+            path.push_str(&query_strings.join("&"));
+        }
+
+        let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
         self.make_request_with_response_body(req).await
     }
 
@@ -592,7 +576,7 @@ impl AppStoreServerAPIClient {
     /// Returns an `APIException` if the request could not be processed.
     pub async fn get_transaction_info(&self, transaction_id: &str) -> Result<TransactionInfoResponse, APIException> {
         let path = format!("/inApps/v1/transactions/{}", transaction_id);
-        let req = self.build_request(path.as_str(), Method::GET);
+        let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
         self.make_request_with_response_body(req).await
     }
 
@@ -613,7 +597,7 @@ impl AppStoreServerAPIClient {
     /// Returns an `APIException` if the request could not be processed.
     pub async fn look_up_order_id(&self, order_id: &str) -> Result<OrderLookupResponse, APIException> {
         let path = format!("/inApps/v1/lookup/{}", order_id);
-        let req = self.build_request(path.as_str(), Method::GET);
+        let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
         self.make_request_with_response_body(req).await
     }
 
@@ -630,7 +614,7 @@ impl AppStoreServerAPIClient {
     /// Returns an `APIException` if the request could not be processed.
     pub async fn request_test_notification(&self) -> Result<SendTestNotificationResponse, APIException> {
         let path = "/inApps/v1/notifications/test";
-        let req = self.build_request(path, Method::POST);
+        let req = self.build_request::<()>(path, Method::POST, None)?;
         self.make_request_with_response_body(req).await
     }
 
@@ -652,9 +636,7 @@ impl AppStoreServerAPIClient {
         consumption_request: &ConsumptionRequest,
     ) -> Result<(), APIException> {
         let path = format!("/inApps/v1/transactions/consumption/{}", transaction_id);
-        let req = self
-            .build_request(path.as_str(), Method::PUT)
-            .json(consumption_request);
+        let req = self.build_request(path.as_str(), Method::PUT, Some(consumption_request))?;
         self.make_request_without_response_body(req).await
     }
 
@@ -684,9 +666,11 @@ impl AppStoreServerAPIClient {
             "/inApps/v1/transactions/{}/appAccountToken",
             original_transaction_id
         );
-        let req = self
-            .build_request(path.as_str(), Method::PUT)
-            .json(update_app_account_token_request);
+        let req = self.build_request(
+            path.as_str(),
+            Method::PUT,
+            Some(update_app_account_token_request),
+        )?;
         self.make_request_without_response_body(req).await
     }
 }
@@ -715,1122 +699,4 @@ struct Claims<'a> {
     iss: &'a str,
     aud: &'a str,
     exp: i64,
-}
-
-#[cfg(test)]
-use serde::de::DeserializeOwned;
-
-#[cfg(test)]
-trait ResponseExt {
-    async fn json<T: DeserializeOwned>(self) -> serde_json::Result<T>;
-}
-
-#[cfg(test)]
-impl ResponseExt for Response<Vec<u8>> {
-    async fn json<T: DeserializeOwned>(self) -> serde_json::Result<T> {
-        let body = std::str::from_utf8(self.body().as_slice()).unwrap();
-        serde_json::from_str(body)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::primitives::account_tenure::AccountTenure;
-    use crate::primitives::consumption_status::ConsumptionStatus;
-    use crate::primitives::delivery_status::DeliveryStatus;
-    use crate::primitives::extend_reason_code::ExtendReasonCode;
-    use crate::primitives::in_app_ownership_type::InAppOwnershipType;
-    use crate::primitives::last_transactions_item::LastTransactionsItem;
-    use crate::primitives::lifetime_dollars_purchased::LifetimeDollarsPurchased;
-    use crate::primitives::lifetime_dollars_refunded::LifetimeDollarsRefunded;
-    use crate::primitives::notification_history_response_item::NotificationHistoryResponseItem;
-    use crate::primitives::notification_type_v2::NotificationTypeV2;
-    use crate::primitives::order_lookup_status::OrderLookupStatus;
-    use crate::primitives::platform::Platform;
-    use crate::primitives::play_time::PlayTime;
-    use crate::primitives::refund_preference::RefundPreference;
-    use crate::primitives::send_attempt_item::SendAttemptItem;
-    use crate::primitives::send_attempt_result::SendAttemptResult;
-    use crate::primitives::subscription_group_identifier_item::SubscriptionGroupIdentifierItem;
-    use crate::primitives::subtype::Subtype;
-    use crate::primitives::transaction_history_request::{Order, ProductType};
-    use crate::primitives::user_status::UserStatus;
-    use base64::prelude::BASE64_STANDARD_NO_PAD;
-    use base64::Engine;
-    use chrono::DateTime;
-    use http::StatusCode;
-    use serde_json::Value;
-    use std::fs;
-    use uuid::Uuid;
-
-    #[tokio::test]
-    async fn test_extend_renewal_date_for_all_active_subscribers() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/extendRenewalDateForAllActiveSubscribersResponse.json",
-            StatusCode::OK,
-            Some(|req, body| {
-                assert_eq!(Method::POST, req.method());
-                assert_eq!(
-                    "https://local-testing-base-url/inApps/v1/subscriptions/extend/mass",
-                    req.url().as_str()
-                );
-
-                let decoded_json: HashMap<&str, Value> = serde_json::from_slice(body.unwrap()).unwrap();
-                assert_eq!(
-                    45,
-                    decoded_json.get("extendByDays").unwrap().as_u64().unwrap()
-                );
-                assert_eq!(
-                    1,
-                    decoded_json
-                        .get("extendReasonCode")
-                        .unwrap()
-                        .as_u64()
-                        .unwrap()
-                );
-                assert_eq!(
-                    "fdf964a4-233b-486c-aac1-97d8d52688ac",
-                    decoded_json
-                        .get("requestIdentifier")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                );
-                assert_eq!(
-                    vec!["USA", "MEX"],
-                    decoded_json
-                        .get("storefrontCountryCodes")
-                        .unwrap()
-                        .as_array()
-                        .unwrap()
-                        .to_vec()
-                );
-                assert_eq!(
-                    "com.example.productId",
-                    decoded_json.get("productId").unwrap().as_str().unwrap()
-                );
-            }),
-        );
-
-        let dto = MassExtendRenewalDateRequest {
-            extend_by_days: 45,
-            extend_reason_code: ExtendReasonCode::CustomerSatisfaction,
-            request_identifier: "fdf964a4-233b-486c-aac1-97d8d52688ac".to_string(),
-            storefront_country_codes: vec!["USA".to_string(), "MEX".to_string()],
-            product_id: "com.example.productId".to_string(),
-        };
-
-        let response = client
-            .extend_renewal_date_for_all_active_subscribers(&dto)
-            .await
-            .unwrap();
-        assert_eq!(
-            "758883e8-151b-47b7-abd0-60c4d804c2f5",
-            response.request_identifier.unwrap().as_str()
-        );
-    }
-
-    #[tokio::test]
-    async fn test_extend_subscription_renewal_date() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/extendSubscriptionRenewalDateResponse.json",
-            StatusCode::OK,
-            Some(|req, body| {
-                assert_eq!(Method::PUT, req.method());
-                assert_eq!(
-                    "https://local-testing-base-url/inApps/v1/subscriptions/extend/4124214",
-                    req.url().as_str()
-                );
-
-                let decoded_json: HashMap<&str, Value> = serde_json::from_slice(body.unwrap()).unwrap();
-                assert_eq!(
-                    45,
-                    decoded_json.get("extendByDays").unwrap().as_u64().unwrap()
-                );
-                assert_eq!(
-                    1,
-                    decoded_json
-                        .get("extendReasonCode")
-                        .unwrap()
-                        .as_u64()
-                        .unwrap()
-                );
-                assert_eq!(
-                    "fdf964a4-233b-486c-aac1-97d8d52688ac",
-                    decoded_json
-                        .get("requestIdentifier")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                );
-            }),
-        );
-
-        let extend_renewal_date_request = ExtendRenewalDateRequest {
-            extend_by_days: Some(45),
-            extend_reason_code: Some(ExtendReasonCode::CustomerSatisfaction),
-            request_identifier: Some("fdf964a4-233b-486c-aac1-97d8d52688ac".to_string()),
-        };
-
-        let response = client
-            .extend_subscription_renewal_date("4124214", &extend_renewal_date_request)
-            .await
-            .unwrap();
-        assert_eq!(
-            "2312412",
-            response.original_transaction_id.unwrap().as_str()
-        );
-        assert_eq!("9993", response.web_order_line_item_id.unwrap().as_str());
-        assert_eq!(true, response.success.unwrap());
-        assert_eq!(1698148900, response.effective_date.unwrap().timestamp());
-    }
-
-    #[tokio::test]
-    async fn test_get_all_subscription_statuses() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/getAllSubscriptionStatusesResponse.json",
-            StatusCode::OK,
-            Some(|req, _body| {
-                assert_eq!(Method::GET, req.method());
-                assert_eq!(
-                    "https://local-testing-base-url/inApps/v1/subscriptions/4321?status=2&status=1",
-                    req.url().as_str()
-                );
-                assert!(req.body().is_none());
-            }),
-        );
-
-        let statuses = vec![Status::Expired, Status::Active];
-        let response = client
-            .get_all_subscription_statuses("4321", Some(&statuses))
-            .await
-            .unwrap();
-
-        assert_eq!(Environment::LocalTesting, response.environment.unwrap());
-        assert_eq!("com.example", response.bundle_id.as_str());
-        assert_eq!(5454545, response.app_apple_id.unwrap());
-
-        let item = SubscriptionGroupIdentifierItem {
-            subscription_group_identifier: Some("sub_group_one".to_string()),
-            last_transactions: Some(vec![
-                LastTransactionsItem {
-                    status: Status::Active.into(),
-                    original_transaction_id: "3749183".to_string().into(),
-                    signed_transaction_info: "signed_transaction_one".to_string().into(),
-                    signed_renewal_info: "signed_renewal_one".to_string().into(),
-                },
-                LastTransactionsItem {
-                    status: Status::Revoked.into(),
-                    original_transaction_id: "5314314134".to_string().into(),
-                    signed_transaction_info: "signed_transaction_two".to_string().into(),
-                    signed_renewal_info: "signed_renewal_two".to_string().into(),
-                },
-            ]),
-        };
-
-        let second_item = SubscriptionGroupIdentifierItem {
-            subscription_group_identifier: "sub_group_two".to_string().into(),
-            last_transactions: vec![LastTransactionsItem {
-                status: Status::Expired.into(),
-                original_transaction_id: "3413453".to_string().into(),
-                signed_transaction_info: "signed_transaction_three".to_string().into(),
-                signed_renewal_info: "signed_renewal_three".to_string().into(),
-            }]
-            .into(),
-        };
-
-        assert_eq!(vec![item, second_item], response.data);
-    }
-
-    #[tokio::test]
-    async fn test_get_refund_history() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/getRefundHistoryResponse.json",
-            StatusCode::OK,
-            Some(|req, _body| {
-                assert_eq!(Method::GET, req.method());
-                assert_eq!(
-                    "https://local-testing-base-url/inApps/v2/refund/lookup/555555?revision=revision_input",
-                    req.url().as_str()
-                );
-                assert!(req.body().is_none());
-            }),
-        );
-
-        let response = client
-            .get_refund_history("555555", "revision_input")
-            .await
-            .unwrap();
-
-        assert_eq!(
-            vec!["signed_transaction_one", "signed_transaction_two"],
-            response.signed_transactions
-        );
-        assert_eq!("revision_output", response.revision);
-        assert_eq!(true, response.has_more);
-    }
-
-    #[tokio::test]
-    async fn test_get_status_of_subscription_renewal_date_extensions() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/getStatusOfSubscriptionRenewalDateExtensionsResponse.json",
-            StatusCode::OK,
-            Some(|req, _body| {
-                assert_eq!(Method::GET, req.method());
-                assert_eq!(
-                    "https://local-testing-base-url/inApps/v1/subscriptions/extend/mass/20fba8a0-2b80-4a7d-a17f-85c1854727f8/com.example.product",
-                    req.url().as_str()
-                );
-                assert!(req.body().is_none());
-            }),
-        );
-
-        let response = client
-            .get_status_of_subscription_renewal_date_extensions(
-                "com.example.product",
-                "20fba8a0-2b80-4a7d-a17f-85c1854727f8",
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(
-            "20fba8a0-2b80-4a7d-a17f-85c1854727f8",
-            response.request_identifier.unwrap().as_str()
-        );
-        assert_eq!(true, response.complete.unwrap());
-        assert_eq!(1698148900, response.complete_date.unwrap().timestamp());
-        assert_eq!(30, response.succeeded_count.unwrap());
-        assert_eq!(2, response.failed_count.unwrap());
-    }
-
-    #[tokio::test]
-    async fn test_get_test_notification_status() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/getTestNotificationStatusResponse.json",
-            StatusCode::OK,
-            Some(|req, _body| {
-                assert_eq!(Method::GET, req.method());
-                assert_eq!(
-                    "https://local-testing-base-url/inApps/v1/notifications/test/8cd2974c-f905-492a-bf9a-b2f47c791d19",
-                    req.url().as_str()
-                );
-                assert!(req.body().is_none());
-            }),
-        );
-
-        let response = client
-            .get_test_notification_status("8cd2974c-f905-492a-bf9a-b2f47c791d19")
-            .await
-            .unwrap();
-        assert_eq!("signed_payload", response.signed_payload.unwrap());
-
-        let send_attempt_items = vec![
-            SendAttemptItem {
-                attempt_date: DateTime::from_timestamp(1698148900, 0),
-                send_attempt_result: SendAttemptResult::NoResponse.into(),
-            },
-            SendAttemptItem {
-                attempt_date: DateTime::from_timestamp(1698148950, 0),
-                send_attempt_result: SendAttemptResult::Success.into(),
-            },
-        ];
-        assert_eq!(send_attempt_items, response.send_attempts.unwrap());
-    }
-
-    #[tokio::test]
-    async fn test_get_notification_history() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/getNotificationHistoryResponse.json",
-            StatusCode::OK,
-            Some(|req, body| {
-                assert_eq!(Method::POST, req.method());
-                assert_eq!(
-                    "https://local-testing-base-url/inApps/v1/notifications/history?paginationToken=a036bc0e-52b8-4bee-82fc-8c24cb6715d6",
-                    req.url().as_str()
-                );
-
-                let decoded_json: HashMap<&str, Value> = serde_json::from_slice(body.unwrap()).unwrap();
-                assert_eq!(1698148900000, decoded_json["startDate"].as_i64().unwrap());
-                assert_eq!(1698148950000, decoded_json["endDate"].as_i64().unwrap());
-                assert_eq!(
-                    "SUBSCRIBED",
-                    decoded_json["notificationType"].as_str().unwrap()
-                );
-                assert_eq!(
-                    "INITIAL_BUY",
-                    decoded_json["notificationSubtype"].as_str().unwrap()
-                );
-                assert_eq!("999733843", decoded_json["transactionId"].as_str().unwrap());
-                assert_eq!(true, decoded_json["onlyFailures"].as_bool().unwrap());
-            }),
-        );
-
-        let notification_history_request = NotificationHistoryRequest {
-            start_date: DateTime::from_timestamp(1698148900, 0),
-            end_date: DateTime::from_timestamp(1698148950, 0),
-            notification_type: NotificationTypeV2::Subscribed.into(),
-            notification_subtype: Subtype::InitialBuy.into(),
-            transaction_id: "999733843".to_string().into(),
-            only_failures: true.into(),
-        };
-
-        let response = client
-            .get_notification_history(
-                "a036bc0e-52b8-4bee-82fc-8c24cb6715d6",
-                &notification_history_request,
-            )
-            .await
-            .unwrap();
-        assert_eq!(
-            "57715481-805a-4283-8499-1c19b5d6b20a",
-            response.pagination_token.unwrap()
-        );
-        assert_eq!(true, response.has_more.unwrap());
-
-        let expected_notification_history = vec![
-            NotificationHistoryResponseItem {
-                signed_payload: "signed_payload_one".to_string().into(),
-                send_attempts: vec![
-                    SendAttemptItem {
-                        attempt_date: DateTime::from_timestamp(1698148900, 0),
-                        send_attempt_result: SendAttemptResult::NoResponse.into(),
-                    },
-                    SendAttemptItem {
-                        attempt_date: DateTime::from_timestamp(1698148950, 0),
-                        send_attempt_result: SendAttemptResult::Success.into(),
-                    },
-                ]
-                .into(),
-            },
-            NotificationHistoryResponseItem {
-                signed_payload: "signed_payload_two".to_string().into(),
-                send_attempts: vec![SendAttemptItem {
-                    attempt_date: DateTime::from_timestamp(1698148800, 0),
-                    send_attempt_result: SendAttemptResult::CircularRedirect.into(),
-                }]
-                .into(),
-            },
-        ];
-        assert_eq!(
-            expected_notification_history,
-            response.notification_history.unwrap()
-        );
-    }
-
-    #[tokio::test]
-    async fn test_get_transaction_history_v1() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/transactionHistoryResponse.json",
-            StatusCode::OK,
-            Some(|req, _body| {
-                assert_eq!(Method::GET, req.method());
-                assert_eq!("/inApps/v1/history/1234", req.url().path());
-                assert!(req.body().is_none());
-            }),
-        );
-
-        let request = TransactionHistoryRequest {
-            start_date: DateTime::from_timestamp(123, 455000000),
-            end_date: DateTime::from_timestamp(123, 456000000),
-            product_ids: Some(vec![
-                "com.example.1".to_string(),
-                "com.example.2".to_string(),
-            ]),
-            product_types: Some(vec![ProductType::Consumable, ProductType::AutoRenewable]),
-            sort: Some(Order::Ascending),
-            subscription_group_identifiers: Some(vec![
-                "sub_group_id".to_string(),
-                "sub_group_id_2".to_string(),
-            ]),
-            in_app_ownership_type: Some(InAppOwnershipType::FamilyShared),
-            revoked: Some(false),
-        };
-
-        let response = client
-            .get_transaction_history("1234", Some("revision_input"), request)
-            .await
-            .unwrap();
-
-        assert_eq!("revision_output", response.revision.unwrap());
-        assert_eq!(response.has_more, Some(true));
-        assert_eq!("com.example", response.bundle_id.unwrap().as_str());
-        assert_eq!(323232, response.app_apple_id.unwrap());
-        assert_eq!(Environment::LocalTesting, response.environment.unwrap());
-        assert_eq!(
-            vec!["signed_transaction_value", "signed_transaction_value2"],
-            response.signed_transactions.unwrap()
-        );
-    }
-
-    #[tokio::test]
-    async fn test_get_transaction_history_v2() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/transactionHistoryResponse.json",
-            StatusCode::OK,
-            Some(|req, _body| {
-                assert_eq!(Method::GET, req.method());
-                let url = req.url();
-                assert_eq!("/inApps/v2/history/1234", url.path());
-
-                let params: HashMap<String, Vec<String>> =
-                    url.query_pairs()
-                        .into_owned()
-                        .fold(HashMap::new(), |mut acc, (k, v)| {
-                            acc.entry(k).or_insert_with(Vec::new).push(v);
-                            acc
-                        });
-
-                assert_eq!(
-                    vec!["revision_input".to_string()],
-                    *params.get("revision").unwrap()
-                );
-                assert_eq!(vec!["123455"], *params.get("startDate").unwrap());
-                assert_eq!(vec!["123456"], *params.get("endDate").unwrap());
-                assert_eq!(
-                    vec!["com.example.1", "com.example.2"],
-                    *params.get("productId").unwrap()
-                );
-                assert_eq!(
-                    vec!["CONSUMABLE", "AUTO_RENEWABLE"],
-                    *params.get("productType").unwrap()
-                );
-                assert_eq!(vec!["ASCENDING"], *params.get("sort").unwrap());
-                assert_eq!(
-                    vec!["sub_group_id", "sub_group_id_2"],
-                    *params.get("subscriptionGroupIdentifier").unwrap()
-                );
-                assert_eq!(
-                    vec!["FAMILY_SHARED"],
-                    *params.get("inAppOwnershipType").unwrap()
-                );
-                assert_eq!(vec!["false"], *params.get("revoked").unwrap());
-
-                assert!(req.body().is_none());
-            }),
-        );
-
-        let request = TransactionHistoryRequest {
-            start_date: DateTime::from_timestamp(123, 455000000),
-            end_date: DateTime::from_timestamp(123, 456000000),
-            product_ids: Some(vec![
-                "com.example.1".to_string(),
-                "com.example.2".to_string(),
-            ]),
-            product_types: Some(vec![ProductType::Consumable, ProductType::AutoRenewable]),
-            sort: Some(Order::Ascending),
-            subscription_group_identifiers: Some(vec![
-                "sub_group_id".to_string(),
-                "sub_group_id_2".to_string(),
-            ]),
-            in_app_ownership_type: Some(InAppOwnershipType::FamilyShared),
-            revoked: Some(false),
-        };
-
-        let response = client
-            .get_transaction_history_with_version(
-                "1234",
-                Some("revision_input"),
-                &request,
-                GetTransactionHistoryVersion::V2,
-            )
-            .await
-            .unwrap();
-
-        assert_eq!("revision_output", response.revision.unwrap());
-        assert_eq!(response.has_more, Some(true));
-        assert_eq!("com.example", response.bundle_id.unwrap().as_str());
-        assert_eq!(323232, response.app_apple_id.unwrap());
-        assert_eq!(Environment::LocalTesting, response.environment.unwrap());
-        assert_eq!(
-            vec!["signed_transaction_value", "signed_transaction_value2"],
-            response.signed_transactions.unwrap()
-        );
-    }
-
-    #[tokio::test]
-    async fn test_get_transaction_info() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/transactionInfoResponse.json",
-            StatusCode::OK,
-            Some(|req, _body| {
-                assert_eq!(Method::GET, req.method());
-                assert_eq!(
-                    "https://local-testing-base-url/inApps/v1/transactions/1234",
-                    req.url().as_str()
-                );
-                assert!(req.body().is_none());
-            }),
-        );
-
-        let response = client.get_transaction_info("1234").await.unwrap();
-        assert_eq!(
-            "signed_transaction_info_value",
-            response.signed_transaction_info.unwrap()
-        );
-    }
-
-    #[tokio::test]
-    async fn test_look_up_order_id() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/lookupOrderIdResponse.json",
-            StatusCode::OK,
-            Some(|req, _body| {
-                assert_eq!(Method::GET, req.method());
-                assert_eq!(
-                    "https://local-testing-base-url/inApps/v1/lookup/W002182",
-                    req.url().as_str()
-                );
-                assert!(req.body().is_none());
-            }),
-        );
-
-        let response = client.look_up_order_id("W002182").await.unwrap();
-        assert_eq!(OrderLookupStatus::Invalid, response.status);
-        assert_eq!(
-            vec!["signed_transaction_one", "signed_transaction_two"],
-            response.signed_transactions
-        );
-    }
-
-    #[tokio::test]
-    async fn test_request_test_notification() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/requestTestNotificationResponse.json",
-            StatusCode::OK,
-            Some(|req, _body| {
-                assert_eq!(Method::POST, req.method());
-                assert_eq!(
-                    "https://local-testing-base-url/inApps/v1/notifications/test",
-                    req.url().as_str()
-                );
-                assert!(req.body().is_none());
-            }),
-        );
-
-        let response = client.request_test_notification().await.unwrap();
-        assert_eq!(
-            "ce3af791-365e-4c60-841b-1674b43c1609",
-            response.test_notification_token.unwrap()
-        );
-    }
-
-    #[tokio::test]
-    async fn test_send_consumption_data() {
-        let client = app_store_server_api_client(
-            "".into(),
-            StatusCode::OK,
-            Some(|req, body| {
-                assert_eq!(Method::PUT, req.method());
-                assert_eq!(
-                    "https://local-testing-base-url/inApps/v1/transactions/consumption/49571273",
-                    req.url().as_str()
-                );
-                assert_eq!(
-                    "application/json",
-                    req.headers().get("Content-Type").unwrap().to_str().unwrap()
-                );
-                let decoded_json: HashMap<String, Value> = serde_json::from_slice(body.unwrap()).unwrap();
-                assert_eq!(true, decoded_json["customerConsented"].as_bool().unwrap());
-                assert_eq!(1, decoded_json["consumptionStatus"].as_i64().unwrap());
-                assert_eq!(2, decoded_json["platform"].as_i64().unwrap());
-                assert_eq!(
-                    false,
-                    decoded_json["sampleContentProvided"].as_bool().unwrap()
-                );
-                assert_eq!(3, decoded_json["deliveryStatus"].as_i64().unwrap());
-                assert_eq!(
-                    "7389A31A-FB6D-4569-A2A6-DB7D85D84813"
-                        .to_lowercase()
-                        .as_str(),
-                    decoded_json["appAccountToken"].as_str().unwrap()
-                );
-                assert_eq!(4, decoded_json["accountTenure"].as_i64().unwrap());
-                assert_eq!(5, decoded_json["playTime"].as_i64().unwrap());
-                assert_eq!(6, decoded_json["lifetimeDollarsRefunded"].as_i64().unwrap());
-                assert_eq!(
-                    7,
-                    decoded_json["lifetimeDollarsPurchased"].as_i64().unwrap()
-                );
-                assert_eq!(4, decoded_json["userStatus"].as_i64().unwrap());
-                assert_eq!(3, decoded_json["refundPreference"].as_i64().unwrap());
-            }),
-        );
-
-        let consumption_request = ConsumptionRequest {
-            customer_consented: true.into(),
-            consumption_status: ConsumptionStatus::NotConsumed.into(),
-            platform: Platform::NonApple.into(),
-            sample_content_provided: false.into(),
-            delivery_status: DeliveryStatus::DidNotDeliverDueToServerOutage.into(),
-            app_account_token: Some(Uuid::parse_str("7389a31a-fb6d-4569-a2a6-db7d85d84813").unwrap()),
-            account_tenure: AccountTenure::ThirtyDaysToNinetyDays.into(),
-            play_time: PlayTime::OneDayToFourDays.into(),
-            lifetime_dollars_refunded:
-                LifetimeDollarsRefunded::OneThousandDollarsToOneThousandNineHundredNinetyNineDollarsAndNinetyNineCents
-                    .into(),
-            lifetime_dollars_purchased: LifetimeDollarsPurchased::TwoThousandDollarsOrGreater.into(),
-            user_status: UserStatus::LimitedAccess.into(),
-            refund_preference: RefundPreference::NoPreference.into(),
-        };
-
-        let _ = client
-            .send_consumption_data("49571273", &consumption_request)
-            .await
-            .unwrap();
-    }
-
-    #[tokio::test]
-    async fn test_set_app_account_token() {
-        let client = app_store_server_api_client(
-            "".to_string(),
-            StatusCode::OK,
-            Some(|req, body| {
-                assert_eq!(Method::PUT, req.method());
-                assert_eq!(
-                    "https://local-testing-base-url/inApps/v1/transactions/555555/appAccountToken",
-                    req.url().as_str()
-                );
-
-                let decoded_json: HashMap<&str, Value> = serde_json::from_slice(body.unwrap()).unwrap();
-                assert_eq!(
-                    "550e8400-e29b-41d4-a716-446655440000",
-                    decoded_json["appAccountToken"].as_str().unwrap()
-                );
-            }),
-        );
-
-        let token = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
-        let request = UpdateAppAccountTokenRequest::new(token);
-
-        let _ = client
-            .set_app_account_token("555555", &request)
-            .await
-            .unwrap();
-    }
-
-    #[tokio::test]
-    async fn test_invalid_app_account_token_uuid_error() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/invalidAppAccountTokenUUIDError.json",
-            StatusCode::BAD_REQUEST,
-            None,
-        );
-
-        let token = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
-        let request = UpdateAppAccountTokenRequest::new(token);
-        let result = client.set_app_account_token("555555", &request).await;
-
-        match result {
-            Ok(_) => {
-                assert!(false, "Unexpected response type");
-            }
-            Err(error) => {
-                assert_eq!(400, error.http_status_code);
-                assert_eq!(
-                    APIError::InvalidAppAccountTokenUUID,
-                    error.api_error.unwrap()
-                );
-                assert_eq!(Some(4000183), error.raw_api_error);
-                assert_eq!(
-                    "Invalid request. The app account token field must be a valid UUID.",
-                    error.error_message.unwrap()
-                );
-            }
-        }
-    }
-
-    #[tokio::test]
-    async fn test_family_transaction_not_supported_error() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/familyTransactionNotSupportedError.json",
-            StatusCode::BAD_REQUEST,
-            None,
-        );
-
-        let token = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
-        let request = UpdateAppAccountTokenRequest::new(token);
-        let result = client.set_app_account_token("555555", &request).await;
-
-        match result {
-            Ok(_) => {
-                assert!(false, "Unexpected response type");
-            }
-            Err(error) => {
-                assert_eq!(400, error.http_status_code);
-                assert_eq!(
-                    APIError::FamilyTransactionNotSupported,
-                    error.api_error.unwrap()
-                );
-                assert_eq!(Some(4000185), error.raw_api_error);
-                assert_eq!(
-                    "Invalid request. Family Sharing transactions aren't supported by this endpoint.",
-                    error.error_message.unwrap()
-                );
-            }
-        }
-    }
-
-    #[tokio::test]
-    async fn test_transaction_id_not_original_transaction_id_error() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/transactionIdNotOriginalTransactionId.json",
-            StatusCode::BAD_REQUEST,
-            None,
-        );
-
-        let token = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
-        let request = UpdateAppAccountTokenRequest::new(token);
-        let result = client.set_app_account_token("555555", &request).await;
-
-        match result {
-            Ok(_) => {
-                assert!(false, "Unexpected response type");
-            }
-            Err(error) => {
-                assert_eq!(400, error.http_status_code);
-                assert_eq!(
-                    APIError::TransactionIdNotOriginalTransactionId,
-                    error.api_error.unwrap()
-                );
-                assert_eq!(Some(4000187), error.raw_api_error);
-                assert_eq!(
-                    "Invalid request. The transaction ID provided is not an original transaction ID.",
-                    error.error_message.unwrap()
-                );
-            }
-        }
-    }
-
-    #[tokio::test]
-    async fn test_headers() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/transactionInfoResponse.json",
-            StatusCode::OK,
-            Some(|req, _body| {
-                let headers = req.headers();
-                assert!(headers
-                    .get("User-Agent")
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .starts_with("app-store-server-library/rust"));
-                assert_eq!("application/json", headers.get("Accept").unwrap());
-                let authorization = headers.get("Authorization").unwrap().to_str().unwrap();
-                assert!(authorization.starts_with("Bearer "));
-                let token_components: Vec<&str> = authorization[7..].split('.').collect();
-                let header_data = BASE64_STANDARD_NO_PAD.decode(token_components[0]).unwrap();
-                let payload_data = BASE64_STANDARD_NO_PAD.decode(token_components[1]).unwrap();
-                let header: HashMap<String, Value> = serde_json::from_slice(&header_data).unwrap();
-                let payload: HashMap<String, Value> = serde_json::from_slice(&payload_data).unwrap();
-
-                assert_eq!("appstoreconnect-v1", payload["aud"].as_str().unwrap());
-                assert_eq!("issuerId", payload["iss"].as_str().unwrap());
-                assert_eq!("keyId", header["kid"].as_str().unwrap());
-                assert_eq!("com.example", payload["bid"].as_str().unwrap());
-                assert_eq!("ES256", header["alg"].as_str().unwrap());
-            }),
-        );
-
-        let _ = client.get_transaction_info("1234").await;
-    }
-
-    #[tokio::test]
-    async fn test_api_error() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/apiException.json",
-            StatusCode::INTERNAL_SERVER_ERROR,
-            None,
-        );
-        let result = client.get_transaction_info("1234").await;
-
-        match result {
-            Ok(_) => {
-                assert!(false, "Unexpected response type");
-            }
-            Err(error) => {
-                assert_eq!(500, error.http_status_code);
-                assert_eq!(APIError::GeneralInternal, error.api_error.unwrap());
-                assert_eq!(5000000, error.raw_api_error.unwrap());
-                assert_eq!("An unknown error occurred.", error.error_message.unwrap());
-            }
-        }
-    }
-
-    #[tokio::test]
-    async fn test_api_too_many_requests() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/apiTooManyRequestsException.json",
-            StatusCode::TOO_MANY_REQUESTS,
-            None,
-        );
-        let result = client.get_transaction_info("1234").await;
-
-        match result {
-            Ok(_) => {
-                assert!(false, "Unexpected response type");
-            }
-            Err(error) => {
-                assert_eq!(429, error.http_status_code);
-                assert_eq!(APIError::RateLimitExceeded, error.api_error.unwrap());
-                assert_eq!(Some(4290000), error.raw_api_error);
-                assert_eq!("Rate limit exceeded.", error.error_message.unwrap());
-            }
-        }
-    }
-
-    #[tokio::test]
-    async fn test_api_unknown_error() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/apiUnknownError.json",
-            StatusCode::BAD_REQUEST,
-            None,
-        );
-        let result = client.get_transaction_info("1234").await;
-
-        match result {
-            Ok(_) => {
-                assert!(false, "Unexpected response type");
-            }
-            Err(error) => {
-                assert_eq!(400, error.http_status_code);
-                assert_eq!(None, error.api_error);
-                // Note: raw_api_error is None because 9990000 is not in the APIError enum
-                // This is a limitation of the current implementation where unknown error codes
-                // can't be captured as raw values
-                assert_eq!(None, error.raw_api_error);
-                assert_eq!("Testing error.", error.error_message.unwrap());
-            }
-        }
-    }
-
-    #[tokio::test]
-    async fn test_decoding_with_unknown_enum_value() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/transactionHistoryResponseWithMalformedEnvironment.json",
-            StatusCode::OK,
-            None,
-        );
-
-        let request = TransactionHistoryRequest {
-            start_date: DateTime::from_timestamp(123, 455000000),
-            end_date: DateTime::from_timestamp(123, 456000000),
-            product_ids: vec!["com.example.1".to_string(), "com.example.2".to_string()].into(),
-            product_types: vec![ProductType::Consumable, ProductType::AutoRenewable].into(),
-            sort: Some(Order::Ascending),
-            subscription_group_identifiers: vec!["sub_group_id".to_string(), "sub_group_id_2".to_string()].into(),
-            in_app_ownership_type: Some(InAppOwnershipType::FamilyShared),
-            revoked: Some(false),
-        };
-
-        let result = client
-            .get_transaction_history("1234", Some("revision_input"), request)
-            .await
-            .unwrap();
-        assert_eq!(Environment::Unknown, result.environment.unwrap());
-    }
-
-    #[tokio::test]
-    async fn test_decoding_with_malformed_json() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/transactionHistoryResponseWithMalformedAppAppleId.json",
-            StatusCode::OK,
-            None,
-        );
-
-        let request = TransactionHistoryRequest {
-            start_date: DateTime::from_timestamp(123, 455000000),
-            end_date: DateTime::from_timestamp(123, 456000000),
-            product_ids: vec!["com.example.1".to_string(), "com.example.2".to_string()].into(),
-            product_types: vec![ProductType::Consumable, ProductType::AutoRenewable].into(),
-            sort: Some(Order::Ascending),
-            subscription_group_identifiers: vec!["sub_group_id".to_string(), "sub_group_id_2".to_string()].into(),
-            in_app_ownership_type: Some(InAppOwnershipType::FamilyShared),
-            revoked: Some(false),
-        };
-
-        let result = client
-            .get_transaction_history("1234", Some("revision_input"), request)
-            .await;
-        match result {
-            Ok(_) => {
-                assert!(false, "Unexpected response type");
-            }
-            Err(error) => {
-                assert_eq!(500, error.http_status_code);
-                assert_eq!(None, error.api_error);
-                assert_eq!(None, error.raw_api_error);
-                assert_eq!(
-                    "Failed to deserialize response JSON",
-                    error.error_message.unwrap()
-                );
-            }
-        }
-    }
-
-    #[tokio::test]
-    async fn test_send_consumption_data_with_null_app_account_token() {
-        let client = app_store_server_api_client(
-            "".into(),
-            StatusCode::OK,
-            Some(|req, body| {
-                assert_eq!(Method::PUT, req.method());
-                assert_eq!(
-                    "https://local-testing-base-url/inApps/v1/transactions/consumption/49571273",
-                    req.url().as_str()
-                );
-                assert_eq!(
-                    "application/json",
-                    req.headers().get("Content-Type").unwrap().to_str().unwrap()
-                );
-                let decoded_json: HashMap<String, Value> = serde_json::from_slice(body.unwrap()).unwrap();
-                assert_eq!(true, decoded_json["customerConsented"].as_bool().unwrap());
-                assert_eq!(1, decoded_json["consumptionStatus"].as_i64().unwrap());
-                assert_eq!(2, decoded_json["platform"].as_i64().unwrap());
-                assert_eq!(
-                    false,
-                    decoded_json["sampleContentProvided"].as_bool().unwrap()
-                );
-                assert_eq!(3, decoded_json["deliveryStatus"].as_i64().unwrap());
-                // When app_account_token is None, it should not be included in the JSON at all
-                assert!(
-                    !decoded_json.contains_key("appAccountToken"),
-                    "appAccountToken field should be omitted when None"
-                );
-                assert_eq!(4, decoded_json["accountTenure"].as_i64().unwrap());
-                assert_eq!(5, decoded_json["playTime"].as_i64().unwrap());
-                assert_eq!(6, decoded_json["lifetimeDollarsRefunded"].as_i64().unwrap());
-                assert_eq!(
-                    7,
-                    decoded_json["lifetimeDollarsPurchased"].as_i64().unwrap()
-                );
-                assert_eq!(4, decoded_json["userStatus"].as_i64().unwrap());
-                // refund_preference is also omitted in Swift test when None
-            }),
-        );
-
-        let consumption_request = ConsumptionRequest {
-            customer_consented: true.into(),
-            consumption_status: ConsumptionStatus::NotConsumed.into(),
-            platform: Platform::NonApple.into(),
-            sample_content_provided: false.into(),
-            delivery_status: DeliveryStatus::DidNotDeliverDueToServerOutage.into(),
-            app_account_token: None,
-            account_tenure: AccountTenure::ThirtyDaysToNinetyDays.into(),
-            play_time: PlayTime::OneDayToFourDays.into(),
-            lifetime_dollars_refunded:
-                LifetimeDollarsRefunded::OneThousandDollarsToOneThousandNineHundredNinetyNineDollarsAndNinetyNineCents
-                    .into(),
-            lifetime_dollars_purchased: LifetimeDollarsPurchased::TwoThousandDollarsOrGreater.into(),
-            user_status: UserStatus::LimitedAccess.into(),
-            refund_preference: None.into(),
-        };
-
-        let _ = client
-            .send_consumption_data("49571273", &consumption_request)
-            .await
-            .unwrap();
-    }
-
-    #[tokio::test]
-    async fn test_get_notification_history_with_microsecond_values() {
-        let client = app_store_server_api_client_with_body_from_file(
-            "tests/resources/models/getNotificationHistoryResponse.json",
-            StatusCode::OK,
-            Some(|_req, body| {
-                let decoded_json: HashMap<String, Value> = serde_json::from_slice(body.unwrap()).unwrap();
-                // Microseconds should be truncated to milliseconds
-                // When 900_000 nanoseconds (0.9ms) is added, it rounds to 1698148900001
-                // When 1_000_000 nanoseconds (1ms) is added, it becomes 1698148950001
-                assert_eq!(1698148900001, decoded_json["startDate"].as_i64().unwrap());
-                assert_eq!(1698148950001, decoded_json["endDate"].as_i64().unwrap());
-            }),
-        );
-
-        let notification_history_request = NotificationHistoryRequest {
-            start_date: DateTime::from_timestamp(1698148900, 900_000).into(), // 900_000 nanoseconds = 0.9 milliseconds
-            end_date: DateTime::from_timestamp(1698148950, 1_000_000).into(), // 1_000_000 nanoseconds = 1 millisecond
-            notification_type: NotificationTypeV2::Subscribed.into(),
-            notification_subtype: Subtype::InitialBuy.into(),
-            transaction_id: Some("999733843".to_string()),
-            only_failures: Some(true),
-        };
-
-        let _ = client
-            .get_notification_history(
-                "a036bc0e-52b8-4bee-82fc-8c24cb6715d6",
-                &notification_history_request,
-            )
-            .await;
-    }
-
-    #[tokio::test]
-    async fn test_xcode_environment_for_app_store_server_api_client() {
-        // Xcode environment should not be allowed for AppStoreServerAPIClient
-        // This test ensures we don't accidentally allow it in the future
-        // Note: In Rust, we handle this at compile time with the Environment enum,
-        // but we can test that LocalTesting environment (which maps to Xcode in some contexts) works
-        let key = fs::read("tests/resources/certs/testSigningKey.p8").expect("Failed to read file");
-
-        // LocalTesting environment should work (it's our equivalent of Xcode for testing)
-        let client = AppStoreServerAPIClient::new(
-            key.clone(),
-            "keyId",
-            "issuerId",
-            "com.example",
-            Environment::LocalTesting,
-            Box::new(move |_req: &reqwest::Request, _body: Option<&[u8]>| {
-                let response = http::response::Builder::new()
-                    .status(StatusCode::OK)
-                    .body(vec![])
-                    .unwrap();
-                response
-            }),
-        );
-
-        // Just verify the client was created successfully
-        assert_eq!("https://local-testing-base-url", client.base_url);
-    }
-
-    fn app_store_server_api_client_with_body_from_file(
-        path: &str,
-        status: http::StatusCode,
-        request_verifier: Option<RequestVerifier>,
-    ) -> AppStoreServerAPIClient {
-        let body = fs::read_to_string(path).expect("Failed to read file");
-        app_store_server_api_client(body, status, request_verifier)
-    }
-
-    fn app_store_server_api_client(
-        body: String,
-        status: http::StatusCode,
-        request_verifier: Option<RequestVerifier>,
-    ) -> AppStoreServerAPIClient {
-        let key = fs::read("tests/resources/certs/testSigningKey.p8").expect("Failed to read file");
-
-        let request_overrider = move |req: &reqwest::Request, request_body: Option<&[u8]>| {
-            if let Some(request_verifier) = request_verifier {
-                (request_verifier)(req, request_body)
-            }
-
-            let buffered_body = body.as_bytes().to_vec();
-
-            let response = http::response::Builder::new()
-                .header("Content-Type", "application/json")
-                .status(status)
-                .body(buffered_body)
-                .unwrap();
-
-            response
-        };
-
-        AppStoreServerAPIClient::new(
-            key,
-            "keyId",
-            "issuerId",
-            "com.example",
-            Environment::LocalTesting,
-            Box::new(request_overrider),
-        )
-    }
 }

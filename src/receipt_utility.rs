@@ -227,7 +227,11 @@ pub fn extract_transaction_id_from_transaction_receipt(
 
                         if let Some(transaction_id_match) = transaction_id_regex.captures(&decoded_inner_level_str) {
                             if let Some(encoded_transaction_id) = transaction_id_match.get(1) {
-                                return Ok(Some(encoded_transaction_id.as_str().to_string()));
+                                return Ok(Some(
+                                    encoded_transaction_id
+                                        .as_str()
+                                        .to_string(),
+                                ));
                             }
                         };
                     }

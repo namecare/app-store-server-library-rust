@@ -1,10 +1,3 @@
-//! OCSP (Online Certificate Status Protocol) verification module.
-//!
-//! This module provides functionality to verify certificate revocation status using OCSP.
-//! It's only compiled when the `ocsp` feature is enabled.
-
-#![cfg(feature = "ocsp")]
-
 use crate::chain_verifier::ChainVerificationFailureReason::InvalidCertificate;
 use crate::chain_verifier::{ChainVerificationFailureReason, ChainVerifierError};
 use x509_parser::certificate::X509Certificate;
@@ -249,7 +242,9 @@ mod tests {
     fn test_extract_ocsp_url_missing_aia() {
         // Create a minimal certificate without AIA extension
         let cert_der = include_bytes!("../tests/resources/certs/testCA.der");
-        let cert = X509Certificate::from_der(cert_der).unwrap().1;
+        let cert = X509Certificate::from_der(cert_der)
+            .unwrap()
+            .1;
 
         let result = extract_ocsp_url(&cert);
         assert!(result.is_err());
@@ -260,7 +255,9 @@ mod tests {
         // This test would need a certificate with an AIA extension
         // For now, we'll test the error case
         let cert_der = include_bytes!("../tests/resources/certs/testCA.der");
-        let cert = X509Certificate::from_der(cert_der).unwrap().1;
+        let cert = X509Certificate::from_der(cert_der)
+            .unwrap()
+            .1;
 
         let result = extract_ocsp_url(&cert);
         // Most test certificates don't have OCSP URLs
@@ -311,7 +308,13 @@ mod tests {
         };
 
         // Basic sanity check for SHA-1 hash length
-        assert_eq!(cert_id.issuer_name_hash.as_bytes().len(), 20);
+        assert_eq!(
+            cert_id
+                .issuer_name_hash
+                .as_bytes()
+                .len(),
+            20
+        );
         assert_eq!(cert_id.issuer_key_hash.as_bytes().len(), 20);
     }
 
