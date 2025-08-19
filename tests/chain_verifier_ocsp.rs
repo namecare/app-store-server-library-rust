@@ -1,6 +1,6 @@
 mod common;
 
-use app_store_server_library::chain_verifier::{verify_chain, ChainVerifierError};
+use app_store_server_library::chain_verifier::{ChainVerifier, ChainVerifierError};
 use app_store_server_library::utils::StringExt;
 use common::*;
 
@@ -17,8 +17,8 @@ fn test_apple_chain_is_valid_with_ocsp() -> Result<(), ChainVerifierError> {
     let intermediate = REAL_APPLE_INTERMEDIATE_BASE64_ENCODED
         .as_der_bytes()
         .unwrap();
-    let chain = vec![leaf.clone(), intermediate, root.clone()];
-
-    let _public_key = verify_chain(&chain, &vec![root], Some(EFFECTIVE_DATE)).unwrap();
+    
+    let verifier = ChainVerifier::new(vec![root]);
+    let _public_key = verifier.verify(&leaf, &intermediate, Some(EFFECTIVE_DATE)).unwrap();
     Ok(())
 }

@@ -1,7 +1,7 @@
 use base64::engine::general_purpose::STANDARD;
 use base64::{DecodeError, Engine};
 
-use crate::chain_verifier::{verify_chain, ChainVerifierError};
+use crate::chain_verifier::{ChainVerifier, ChainVerifierError};
 use crate::primitives::app_transaction::AppTransaction;
 use crate::primitives::environment::Environment;
 use crate::primitives::jws_renewal_info_decoded_payload::JWSRenewalInfoDecodedPayload;
@@ -10,8 +10,9 @@ use crate::primitives::response_body_v2_decoded_payload::ResponseBodyV2DecodedPa
 use crate::utils::{base64_url_to_base64, StringExt};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use serde::de::DeserializeOwned;
+use crate::chain_verifier::ChainVerificationFailureReason::InvalidChainLength;
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(thiserror::Error, Debug)]
 pub enum SignedDataVerifierError {
     #[error("VerificationFailure")]
     VerificationFailure,
@@ -28,17 +29,22 @@ pub enum SignedDataVerifierError {
     #[error("InternalDecodeError: [{0}]")]
     InternalDecodeError(#[from] DecodeError),
 
+    #[error("InternalDeserializationError: [{0}]")]
+    InternalDeserializationError(#[from] serde_json::Error),
+
     #[error("InternalJWTError: [{0}]")]
     InternalJWTError(#[from] jsonwebtoken::errors::Error),
 }
 
+const EXPECTED_CHAIN_LENGTH: usize = 3;
+
 /// A verifier for signed data, commonly used for verifying and decoding
 /// signed Apple server notifications and transactions.
 pub struct SignedDataVerifier {
-    root_certificates: Vec<Vec<u8>>,
     environment: Environment,
     bundle_id: String,
     app_apple_id: Option<i64>,
+    chain_verifier: ChainVerifier,
 }
 
 impl SignedDataVerifier {
@@ -60,12 +66,14 @@ impl SignedDataVerifier {
         bundle_id: String,
         app_apple_id: Option<i64>,
     ) -> Self {
-        return SignedDataVerifier {
-            root_certificates,
+        let chain_verifier = ChainVerifier::new(root_certificates);
+
+        SignedDataVerifier {
             environment,
             bundle_id,
             app_apple_id,
-        };
+            chain_verifier
+        }
     }
 }
 
@@ -260,16 +268,9 @@ impl SignedDataVerifier {
             }
 
             let _ = jsonwebtoken::decode_header(&signed_obj)?;
-            let body_data = base64_url_to_base64(body_segments[1]);
-
-            let decoded_body = match STANDARD.decode(body_data) {
-                Ok(decoded_body) => match serde_json::from_slice(&decoded_body) {
-                    Ok(decoded) => decoded,
-                    Err(_) => return Err(SignedDataVerifierError::VerificationFailure),
-                },
-                Err(_) => return Err(SignedDataVerifierError::VerificationFailure),
-            };
-
+            let body_base64 = base64_url_to_base64(body_segments[1]);
+            let body_data = STANDARD.decode(body_base64)?;
+            let decoded_body = serde_json::from_slice(&body_data)?;
             return Ok(decoded_body);
         }
 
@@ -293,7 +294,7 @@ impl SignedDataVerifier {
             return Err(SignedDataVerifierError::VerificationFailure);
         }
 
-        let pub_key = verify_chain(&chain, &self.root_certificates, None)?;
+        let pub_key = self.verify_chain(&chain, None)?;
         let pub_key = &pub_key[pub_key.len() - 65..];
 
         let decoding_key = DecodingKey::from_ec_der(pub_key);
@@ -303,7 +304,43 @@ impl SignedDataVerifier {
         validator.validate_exp = false;
         validator.set_required_spec_claims(&claims);
 
-        let payload = jsonwebtoken::decode::<T>(signed_obj, &decoding_key, &validator).expect("Expect Payload");
-        return Ok(payload.claims);
+        let payload = jsonwebtoken::decode::<T>(signed_obj, &decoding_key, &validator)?;
+        Ok(payload.claims)
+    }
+
+    fn verify_chain(&self, chain: &Vec<Vec<u8>>, effective_date: Option<u64>) -> Result<Vec<u8>, ChainVerifierError> {
+        if chain.len() != EXPECTED_CHAIN_LENGTH {
+            return Err(ChainVerifierError::VerificationFailure(InvalidChainLength))
+        }
+
+        let leaf = &chain[0];
+        let intermediate = &chain[1];
+
+        Ok(self.chain_verifier.verify(leaf, intermediate, effective_date)?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::chain_verifier::ChainVerificationFailureReason::InvalidChainLength;
+    use super::*;
+
+    #[test]
+    fn test_invalid_chain_length() -> Result<(), ChainVerifierError> {
+        let root = Vec::new();
+        let leaf = Vec::new();
+        let intermediate = Vec::new();
+
+        let chain = vec![leaf, intermediate, Vec::new(), Vec::new()];
+        let verifier = SignedDataVerifier::new(vec![root], Environment::Production, "com.example".into(), Some(1234));
+        let public_key = verifier.verify_chain(&chain, None);
+
+        assert!(
+            matches!(
+                public_key.expect_err("Expect error"),
+                ChainVerifierError::VerificationFailure(InvalidChainLength)
+            )
+        );
+        Ok(())
     }
 }
