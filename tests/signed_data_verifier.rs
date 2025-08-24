@@ -44,7 +44,9 @@ fn test_app_store_server_notification_decoding_production() {
         .err()
         .unwrap();
 
-    assert_eq!(error, SignedDataVerifierError::InvalidEnvironment);
+    assert!(
+        matches!(error, SignedDataVerifierError::InvalidEnvironment)
+    );
 }
 
 #[test]
@@ -53,9 +55,11 @@ fn test_missing_x5c_header() {
         .expect("Failed to read file");
     let verifier = get_signed_data_verifier(Environment::Sandbox, "com.example", None);
     let result = verifier.verify_and_decode_notification(&missing_x5c_header_claim_data);
-    assert_eq!(
-        result.err().unwrap(),
-        SignedDataVerifierError::VerificationFailure
+    assert!(
+        matches!(
+            result.err().unwrap(),
+            SignedDataVerifierError::VerificationFailure
+        )
     );
 }
 
@@ -65,9 +69,11 @@ fn test_wrong_bundle_id_for_server_notification() {
         .expect("Failed to read file");
     let verifier = get_signed_data_verifier(Environment::Sandbox, "com.example", None);
     let result = verifier.verify_and_decode_notification(&wrong_bundle_id_data);
-    assert_eq!(
-        result.err().unwrap(),
-        SignedDataVerifierError::InvalidAppIdentifier
+    assert!(
+        matches!(
+            result.err().unwrap(),
+            SignedDataVerifierError::InvalidAppIdentifier
+        )
     );
 }
 
@@ -77,9 +83,11 @@ fn test_wrong_app_apple_id_for_server_notification() {
         .expect("Failed to read file");
     let verifier = get_signed_data_verifier(Environment::Production, "com.example", Some(1235));
     let result = verifier.verify_and_decode_notification(&test_notification_data);
-    assert_eq!(
-        result.err().unwrap(),
-        SignedDataVerifierError::InvalidAppIdentifier
+    assert!(
+        matches!(
+            result.err().unwrap(),
+            SignedDataVerifierError::InvalidAppIdentifier
+        )
     );
 }
 
