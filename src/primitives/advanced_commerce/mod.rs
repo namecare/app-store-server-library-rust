@@ -49,6 +49,7 @@ pub mod subscription_reactivate_item;
 pub mod subscription_revoke_request;
 mod request_operation;
 mod request_version;
+mod error;
 
 // Re-exports for core types
 pub use effective::Effective;
