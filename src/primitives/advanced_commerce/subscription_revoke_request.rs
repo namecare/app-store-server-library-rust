@@ -2,7 +2,7 @@ use crate::primitives::advanced_commerce::request_info::RequestInfo;
 use crate::primitives::advanced_commerce::refund_reason::RefundReason;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::primitives::advanced_commerce::RefundType;
+use crate::primitives::advanced_commerce::refund_type::RefundType;
 
 /// The request data your app provides to revoke an auto-renewable subscription.
 ///

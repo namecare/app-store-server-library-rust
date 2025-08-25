@@ -1,7 +1,6 @@
 use crate::primitives::advanced_commerce::request_info::RequestInfo;
 use crate::primitives::advanced_commerce::request_refund_item::RequestRefundItem;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 /// The request data your app provides to request refunds for items.
 ///

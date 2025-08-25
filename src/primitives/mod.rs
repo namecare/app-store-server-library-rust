@@ -8,7 +8,6 @@ pub mod consumption_status;
 pub mod data;
 pub mod delivery_status;
 pub mod environment;
-pub mod error_payload;
 pub mod expiration_intent;
 pub mod extend_reason_code;
 pub mod extend_renewal_date_request;
