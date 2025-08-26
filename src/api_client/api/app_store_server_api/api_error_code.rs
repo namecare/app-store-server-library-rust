@@ -1,10 +1,10 @@
-use serde::{Deserialize, Deserializer, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
+use crate::api_client::error::APIServiceErrorCode;
 
 /// Enum representing different API errors with associated status codes.
-#[derive(Debug, Clone, Deserialize_repr, Serialize_repr, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Deserialize_repr, Serialize_repr, PartialEq, Hash)]
 #[repr(i64)]
-pub enum APIError {
+pub enum ApiErrorCode {
     /// An error that indicates an invalid request.
     /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/generalbadrequesterror)
     GeneralBadRequest = 4000000,
@@ -252,34 +252,17 @@ pub enum APIError {
     ///
     /// [GeneralInternalRetryableError](https://developer.apple.com/documentation/appstoreserverapi/generalinternalretryableerror)
     GeneralInternalRetryable = 5000001,
+
+    /// An unknown error
+    Unknown = -1,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
-pub struct ErrorPayload {
-    #[serde(rename = "errorCode")]
-    #[serde(default, deserialize_with = "deserialize_maybe_none")]
-    pub error_code: Option<APIError>,
-
-    #[serde(rename = "errorMessage")]
-    pub error_message: Option<String>,
-}
-
-impl ErrorPayload {
-    pub fn raw_error_code(&self) -> Option<i64> {
-        match &self.error_code {
-            None => return None,
-            Some(code) => return Some(code.clone() as i64),
-        }
+impl APIServiceErrorCode for ApiErrorCode {
+    fn code(&self) -> i64 {
+        *self as i64
     }
-}
 
-fn deserialize_maybe_none<'de, D, T: Deserialize<'de>>(deserializer: D) -> Result<Option<T>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    if let Ok(value) = Deserialize::deserialize(deserializer) {
-        Ok(value)
-    } else {
-        Ok(None)
+    fn unknown() -> Self {
+        Self::Unknown
     }
 }

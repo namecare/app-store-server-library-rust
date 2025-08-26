@@ -5,6 +5,7 @@ use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
+use crate::primitives::advanced_commerce::in_app_request::AdvancedCommerceInAppRequest;
 
 #[derive(Error, Debug)]
 pub enum JWSSignatureCreatorError {
@@ -57,9 +58,6 @@ struct AdvancedCommerceInAppPayload {
     base: BasePayload,
     request: String,
 }
-
-/// Trait for Advanced Commerce in-app requests
-pub trait AdvancedCommerceInAppRequest: Serialize {}
 
 /// Base struct for creating JWS signatures for App Store requests
 struct JWSSignatureCreator {

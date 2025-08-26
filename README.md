@@ -1,5 +1,5 @@
 # Apple App Store Server Rust Library
-The Rust server library for the [App Store Server API](https://developer.apple.com/documentation/appstoreserverapi) and [App Store Server Notifications](https://developer.apple.com/documentation/appstoreservernotifications)
+The Rust server library for the [App Store Server API](https://developer.apple.com/documentation/appstoreserverapi), [App Store Server Notifications](https://developer.apple.com/documentation/appstoreservernotifications) and [Advanced Commerce API](https://developer.apple.com/documentation/AdvancedCommerceAPI).
 
 ## Requirements
 
@@ -11,12 +11,12 @@ Specify `app-store-server-library` in your project's `Cargo.toml` file, under th
 
 ```toml
 [dependencies]
-app-store-server-library = { version = "3.2.0", features = ["receipt-utility", "api-client", "ocsp"] }
+app-store-server-library = { version = "4.0.0", features = ["receipt-utility", "api-client", "ocsp"] }
 ```
 
 ### Feature Flags
 
-- `api-client` - Enables the App Store Server API client functionality
+- `api-client` - Enables the App Store Server/Advanced Commerce API client functionality
 - `receipt-utility` - Enables receipt processing and transaction ID extraction
 - `ocsp` - Enables OCSP (Online Certificate Status Protocol) verification
 
@@ -34,6 +34,7 @@ Download and store the root certificates found in the Apple Root Certificates se
 
 ### API Usage
 
+#### App Store Server API
 ```rust
 use app_store_server_library::{AppStoreServerApiClient, Environment, AppStoreApiResponse, APIError};
 
@@ -44,15 +45,48 @@ async fn main() {
     let bundle_id = "com.example";
     let encoded_key = std::fs::read_to_string("/path/to/key/SubscriptionKey_ABCDEFGHIJ.p8").unwrap(); // Adjust the path accordingly
     let environment = Environment::Sandbox;
-    
-    let client = AppStoreServerApiClient::new(encoded_key, key_id, issuer_id, bundle_id, environment);
+    let transport = ReqwestHttpTransport::new(); // You can use any http client, but you must implement `Transport` trait for it.
+    let client = AppStoreServerApiClient::new(encoded_key, key_id, issuer_id, bundle_id, environment, transport);
     match client.request_test_notification().await {
         Ok(response) => {
             println!("{}", response.test_notification_token);
         }
         Err(err) => {
             println!("{}", err.http_status_code);
-            println!("{:?}", err.raw_api_error);
+            println!("{:?}", err.error_code);
+            println!("{:?}", err.api_error);
+            println!("{}", err.error_message);
+        }
+    }
+}
+```
+
+#### Advanced Commerce Server API
+```rust
+// NOTE: .unwrap() used for example purposes only
+
+use app_store_server_library::{AppStoreServerApiClient, Environment, AppStoreApiResponse, APIError};
+
+#[tokio::main]
+async fn main() {
+    let issuer_id = "99b16628-15e4-4668-972b-eeff55eeff55";
+    let key_id = "ABCDEFGHIJ";
+    let bundle_id = "com.example";
+    let encoded_key = std::fs::read_to_string("/path/to/key/SubscriptionKey_ABCDEFGHIJ.p8").unwrap(); // Adjust the path accordingly
+    let environment = Environment::Sandbox;
+    let transport = ReqwestHttpTransport::new(); // You can use any http client, but you must implement `Transport` trait for it.
+    let client = AdvancedCommerceApiClient::new(encoded_key, key_id, issuer_id, bundle_id, environment, transport);
+    
+    let transaction_id = "txId";
+    let subscription_cancel_request = SubscriptionCancelRequest(...);
+    match client.cancel_subscription(transaction_id, &subscription_cancel_request).await {
+        Ok(response) => {
+            println!("{}", response.signed_renewal_info);
+            println!("{}", response.signed_transaction_info);
+        }
+        Err(err) => {
+            println!("{}", err.http_status_code);
+            println!("{:?}", err.error_code);
             println!("{:?}", err.api_error);
             println!("{}", err.error_message);
         }
@@ -63,7 +97,8 @@ async fn main() {
 ### Verification Usage
 
 ```rust
-// .unwrap() used for example purposes only
+// NOTE: .unwrap() used for example purposes only
+
 let root_cert = "apple-root-cert-in-base-base64-format"; // https://www.apple.com/certificateauthority/AppleRootCA-G3.cer
 let root_cert_der = root_cert.as_der_bytes().unwrap(); // Use `base64` crate to decode base64 string into bytes 
 
@@ -86,10 +121,13 @@ To enable OCSP verification:
 
 ```toml
 [dependencies]
-app-store-server-library = { version = "3.2.0", features = ["api-client", "ocsp"] }
+app-store-server-library = { version = "4.0.0", features = ["ocsp"] }
 ```
 
 OCSP verification is performed automatically when verifying signed data.
+
+> Note: OCSP request is blocking, not async.   
+> Async signed data verification is coming soon.
 
 ### Receipt Usage
 ```rust
@@ -102,9 +140,10 @@ let transaction_id = extract_transaction_id_from_app_receipt(receipt);
 
 #### V1 Signature Creation
 ```rust
+// NOTE: .unwrap() used for example purposes only
+
 use app_store_server_library::promotional_offer::PromotionalOfferSignatureCreator;
 
-// .unwrap() used for example purposes only
 let private_key = include_str!("../assets/SubscriptionKey_L256SYR32L.p8");
 let creator = PromotionalOfferSignatureCreator::new(private_key, "L256SYR32L".to_string(), "com.test.app".to_string()).unwrap();
 
@@ -121,9 +160,10 @@ let signature: String = creator.create_signature(
 
 #### V2 Signature Creation  
 ```rust
-use app_store_server_library::promotional_offer_v2::PromotionalOfferV2SignatureCreator;
+// NOTE: .unwrap() used for example purposes only
 
-// .unwrap() used for example purposes only  
+use app_store_server_library::promotional_offer_v2::PromotionalOfferV2SignatureCreator;
+ 
 let private_key = include_str!("../assets/SubscriptionKey_L256SYR32L.p8");
 let creator = PromotionalOfferV2SignatureCreator::new(
     private_key, 
@@ -139,11 +179,39 @@ let signature: String = creator.create_signature(
 ).unwrap();
 ```
 
+### Advanced Commerce Signature Creation
+
+#### Prepare request object:
+- Receive request object from the client. 
+- Or create request from the server side.
+
+Supported request objects: `OneTimeChargeCreateRequest`, `SubscriptionCreateRequest`, `SubscriptionModifyInAppRequest` or `SubscriptionReactivateInAppRequest`.
+
+```rust
+// NOTE: .unwrap() used for example purposes only
+
+use app_store_server_library::promotional_offer_v2::PromotionalOfferV2SignatureCreator;
+
+let request_object = ... // Receive from client side or create on server side 
+let private_key = include_str!("../assets/SubscriptionKey_L256SYR32L.p8");
+let creator = AdvancedCommerceInAppSignatureCreator::new(
+    private_key, 
+    "L256SYR32L".to_string(),     // Key ID
+    "issuer_id".to_string(),       // Issuer ID
+    "com.test.app".to_string()     // Bundle ID
+).unwrap();
+
+let signature: String = creator.create_signature(
+    advanced_commerce_in_app_request: &request_object
+).unwrap();
+```
+
 ## Documentation
 
 * The full documentation is available at [docs.rs](https://docs.rs/app-store-server-library/)
 * [App Store Server API Documentation](https://developer.apple.com/documentation/appstoreserverapi)
 * [App Store Server Notifications Documentation](https://developer.apple.com/documentation/appstoreservernotifications)
+* [Advanced Commerce API Documentation](https://developer.apple.com/documentation/advancedcommerceapi)
 * [WWDC Video](https://developer.apple.com/videos/play/wwdc2023/10143/)
 
 ## References
