@@ -1,9 +1,9 @@
 pub mod api_error_code;
 
 use http::Method;
-use crate::api_client::api::advanced_commerce_api::api_error_code::APIErrorCode;
-use crate::api_client::api_client::APIClient;
-use crate::api_client::error::APIServiceError;
+use crate::api_client::api::advanced_commerce_api::api_error_code::ApiErrorCode;
+use crate::api_client::api_client::ApiClient;
+use crate::api_client::error::ApiServiceError;
 use crate::api_client::transport::Transport;
 use crate::primitives::advanced_commerce::subscription_cancel_request::SubscriptionCancelRequest;
 use crate::primitives::advanced_commerce::subscription_cancel_response::SubscriptionCancelResponse;
@@ -18,11 +18,11 @@ use crate::primitives::advanced_commerce::subscription_migrate_response::Subscri
 use crate::primitives::advanced_commerce::subscription_price_change_request::SubscriptionPriceChangeRequest;
 use crate::primitives::advanced_commerce::subscription_price_change_response::SubscriptionPriceChangeResponse;
 
-pub struct AdvancedCommerceAPI;
-pub type AdvancedCommerceAPIClient<T> = APIClient<T, AdvancedCommerceAPI, APIErrorCode>;
-pub type APIError = APIServiceError<APIErrorCode>;
+pub struct AdvancedCommerceApi;
+pub type AdvancedCommerceApiClient<T> = ApiClient<T, AdvancedCommerceApi, ApiErrorCode>;
+pub type ApiError = ApiServiceError<ApiErrorCode>;
 
-impl<T: Transport> AdvancedCommerceAPIClient<T> {
+impl<T: Transport> AdvancedCommerceApiClient<T> {
     /// Turn off automatic renewal to cancel a customer's auto-renewable subscription.
     ///
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/cancel-a-subscription)
@@ -43,7 +43,7 @@ impl<T: Transport> AdvancedCommerceAPIClient<T> {
         &self,
         transaction_id: &str,
         subscription_cancel_request: &SubscriptionCancelRequest,
-    ) -> Result<SubscriptionCancelResponse, APIError> {
+    ) -> Result<SubscriptionCancelResponse, ApiError> {
         let path = format!("/advancedCommerce/v1/subscription/cancel/{}", transaction_id);
         let req = self.build_request(
             path.as_str(),
@@ -76,7 +76,7 @@ impl<T: Transport> AdvancedCommerceAPIClient<T> {
         &self,
         transaction_id: &str,
         subscription_change_metadata_request: &SubscriptionChangeMetadataRequest,
-    ) -> Result<SubscriptionChangeMetadataResponse, APIError> {
+    ) -> Result<SubscriptionChangeMetadataResponse, ApiError> {
         let path = format!("/advancedCommerce/v1/subscription/changeMetadata/{}", transaction_id);
         let req = self.build_request(
             path.as_str(),
@@ -109,7 +109,7 @@ impl<T: Transport> AdvancedCommerceAPIClient<T> {
         &self,
         transaction_id: &str,
         subscription_price_change_request: &SubscriptionPriceChangeRequest,
-    ) -> Result<SubscriptionPriceChangeResponse, APIError> {
+    ) -> Result<SubscriptionPriceChangeResponse, ApiError> {
         let path = format!("/advancedCommerce/v1/subscription/changePrice/{}", transaction_id);
         let req = self.build_request(
             path.as_str(),
@@ -142,7 +142,7 @@ impl<T: Transport> AdvancedCommerceAPIClient<T> {
         &self,
         transaction_id: &str,
         subscription_migrate_request: &SubscriptionMigrateRequest,
-    ) -> Result<SubscriptionMigrateResponse, APIError> {
+    ) -> Result<SubscriptionMigrateResponse, ApiError> {
         let path = format!("/advancedCommerce/v1/subscription/migrate/{}", transaction_id);
         let req = self.build_request(
             path.as_str(),
@@ -172,7 +172,7 @@ impl<T: Transport> AdvancedCommerceAPIClient<T> {
         &self,
         transaction_id: &str,
         request_refund_request: &RequestRefundRequest,
-    ) -> Result<RequestRefundResponse, APIError> {
+    ) -> Result<RequestRefundResponse, ApiError> {
         let path = format!("/advancedCommerce/v1/transaction/requestRefund/{}", transaction_id);
         let req = self.build_request(
             path.as_str(),
@@ -205,7 +205,7 @@ impl<T: Transport> AdvancedCommerceAPIClient<T> {
         &self,
         transaction_id: &str,
         subscription_revoke_request: &SubscriptionRevokeRequest,
-    ) -> Result<SubscriptionRevokeResponse, APIError> {
+    ) -> Result<SubscriptionRevokeResponse, ApiError> {
         let path = format!("/advancedCommerce/v1/subscription/revoke/{}", transaction_id);
         let req = self.build_request(
             path.as_str(),

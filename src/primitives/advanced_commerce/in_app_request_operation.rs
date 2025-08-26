@@ -8,5 +8,4 @@ pub enum InAppRequestOperation {
     CreateOneTimeCharge,
     ModifySubscription,
     ReactivateSubscription,
-    RevokeSubscription,
 }

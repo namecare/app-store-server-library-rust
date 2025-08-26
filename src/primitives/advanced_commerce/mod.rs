@@ -18,7 +18,6 @@ pub mod request_refund_request;
 pub mod request_refund_response;
 
 pub mod descriptors;
-pub mod request_descriptors;
 pub mod subscription_modify_descriptors;
 pub mod subscription_cancel_request;
 pub mod subscription_cancel_response;

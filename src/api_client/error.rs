@@ -76,15 +76,15 @@ pub trait APIServiceErrorCode: Debug + Sized {
 }
 
 #[derive(Debug, Clone)]
-pub struct APIServiceError<E: APIServiceErrorCode> {
+pub struct ApiServiceError<E: APIServiceErrorCode> {
     pub http_status_code: u16,
     pub api_error: Option<E>,
     pub error_code: Option<i64>,
     pub error_message: Option<String>,
 }
 
-impl<E: APIServiceErrorCode> std::error::Error for APIServiceError<E> {}
-impl<E: APIServiceErrorCode> fmt::Display for APIServiceError<E> {
+impl<E: APIServiceErrorCode> std::error::Error for ApiServiceError<E> {}
+impl<E: APIServiceErrorCode> fmt::Display for ApiServiceError<E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -104,7 +104,7 @@ impl<E: APIServiceErrorCode> fmt::Display for APIServiceError<E> {
     }
 }
 
-impl<E: APIServiceErrorCode> From<http::Error> for APIServiceError<E> {
+impl<E: APIServiceErrorCode> From<http::Error> for ApiServiceError<E> {
     fn from(e: http::Error) -> Self {
         use http::{header, method, status, uri};
 
@@ -131,52 +131,52 @@ impl<E: APIServiceErrorCode> From<http::Error> for APIServiceError<E> {
     }
 }
 
-impl<E: APIServiceErrorCode> From<TransportError> for APIServiceError<E> {
+impl<E: APIServiceErrorCode> From<TransportError> for ApiServiceError<E> {
     fn from(err: TransportError) -> Self {
         match err {
-            TransportError::Serialization(e) => APIServiceError {
+            TransportError::Serialization(e) => ApiServiceError {
                 http_status_code: 400,
                 api_error: None,
                 error_code: None,
                 error_message: Some(format!("Serialization error: {}", e)),
             },
-            TransportError::InvalidMethod => APIServiceError {
+            TransportError::InvalidMethod => ApiServiceError {
                 http_status_code: 400,
                 api_error: None,
                 error_code: None,
                 error_message: Some("Invalid HTTP method".to_string()),
             },
-            TransportError::InvalidStatusCode(e) => APIServiceError {
+            TransportError::InvalidStatusCode(e) => ApiServiceError {
                 http_status_code: 500,
                 api_error: None,
                 error_code: None,
                 error_message: Some(format!("Invalid status code: {}", e)),
             },
-            TransportError::RequestFailed(msg) => APIServiceError {
+            TransportError::RequestFailed(msg) => ApiServiceError {
                 http_status_code: 500,
                 api_error: None,
                 error_code: None,
                 error_message: Some(format!("Request failed: {}", msg)),
             },
-            TransportError::NetworkError(msg) => APIServiceError {
+            TransportError::NetworkError(msg) => ApiServiceError {
                 http_status_code: 503,
                 api_error: None,
                 error_code: None,
                 error_message: Some(format!("Network error: {}", msg)),
             },
-            TransportError::InvalidResponse(msg) => APIServiceError {
+            TransportError::InvalidResponse(msg) => ApiServiceError {
                 http_status_code: 502,
                 api_error: None,
                 error_code: None,
                 error_message: Some(format!("Invalid response: {}", msg)),
             },
-            TransportError::Timeout => APIServiceError {
+            TransportError::Timeout => ApiServiceError {
                 http_status_code: 504,
                 api_error: None,
                 error_code: None,
                 error_message: Some("Request timeout".to_string()),
             },
-            TransportError::Other(msg) => APIServiceError {
+            TransportError::Other(msg) => ApiServiceError {
                 http_status_code: 500,
                 api_error: None,
                 error_code: None,

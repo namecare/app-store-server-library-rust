@@ -4,7 +4,7 @@ use crate::api_client::error::APIServiceErrorCode;
 /// Enum representing different API errors with associated status codes.
 #[derive(Debug, Copy, Clone, Deserialize_repr, Serialize_repr, PartialEq, Hash)]
 #[repr(i64)]
-pub enum APIErrorCode {
+pub enum ApiErrorCode {
     /// An error that indicates an invalid request.
     /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/generalbadrequesterror)
     GeneralBadRequest = 4000000,
@@ -257,7 +257,7 @@ pub enum APIErrorCode {
     Unknown = -1,
 }
 
-impl APIServiceErrorCode for APIErrorCode {
+impl APIServiceErrorCode for ApiErrorCode {
     fn code(&self) -> i64 {
         *self as i64
     }

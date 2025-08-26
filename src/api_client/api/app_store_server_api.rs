@@ -3,9 +3,9 @@ pub mod api_error_code;
 use std::collections::HashMap;
 use http::Method;
 use serde_json::Value;
-use crate::api_client::api::app_store_server_api::api_error_code::APIErrorCode;
-use crate::api_client::api_client::{APIClient};
-use crate::api_client::error::APIServiceError;
+use crate::api_client::api::app_store_server_api::api_error_code::ApiErrorCode;
+use crate::api_client::api_client::{ApiClient};
+use crate::api_client::error::ApiServiceError;
 use crate::api_client::transport::Transport;
 use crate::primitives::check_test_notification_response::CheckTestNotificationResponse;
 use crate::primitives::consumption_request::ConsumptionRequest;
@@ -25,11 +25,11 @@ use crate::primitives::transaction_history_request::TransactionHistoryRequest;
 use crate::primitives::transaction_info_response::TransactionInfoResponse;
 use crate::primitives::update_app_account_token_request::UpdateAppAccountTokenRequest;
 
-pub struct AppStoreServerAPI;
-pub type AppStoreServerAPIClient<T> = APIClient<T, AppStoreServerAPI, APIErrorCode>;
-pub type APIError = APIServiceError<APIErrorCode>;
+pub struct AppStoreServerApi;
+pub type AppStoreServerApiClient<T> = ApiClient<T, AppStoreServerApi, ApiErrorCode>;
+pub type ApiError = ApiServiceError<ApiErrorCode>;
 
-impl<T: Transport> AppStoreServerAPIClient<T> {
+impl<T: Transport> AppStoreServerApiClient<T> {
     /// Uses a subscription's product identifier to extend the renewal date for all of its eligible active subscribers.
     ///
     /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/extend_subscription_renewal_dates_for_all_active_subscribers)
@@ -48,7 +48,7 @@ impl<T: Transport> AppStoreServerAPIClient<T> {
     pub async fn extend_renewal_date_for_all_active_subscribers(
         &self,
         mass_extend_renewal_date_request: &MassExtendRenewalDateRequest,
-    ) -> Result<MassExtendRenewalDateStatusResponse, APIError> {
+    ) -> Result<MassExtendRenewalDateStatusResponse, ApiError> {
         let req = self.build_request(
             "/inApps/v1/subscriptions/extend/mass",
             Method::POST,
@@ -77,7 +77,7 @@ impl<T: Transport> AppStoreServerAPIClient<T> {
         &self,
         original_transaction_id: &str,
         extend_renewal_date_request: &ExtendRenewalDateRequest,
-    ) -> Result<ExtendRenewalDateResponse, APIError> {
+    ) -> Result<ExtendRenewalDateResponse, ApiError> {
         let path = format!(
             "/inApps/v1/subscriptions/extend/{}",
             original_transaction_id
@@ -110,7 +110,7 @@ impl<T: Transport> AppStoreServerAPIClient<T> {
         &self,
         transaction_id: &str,
         status: Option<&Vec<Status>>,
-    ) -> Result<StatusResponse, APIError> {
+    ) -> Result<StatusResponse, ApiError> {
         let mut path = format!("/inApps/v1/subscriptions/{}", transaction_id);
 
         if let Some(status) = status {
@@ -151,7 +151,7 @@ impl<T: Transport> AppStoreServerAPIClient<T> {
         &self,
         transaction_id: &str,
         revision: &str,
-    ) -> Result<RefundHistoryResponse, APIError> {
+    ) -> Result<RefundHistoryResponse, ApiError> {
         let mut path = format!("/inApps/v2/refund/lookup/{}", transaction_id);
         if !revision.is_empty() {
             path.push_str(&format!("?revision={}", revision));
@@ -182,7 +182,7 @@ impl<T: Transport> AppStoreServerAPIClient<T> {
         &self,
         request_identifier: &str,
         product_id: &str,
-    ) -> Result<MassExtendRenewalDateStatusResponse, APIError> {
+    ) -> Result<MassExtendRenewalDateStatusResponse, ApiError> {
         let path = format!(
             "/inApps/v1/subscriptions/extend/mass/{}/{}",
             product_id, request_identifier
@@ -211,7 +211,7 @@ impl<T: Transport> AppStoreServerAPIClient<T> {
     pub async fn get_test_notification_status(
         &self,
         test_notification_token: &str,
-    ) -> Result<CheckTestNotificationResponse, APIError> {
+    ) -> Result<CheckTestNotificationResponse, ApiError> {
         let path = format!("/inApps/v1/notifications/test/{}", test_notification_token);
         let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
         self.make_request_with_response_body(req).await
@@ -240,7 +240,7 @@ impl<T: Transport> AppStoreServerAPIClient<T> {
         transaction_id: &str,
         revision: Option<&str>,
         transaction_history_request: TransactionHistoryRequest,
-    ) -> Result<HistoryResponse, APIError> {
+    ) -> Result<HistoryResponse, ApiError> {
         self.get_transaction_history_with_version(
             transaction_id,
             revision,
@@ -272,7 +272,7 @@ impl<T: Transport> AppStoreServerAPIClient<T> {
         &self,
         pagination_token: &str,
         notification_history_request: &NotificationHistoryRequest,
-    ) -> Result<NotificationHistoryResponse, APIError> {
+    ) -> Result<NotificationHistoryResponse, ApiError> {
         let mut query_parameters: HashMap<&str, &str> = HashMap::new();
         if !pagination_token.is_empty() {
             query_parameters.insert("paginationToken", pagination_token);
@@ -316,7 +316,7 @@ impl<T: Transport> AppStoreServerAPIClient<T> {
         revision: Option<&str>,
         transaction_history_request: &TransactionHistoryRequest,
         version: GetTransactionHistoryVersion,
-    ) -> Result<HistoryResponse, APIError> {
+    ) -> Result<HistoryResponse, ApiError> {
         let mut query_parameters: Vec<(&str, Value)> = vec![];
 
         if let Some(rev) = revision {
@@ -404,7 +404,7 @@ impl<T: Transport> AppStoreServerAPIClient<T> {
     /// # Errors
     ///
     /// Returns an `APIException` if the request could not be processed.
-    pub async fn get_transaction_info(&self, transaction_id: &str) -> Result<TransactionInfoResponse, APIError> {
+    pub async fn get_transaction_info(&self, transaction_id: &str) -> Result<TransactionInfoResponse, ApiError> {
         let path = format!("/inApps/v1/transactions/{}", transaction_id);
         let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
         self.make_request_with_response_body(req).await
@@ -425,7 +425,7 @@ impl<T: Transport> AppStoreServerAPIClient<T> {
     /// # Errors
     ///
     /// Returns an `APIException` if the request could not be processed.
-    pub async fn look_up_order_id(&self, order_id: &str) -> Result<OrderLookupResponse, APIError> {
+    pub async fn look_up_order_id(&self, order_id: &str) -> Result<OrderLookupResponse, ApiError> {
         let path = format!("/inApps/v1/lookup/{}", order_id);
         let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
         self.make_request_with_response_body(req).await
@@ -442,7 +442,7 @@ impl<T: Transport> AppStoreServerAPIClient<T> {
     /// # Errors
     ///
     /// Returns an `APIException` if the request could not be processed.
-    pub async fn request_test_notification(&self) -> Result<SendTestNotificationResponse, APIError> {
+    pub async fn request_test_notification(&self) -> Result<SendTestNotificationResponse, ApiError> {
         let path = "/inApps/v1/notifications/test";
         let req = self.build_request::<()>(path, Method::POST, None)?;
         self.make_request_with_response_body(req).await
@@ -464,7 +464,7 @@ impl<T: Transport> AppStoreServerAPIClient<T> {
         &self,
         transaction_id: &str,
         consumption_request: &ConsumptionRequest,
-    ) -> Result<(), APIError> {
+    ) -> Result<(), ApiError> {
         let path = format!("/inApps/v1/transactions/consumption/{}", transaction_id);
         let req = self.build_request(path.as_str(), Method::PUT, Some(consumption_request))?;
         self.make_request_without_response_body(req).await
@@ -491,7 +491,7 @@ impl<T: Transport> AppStoreServerAPIClient<T> {
         &self,
         original_transaction_id: &str,
         update_app_account_token_request: &UpdateAppAccountTokenRequest,
-    ) -> Result<(), APIError> {
+    ) -> Result<(), ApiError> {
         let path = format!(
             "/inApps/v1/transactions/{}/appAccountToken",
             original_transaction_id

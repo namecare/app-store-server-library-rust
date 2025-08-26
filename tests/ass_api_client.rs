@@ -37,8 +37,8 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 use uuid::Uuid;
-use app_store_server_library::api_client::api::app_store_server_api::api_error_code::APIErrorCode;
-use app_store_server_library::api_client::api::app_store_server_api::{AppStoreServerAPIClient, GetTransactionHistoryVersion};
+use app_store_server_library::api_client::api::app_store_server_api::api_error_code::ApiErrorCode;
+use app_store_server_library::api_client::api::app_store_server_api::{AppStoreServerApiClient, GetTransactionHistoryVersion};
 use app_store_server_library::api_client::error::ConfigurationError;
 
 #[tokio::test]
@@ -862,7 +862,7 @@ async fn test_invalid_app_account_token_uuid_error() {
         Err(error) => {
             assert_eq!(400, error.http_status_code);
             assert_eq!(
-                APIErrorCode::InvalidAppAccountTokenUUID,
+                ApiErrorCode::InvalidAppAccountTokenUUID,
                 error.api_error.unwrap()
             );
             assert_eq!(Some(4000183), error.error_code);
@@ -895,7 +895,7 @@ async fn test_family_transaction_not_supported_error() {
         Err(error) => {
             assert_eq!(400, error.http_status_code);
             assert_eq!(
-                APIErrorCode::FamilyTransactionNotSupported,
+                ApiErrorCode::FamilyTransactionNotSupported,
                 error.api_error.unwrap()
             );
             assert_eq!(Some(4000185), error.error_code);
@@ -928,7 +928,7 @@ async fn test_transaction_id_not_original_transaction_id_error() {
         Err(error) => {
             assert_eq!(400, error.http_status_code);
             assert_eq!(
-                APIErrorCode::TransactionIdNotOriginalTransactionId,
+                ApiErrorCode::TransactionIdNotOriginalTransactionId,
                 error.api_error.unwrap()
             );
             assert_eq!(Some(4000187), error.error_code);
@@ -1001,7 +1001,7 @@ async fn test_api_error() {
         }
         Err(error) => {
             assert_eq!(500, error.http_status_code);
-            assert_eq!(APIErrorCode::GeneralInternal, error.api_error.unwrap());
+            assert_eq!(ApiErrorCode::GeneralInternal, error.api_error.unwrap());
             assert_eq!(5000000, error.error_code.unwrap());
             assert_eq!("An unknown error occurred.", error.error_message.unwrap());
         }
@@ -1025,7 +1025,7 @@ async fn test_api_too_many_requests() {
         }
         Err(error) => {
             assert_eq!(429, error.http_status_code);
-            assert_eq!(APIErrorCode::RateLimitExceeded, error.api_error.unwrap());
+            assert_eq!(ApiErrorCode::RateLimitExceeded, error.api_error.unwrap());
             assert_eq!(Some(4290000), error.error_code);
             assert_eq!("Rate limit exceeded.", error.error_message.unwrap());
         }
@@ -1049,7 +1049,7 @@ async fn test_api_unknown_error() {
         }
         Err(error) => {
             assert_eq!(400, error.http_status_code);
-            assert_eq!(Some(APIErrorCode::Unknown), error.api_error);
+            assert_eq!(Some(ApiErrorCode::Unknown), error.api_error);
             assert_eq!("Testing error.", error.error_message.unwrap());
         }
     }
@@ -1256,7 +1256,7 @@ fn test_xcode_environment_is_rejected() {
         None
     );
 
-    let result = AppStoreServerAPIClient::new(
+    let result = AppStoreServerApiClient::new(
         vec![],
         "test_key_id",
         "test_issuer_id",
@@ -1282,7 +1282,7 @@ fn test_sandbox_environment_is_accepted() {
         None
     );
 
-    let result = AppStoreServerAPIClient::new(
+    let result = AppStoreServerApiClient::new(
         vec![],
         "test_key_id",
         "test_issuer_id",
@@ -1302,7 +1302,7 @@ fn test_production_environment_is_accepted() {
         None
     );
 
-    let result = AppStoreServerAPIClient::new(
+    let result = AppStoreServerApiClient::new(
         vec![],
         "test_key_id",
         "test_issuer_id",
@@ -1318,7 +1318,7 @@ fn app_store_server_api_client_with_body_from_file(
     path: &str,
     status: StatusCode,
     request_verifier: Option<RequestVerifier>,
-) -> AppStoreServerAPIClient<MockTransport> {
+) -> AppStoreServerApiClient<MockTransport> {
     let body = fs::read_to_string(path).expect("Failed to read file");
     app_store_server_api_client(body, status, request_verifier)
 }
@@ -1327,12 +1327,12 @@ fn app_store_server_api_client(
     body: String,
     status: StatusCode,
     request_verifier: Option<RequestVerifier>,
-) -> AppStoreServerAPIClient<MockTransport> {
+) -> AppStoreServerApiClient<MockTransport> {
     let key = fs::read("tests/resources/certs/testSigningKey.p8").expect("Failed to read file");
 
     let mock_transport = MockTransport::new(body, status, request_verifier);
 
-    AppStoreServerAPIClient::new(
+    AppStoreServerApiClient::new(
         key,
         "keyId",
         "issuerId",

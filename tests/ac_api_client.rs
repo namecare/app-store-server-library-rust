@@ -1,6 +1,6 @@
 mod common;
 use common::transport_mock::{MockTransport, RequestVerifier};
-use app_store_server_library::api_client::api::advanced_commerce_api::AdvancedCommerceAPIClient;
+use app_store_server_library::api_client::api::advanced_commerce_api::AdvancedCommerceApiClient;
 use app_store_server_library::api_client::error::ConfigurationError;
 use app_store_server_library::primitives::environment::Environment;
 use app_store_server_library::primitives::advanced_commerce::subscription_cancel_request::SubscriptionCancelRequest;
@@ -221,7 +221,7 @@ fn test_xcode_environment_is_not_supported() {
         None
     );
 
-    let result = AdvancedCommerceAPIClient::new(
+    let result = AdvancedCommerceApiClient::new(
         vec![],
         "test_key_id",
         "test_issuer_id",
@@ -247,7 +247,7 @@ fn test_sandbox_environment_is_accepted() {
         None
     );
 
-    let result = AdvancedCommerceAPIClient::new(
+    let result = AdvancedCommerceApiClient::new(
         vec![],
         "test_key_id",
         "test_issuer_id",
@@ -267,7 +267,7 @@ fn test_production_environment_is_accepted() {
         None
     );
 
-    let result = AdvancedCommerceAPIClient::new(
+    let result = AdvancedCommerceApiClient::new(
         vec![],
         "test_key_id",
         "test_issuer_id",
@@ -283,7 +283,7 @@ fn advanced_commerce_api_client_with_body_from_file(
     path: &str,
     status: StatusCode,
     request_verifier: Option<RequestVerifier>,
-) -> AdvancedCommerceAPIClient<MockTransport> {
+) -> AdvancedCommerceApiClient<MockTransport> {
     let body = fs::read_to_string(path).expect("Failed to read file");
     advanced_commerce_api_client(body, status, request_verifier)
 }
@@ -292,12 +292,12 @@ fn advanced_commerce_api_client(
     body: String,
     status: StatusCode,
     request_verifier: Option<RequestVerifier>,
-) -> AdvancedCommerceAPIClient<MockTransport> {
+) -> AdvancedCommerceApiClient<MockTransport> {
     let key = fs::read("tests/resources/certs/testSigningKey.p8").expect("Failed to read file");
 
     let mock_transport = MockTransport::new(body, status, request_verifier);
 
-    AdvancedCommerceAPIClient::new(
+    AdvancedCommerceApiClient::new(
         key,
         "keyId",
         "issuerId",
