@@ -19,50 +19,5 @@ pub const REAL_APPLE_INTERMEDIATE_BASE64_ENCODED: &str = "MIIDFjCCApygAwIBAgIUIs
 pub const REAL_APPLE_SIGNING_CERTIFICATE_BASE64_ENCODED: &str = "MIIEMDCCA7agAwIBAgIQaPoPldvpSoEH0lBrjDPv9jAKBggqhkjOPQQDAzB1MUQwQgYDVQQDDDtBcHBsZSBXb3JsZHdpZGUgRGV2ZWxvcGVyIFJlbGF0aW9ucyBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTELMAkGA1UECwwCRzYxEzARBgNVBAoMCkFwcGxlIEluYy4xCzAJBgNVBAYTAlVTMB4XDTIxMDgyNTAyNTAzNFoXDTIzMDkyNDAyNTAzM1owgZIxQDA+BgNVBAMMN1Byb2QgRUNDIE1hYyBBcHAgU3RvcmUgYW5kIGlUdW5lcyBTdG9yZSBSZWNlaXB0IFNpZ25pbmcxLDAqBgNVBAsMI0FwcGxlIFdvcmxkd2lkZSBEZXZlbG9wZXIgUmVsYXRpb25zMRMwEQYDVQQKDApBcHBsZSBJbmMuMQswCQYDVQQGEwJVUzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABOoTcaPcpeipNL9eQ06tCu7pUcwdCXdN8vGqaUjd58Z8tLxiUC0dBeA+euMYggh1/5iAk+FMxUFmA2a1r4aCZ8SjggIIMIICBDAMBgNVHRMBAf8EAjAAMB8GA1UdIwQYMBaAFD8vlCNR01DJmig97bB85c+lkGKZMHAGCCsGAQUFBwEBBGQwYjAtBggrBgEFBQcwAoYhaHR0cDovL2NlcnRzLmFwcGxlLmNvbS93d2RyZzYuZGVyMDEGCCsGAQUFBzABhiVodHRwOi8vb2NzcC5hcHBsZS5jb20vb2NzcDAzLXd3ZHJnNjAyMIIBHgYDVR0gBIIBFTCCAREwggENBgoqhkiG92NkBQYBMIH+MIHDBggrBgEFBQcCAjCBtgyBs1JlbGlhbmNlIG9uIHRoaXMgY2VydGlmaWNhdGUgYnkgYW55IHBhcnR5IGFzc3VtZXMgYWNjZXB0YW5jZSBvZiB0aGUgdGhlbiBhcHBsaWNhYmxlIHN0YW5kYXJkIHRlcm1zIGFuZCBjb25kaXRpb25zIG9mIHVzZSwgY2VydGlmaWNhdGUgcG9saWN5IGFuZCBjZXJ0aWZpY2F0aW9uIHByYWN0aWNlIHN0YXRlbWVudHMuMDYGCCsGAQUFBwIBFipodHRwOi8vd3d3LmFwcGxlLmNvbS9jZXJ0aWZpY2F0ZWF1dGhvcml0eS8wHQYDVR0OBBYEFCOCmMBq//1L5imvVmqX1oCYeqrMMA4GA1UdDwEB/wQEAwIHgDAQBgoqhkiG92NkBgsBBAIFADAKBggqhkjOPQQDAwNoADBlAjEAl4JB9GJHixP2nuibyU1k3wri5psGIxPME05sFKq7hQuzvbeyBu82FozzxmbzpogoAjBLSFl0dZWIYl2ejPV+Di5fBnKPu8mymBQtoE/H2bES0qAs8bNueU3CBjjh1lwnDsI=";
 pub const EFFECTIVE_DATE: u64 = 1681312846;
 
-use app_store_server_library::api_client::transport::{Transport, TransportError};
-use http::StatusCode;
-
-pub type RequestVerifier = Box<dyn Fn(&http::Request<Vec<u8>>, &Vec<u8>) -> () + Send + Sync>;
-
-pub struct MockTransport {
-    response_body: String,
-    status_code: StatusCode,
-    request_verifier: Option<RequestVerifier>,
-}
-
-impl MockTransport {
-    pub fn new(body: String, status: StatusCode, verifier: Option<RequestVerifier>) -> Self {
-        Self {
-            response_body: body,
-            status_code: status,
-            request_verifier: verifier,
-        }
-    }
-}
-
-impl Transport for MockTransport {
-    async fn send(&self, req: http::Request<Vec<u8>>) -> Result<http::Response<Vec<u8>>, TransportError> {
-        let (parts, body) = req.into_parts();
-
-        // Call the verifier if present
-        if let Some(ref verifier) = self.request_verifier {
-            verifier(
-                &http::Request::from_parts(parts.clone(), body.clone()),
-                &body,
-            );
-        }
-
-        // Get the response body
-        let body_str = self.response_body.clone();
-        let response_body = body_str.into_bytes();
-
-        // Build the response
-        let response = http::Response::builder()
-            .status(self.status_code)
-            .header("Content-Type", "application/json")
-            .body(response_body)
-            .map_err(|e| TransportError::InvalidResponse(e.to_string()))?;
-
-        Ok(response)
-    }
-}
+#[cfg(feature="api-client")]
+pub mod transport_mock;

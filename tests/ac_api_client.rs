@@ -1,5 +1,5 @@
 mod common;
-use common::{MockTransport, RequestVerifier};
+use common::transport_mock::{MockTransport, RequestVerifier};
 use app_store_server_library::api_client::api::advanced_commerce_api::AdvancedCommerceAPIClient;
 use app_store_server_library::api_client::error::ConfigurationError;
 use app_store_server_library::primitives::environment::Environment;

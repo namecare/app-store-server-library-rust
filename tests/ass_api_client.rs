@@ -1,5 +1,5 @@
 mod common;
-use common::{MockTransport, RequestVerifier};
+use common::transport_mock::{MockTransport, RequestVerifier};
 use app_store_server_library::primitives::account_tenure::AccountTenure;
 use app_store_server_library::primitives::consumption_request::ConsumptionRequest;
 use app_store_server_library::primitives::consumption_status::ConsumptionStatus;
