@@ -110,6 +110,7 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> APIClient<T, 
             serde_json::to_vec(body_data).map_err(|_| APIServiceError {
                 http_status_code: 400,
                 api_error: None,
+                error_code: None,
                 error_message: Some("Failed to serialize request body".to_string()),
             })?
         } else {
@@ -118,11 +119,7 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> APIClient<T, 
 
         request_builder
             .body(body_bytes)
-            .map_err(|e| APIServiceError {
-                http_status_code: 500,
-                api_error: None,
-                error_message: Some(format!("Failed to build request: {}", e)),
-            })
+            .map_err(|e| e.into())
     }
 
     pub(super) async fn make_request_with_response_body<Res>(&self, request: Request<Vec<u8>>) -> Result<Res, APIServiceError<E>>
@@ -134,6 +131,7 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> APIClient<T, 
         let json_result = serde_json::from_slice::<Res>(&body).map_err(|_| APIServiceError {
             http_status_code: 500,
             api_error: None,
+            error_code: None,
             error_message: Some("Failed to deserialize response JSON".to_string()),
         })?;
         Ok(json_result)
@@ -165,14 +163,16 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> APIClient<T, 
             .map(|payload| {
                 APIServiceError {
                     http_status_code: status_code,
-                    api_error: payload.error_code,
+                    api_error: Some(payload.error_code),
+                    error_code: payload.raw_error_code,
                     error_message: payload.error_message,
                 }
             })
             .unwrap_or_else(|_| APIServiceError {
                 http_status_code: status_code,
                 api_error: None,
-                error_message: None,
+                error_code: None,
+                error_message: Some("Failed to deserialize error JSON".to_string()),
             })
     }
 }

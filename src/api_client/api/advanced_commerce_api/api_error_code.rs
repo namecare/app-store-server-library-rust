@@ -479,11 +479,18 @@ pub enum APIErrorCode {
     /// The value of version is invalid.
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/unexpectedversion)
     UnexpectedVersion = 4000084,
+
+    /// An unknown error
+    Unknown = -1,
 }
 
 impl APIServiceErrorCode for APIErrorCode {
     fn code(&self) -> i64 {
         *self as i64
+    }
+
+    fn unknown() -> Self {
+        Self::Unknown
     }
 }
 
@@ -609,6 +616,7 @@ impl APIErrorCode {
             APIErrorCode::TransactionCannotBeRefundedContactSupport => "The transaction can't be refunded; customer can contact Apple Support for assistance.",
             APIErrorCode::Unauthorized => "Unauthorized.",
             APIErrorCode::UnexpectedVersion => "The value of version is invalid.",
+            APIErrorCode::Unknown => "Unknown error.",
         }
     }
 }

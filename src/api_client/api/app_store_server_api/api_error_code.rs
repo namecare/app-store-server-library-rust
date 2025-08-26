@@ -252,10 +252,17 @@ pub enum APIErrorCode {
     ///
     /// [GeneralInternalRetryableError](https://developer.apple.com/documentation/appstoreserverapi/generalinternalretryableerror)
     GeneralInternalRetryable = 5000001,
+
+    /// An unknown error
+    Unknown = -1,
 }
 
 impl APIServiceErrorCode for APIErrorCode {
     fn code(&self) -> i64 {
         *self as i64
+    }
+
+    fn unknown() -> Self {
+        Self::Unknown
     }
 }
