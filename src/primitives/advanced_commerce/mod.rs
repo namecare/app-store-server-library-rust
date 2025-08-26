@@ -8,20 +8,15 @@ pub mod reason;
 pub mod refund_reason;
 pub mod refund_type;
 pub mod request_info;
-pub mod request_offer;
 pub mod validation_utils;
 
-// OneTimeCharge models
 pub mod one_time_charge_create_request;
-pub mod one_time_charge_create_response;
 pub mod one_time_charge_item;
 
-// Refund models
 pub mod request_refund_item;
 pub mod request_refund_request;
 pub mod request_refund_response;
 
-// Descriptors models
 pub mod descriptors;
 pub mod request_descriptors;
 pub mod subscription_modify_descriptors;
@@ -50,5 +45,7 @@ pub mod subscription_reactivate_item;
 pub mod subscription_revoke_request;
 pub mod subscription_revoke_response;
 pub mod subscription_migrate_response;
-pub mod request_operation;
-pub mod request_version;
+pub mod in_app_request_operation;
+pub mod in_app_request_version;
+pub mod in_app_request;
+mod base_response;

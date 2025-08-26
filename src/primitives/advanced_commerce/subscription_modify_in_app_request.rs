@@ -5,9 +5,9 @@ use crate::primitives::advanced_commerce::subscription_modify_change_item::Subsc
 use crate::primitives::advanced_commerce::subscription_modify_period_change::SubscriptionModifyPeriodChange;
 use crate::primitives::advanced_commerce::subscription_modify_remove_item::SubscriptionModifyRemoveItem;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use crate::primitives::advanced_commerce::request_operation::RequestOperation;
-use crate::primitives::advanced_commerce::request_version::RequestVersion;
+use crate::primitives::advanced_commerce::in_app_request::AdvancedCommerceInAppRequest;
+use crate::primitives::advanced_commerce::in_app_request_operation::InAppRequestOperation;
+use crate::primitives::advanced_commerce::in_app_request_version::InAppRequestVersion;
 
 /// The metadata your app provides to modify an auto-renewable subscription.
 ///
@@ -16,10 +16,10 @@ use crate::primitives::advanced_commerce::request_version::RequestVersion;
 #[serde(rename_all = "camelCase")]
 pub struct SubscriptionModifyInAppRequest {
     /// The operation type for this request.
-    pub operation: RequestOperation,
+    pub operation: InAppRequestOperation,
 
     /// The version of this request.
-    pub version: RequestVersion,
+    pub version: InAppRequestVersion,
 
     /// The currency of the price of the product.
     ///
@@ -85,67 +85,4 @@ pub struct SubscriptionModifyInAppRequest {
     pub retain_billing_cycle: bool,
 }
 
-impl SubscriptionModifyInAppRequest {
-    pub fn new(request_reference_id: Uuid, transaction_id: String, retain_billing_cycle: bool) -> Self {
-        Self {
-            operation: RequestOperation::ModifySubscription,
-            version: RequestVersion::V1,
-            currency: None,
-            descriptors: None,
-            add_items: None,
-            change_items: None,
-            remove_items: None,
-            period_change: None,
-            request_info: RequestInfo::new(request_reference_id),
-            storefront: None,
-            tax_code: None,
-            transaction_id,
-            retain_billing_cycle,
-        }
-    }
-
-    pub fn with_currency(mut self, currency: String) -> Self {
-        self.currency = Some(currency);
-        self
-    }
-
-    pub fn with_descriptors(mut self, descriptors: SubscriptionModifyDescriptors) -> Self {
-        self.descriptors = Some(descriptors);
-        self
-    }
-
-    pub fn with_add_items(mut self, add_items: Vec<SubscriptionModifyAddItem>) -> Self {
-        self.add_items = Some(add_items);
-        self
-    }
-
-    pub fn with_change_items(mut self, change_items: Vec<SubscriptionModifyChangeItem>) -> Self {
-        self.change_items = Some(change_items);
-        self
-    }
-
-    pub fn with_remove_items(mut self, remove_items: Vec<SubscriptionModifyRemoveItem>) -> Self {
-        self.remove_items = Some(remove_items);
-        self
-    }
-
-    pub fn with_period_change(mut self, period_change: SubscriptionModifyPeriodChange) -> Self {
-        self.period_change = Some(period_change);
-        self
-    }
-
-    pub fn with_storefront(mut self, storefront: String) -> Self {
-        self.storefront = Some(storefront);
-        self
-    }
-
-    pub fn with_tax_code(mut self, tax_code: String) -> Self {
-        self.tax_code = Some(tax_code);
-        self
-    }
-
-    pub fn with_request_info(mut self, request_info: RequestInfo) -> Self {
-        self.request_info = request_info;
-        self
-    }
-}
+impl AdvancedCommerceInAppRequest for SubscriptionModifyInAppRequest {}

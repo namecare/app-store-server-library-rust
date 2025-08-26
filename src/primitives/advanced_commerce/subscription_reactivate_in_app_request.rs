@@ -1,9 +1,9 @@
 use crate::primitives::advanced_commerce::request_info::RequestInfo;
 use crate::primitives::advanced_commerce::subscription_reactivate_item::SubscriptionReactivateItem;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use crate::primitives::advanced_commerce::request_operation::RequestOperation;
-use crate::primitives::advanced_commerce::request_version::RequestVersion;
+use crate::primitives::advanced_commerce::in_app_request::AdvancedCommerceInAppRequest;
+use crate::primitives::advanced_commerce::in_app_request_operation::InAppRequestOperation;
+use crate::primitives::advanced_commerce::in_app_request_version::InAppRequestVersion;
 
 /// The metadata your app provides to reactivate an auto-renewable subscription.
 ///
@@ -13,10 +13,10 @@ use crate::primitives::advanced_commerce::request_version::RequestVersion;
 pub struct SubscriptionReactivateInAppRequest {
     /// The operation type for this request.
     /// Value: REACTIVATE_SUBSCRIPTION
-    pub operation: RequestOperation,
+    pub operation: InAppRequestOperation,
 
     /// The version of this request.
-    pub version: RequestVersion,
+    pub version: InAppRequestVersion,
 
     /// The details of the reactivation items.
     ///
@@ -41,33 +41,4 @@ pub struct SubscriptionReactivateInAppRequest {
     pub transaction_id: String,
 }
 
-impl SubscriptionReactivateInAppRequest {
-    pub fn new(
-        request_reference_id: Uuid,
-        transaction_id: String,
-    ) -> Self {
-        Self {
-            operation: RequestOperation::ReactivateSubscription,
-            version: RequestVersion::V1,
-            items: None,
-            request_info: RequestInfo::new(request_reference_id),
-            storefront: None,
-            transaction_id,
-        }
-    }
-
-    pub fn with_items(mut self, items: Vec<SubscriptionReactivateItem>) -> Self {
-        self.items = Some(items);
-        self
-    }
-
-    pub fn with_storefront(mut self, storefront: String) -> Self {
-        self.storefront = Some(storefront);
-        self
-    }
-
-    pub fn with_request_info(mut self, request_info: RequestInfo) -> Self {
-        self.request_info = request_info;
-        self
-    }
-}
+impl AdvancedCommerceInAppRequest for SubscriptionReactivateInAppRequest {}

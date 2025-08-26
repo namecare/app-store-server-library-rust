@@ -1,11 +1,12 @@
 use app_store_server_library::jws_signature_creator::{
-    AdvancedCommerceInAppRequest, AdvancedCommerceInAppSignatureCreator, IntroductoryOfferEligibilitySignatureCreator,
+    AdvancedCommerceInAppSignatureCreator, IntroductoryOfferEligibilitySignatureCreator,
     PromotionalOfferV2SignatureCreator,
 };
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use serde::Serialize;
 use serde_json::Value;
+use app_store_server_library::primitives::advanced_commerce::in_app_request::AdvancedCommerceInAppRequest;
 
 #[test]
 fn test_promotional_offer_v2_signature_creator() {

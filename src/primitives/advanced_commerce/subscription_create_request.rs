@@ -3,9 +3,9 @@ use crate::primitives::advanced_commerce::period::Period;
 use crate::primitives::advanced_commerce::request_info::RequestInfo;
 use crate::primitives::advanced_commerce::subscription_create_item::SubscriptionCreateItem;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use crate::primitives::advanced_commerce::request_operation::RequestOperation;
-use crate::primitives::advanced_commerce::request_version::RequestVersion;
+use crate::primitives::advanced_commerce::in_app_request::AdvancedCommerceInAppRequest;
+use crate::primitives::advanced_commerce::in_app_request_operation::InAppRequestOperation;
+use crate::primitives::advanced_commerce::in_app_request_version::InAppRequestVersion;
 
 /// The metadata your app provides when a customer purchases an auto-renewable subscription.
 ///
@@ -15,10 +15,10 @@ use crate::primitives::advanced_commerce::request_version::RequestVersion;
 pub struct SubscriptionCreateRequest {
     /// The operation type for this request.
     /// Value: CREATE_SUBSCRIPTION
-    pub operation: RequestOperation,
+    pub operation: InAppRequestOperation,
 
     /// The version of this request.
-    pub version: RequestVersion,
+    pub version: InAppRequestVersion,
 
     /// The currency of the price of the product.
     ///
@@ -63,41 +63,4 @@ pub struct SubscriptionCreateRequest {
     pub tax_code: String,
 }
 
-impl SubscriptionCreateRequest {
-    pub fn new(
-        currency: String,
-        descriptors: Descriptors,
-        items: Vec<SubscriptionCreateItem>,
-        period: Period,
-        tax_code: String,
-        request_reference_id: Uuid,
-    ) -> Self {
-        Self {
-            operation: RequestOperation::CreateSubscription,
-            version: RequestVersion::V1,
-            currency,
-            descriptors,
-            items,
-            period,
-            previous_transaction_id: None,
-            request_info: RequestInfo::new(request_reference_id),
-            storefront: None,
-            tax_code,
-        }
-    }
-
-    pub fn with_previous_transaction_id(mut self, previous_transaction_id: String) -> Self {
-        self.previous_transaction_id = Some(previous_transaction_id);
-        self
-    }
-
-    pub fn with_storefront(mut self, storefront: String) -> Self {
-        self.storefront = Some(storefront);
-        self
-    }
-
-    pub fn with_request_info(mut self, request_info: RequestInfo) -> Self {
-        self.request_info = request_info;
-        self
-    }
-}
+impl AdvancedCommerceInAppRequest for SubscriptionCreateRequest {}

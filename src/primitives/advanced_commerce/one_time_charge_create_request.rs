@@ -1,9 +1,9 @@
 use crate::primitives::advanced_commerce::one_time_charge_item::OneTimeChargeItem;
 use crate::primitives::advanced_commerce::request_info::RequestInfo;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use crate::primitives::advanced_commerce::request_operation::RequestOperation;
-use crate::primitives::advanced_commerce::request_version::RequestVersion;
+use crate::primitives::advanced_commerce::in_app_request::AdvancedCommerceInAppRequest;
+use crate::primitives::advanced_commerce::in_app_request_operation::InAppRequestOperation;
+use crate::primitives::advanced_commerce::in_app_request_version::InAppRequestVersion;
 
 /// The request data your app provides when a customer purchases a one-time-charge product.
 ///
@@ -13,10 +13,10 @@ use crate::primitives::advanced_commerce::request_version::RequestVersion;
 pub struct OneTimeChargeCreateRequest {
     /// The operation type for this request.
     /// Value: CREATE_ONE_TIME_CHARGE
-    pub operation: RequestOperation,
+    pub operation: InAppRequestOperation,
     
     /// The version of this request.
-    pub version: RequestVersion,
+    pub version: InAppRequestVersion,
     
     /// The metadata to include in server requests.
     ///
@@ -45,31 +45,4 @@ pub struct OneTimeChargeCreateRequest {
     pub tax_code: String,
 }
 
-impl OneTimeChargeCreateRequest {
-    pub fn new(
-        currency: String,
-        item: OneTimeChargeItem,
-        tax_code: String,
-        request_reference_id: Uuid,
-    ) -> Self {
-        Self {
-            operation: RequestOperation::CreateOneTimeCharge,
-            version: RequestVersion::V1,
-            request_info: RequestInfo::new(request_reference_id),
-            currency,
-            item,
-            storefront: None,
-            tax_code,
-        }
-    }
-    
-    pub fn with_storefront(mut self, storefront: String) -> Self {
-        self.storefront = Some(storefront);
-        self
-    }
-    
-    pub fn with_request_info(mut self, request_info: RequestInfo) -> Self {
-        self.request_info = request_info;
-        self
-    }
-}
+impl AdvancedCommerceInAppRequest for OneTimeChargeCreateRequest {}

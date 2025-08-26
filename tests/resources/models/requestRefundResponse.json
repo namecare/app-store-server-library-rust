@@ -1,3 +1,4 @@
 {
-  "signedTransactionInfo": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0cmFuc2FjdGlvbklkIjoidGVzdF90cmFuc2FjdGlvbl9pZCJ9.test_signature"
+  "signedTransactionInfo": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0cmFuc2FjdGlvbklkIjoidGVzdF90cmFuc2FjdGlvbl9pZCJ9.test_signature",
+  "signedRenewalInfo": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZW5ld2FsSWQiOiJ0ZXN0X3JlbmV3YWxfaWQifQ.test_signature"
 }
