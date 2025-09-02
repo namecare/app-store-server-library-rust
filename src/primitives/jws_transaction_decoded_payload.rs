@@ -9,6 +9,7 @@ use chrono::{DateTime, Utc};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
 use uuid::Uuid;
+use crate::primitives::advanced_commerce_transaction_info::AdvancedCommerceTransactionInfo;
 
 /// A decoded payload containing transaction information.
 ///
@@ -184,4 +185,10 @@ pub struct JWSTransactionDecodedPayload {
     /// [offerPeriod](https://developer.apple.com/documentation/appstoreserverapi/offerPeriod)
     #[serde(rename = "offerPeriod")]
     pub offer_period: Option<String>,
+
+    /// Transaction information that is present only for Advanced Commerce SKUs.
+    ///
+    /// [advancedCommerceTransactionInfo](https://developer.apple.com/documentation/appstoreserverapi/advancedcommercetransactioninfo)
+    #[serde(rename = "advancedCommerceInfo")]
+    pub advanced_commerce_info: Option<AdvancedCommerceTransactionInfo>,
 }

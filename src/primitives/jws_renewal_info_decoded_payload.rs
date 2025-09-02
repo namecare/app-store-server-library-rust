@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
 use uuid::Uuid;
+use crate::primitives::advanced_commerce_renewal_info::AdvancedCommerceRenewalInfo;
 
 /// A decoded payload containing subscription renewal information for an auto-renewable subscription.
 ///
@@ -144,4 +145,9 @@ pub struct JWSRenewalInfoDecodedPayload {
     /// [offerPeriod](https://developer.apple.com/documentation/appstoreserverapi/offerPeriod)
     #[serde(rename = "offerPeriod")]
     pub offer_period: Option<String>,
+
+    /// Renewal information that is present only for Advanced Commerce SKUs.
+    ///
+    /// [advancedCommerceRenewalInfo](https://developer.apple.com/documentation/appstoreserverapi/advancedcommercerenewalinfo)
+    pub advanced_commerce_info: Option<AdvancedCommerceRenewalInfo>,
 }
