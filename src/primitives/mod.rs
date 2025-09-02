@@ -57,3 +57,7 @@ pub mod transaction_reason;
 pub mod update_app_account_token_request;
 pub mod user_status;
 pub mod advanced_commerce;
+pub mod advanced_commerce_transaction_item;
+pub mod advanced_commerce_transaction_info;
+pub mod advanced_commerce_renewal_info;
+pub mod advanced_commerce_renewal_item;
