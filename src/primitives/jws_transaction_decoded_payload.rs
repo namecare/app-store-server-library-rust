@@ -105,7 +105,7 @@ pub struct JWSTransactionDecodedPayload {
     #[serde_as(as = "Option<TimestampMilliSeconds<String, Flexible>>")]
     pub signed_date: Option<DateTime<Utc>>,
 
-    /// The reason that the App Store refunded the transaction or revoked it from family sharing.
+    /// The reason that the App Store refunded the transaction or revoked it from Family Sharing.
     ///
     /// [revocationReason](https://developer.apple.com/documentation/appstoreserverapi/revocationreason)
     #[serde(rename = "revocationReason")]
@@ -130,7 +130,7 @@ pub struct JWSTransactionDecodedPayload {
     #[serde(rename = "offerType")]
     pub offer_type: Option<OfferType>,
 
-    /// The identifier that contains the promo code or the promotional offer identifier.
+    /// The identifier that contains the offer code or the promotional offer identifier.
     ///
     /// [offerIdentifier](https://developer.apple.com/documentation/appstoreserverapi/offeridentifier)
     #[serde(rename = "offerIdentifier")]
@@ -168,7 +168,7 @@ pub struct JWSTransactionDecodedPayload {
     /// [price](https://developer.apple.com/documentation/appstoreserverapi/price)
     pub price: Option<i64>,
 
-    /// The payment mode you configure for an introductory offer, promotional offer, or offer code on an auto-renewable subscription.
+    /// The payment mode you configure for the offer.
     ///
     /// [offerDiscountType](https://developer.apple.com/documentation/appstoreserverapi/offerdiscounttype)
     #[serde(rename = "offerDiscountType")]

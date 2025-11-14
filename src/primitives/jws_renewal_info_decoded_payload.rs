@@ -66,13 +66,13 @@ pub struct JWSRenewalInfoDecodedPayload {
     #[serde_as(as = "Option<TimestampMilliSeconds<String, Flexible>>")]
     pub grace_period_expires_date: Option<DateTime<Utc>>,
 
-    /// The type of the subscription offer.
+    /// The type of subscription offer.
     ///
     /// [offerType](https://developer.apple.com/documentation/appstoreserverapi/offertype)
     #[serde(rename = "offerType")]
     pub offer_type: Option<OfferType>,
 
-    /// The identifier that contains the promo code or the promotional offer identifier.
+    /// The offer code or the promotional offer identifier.
     ///
     /// [offerIdentifier](https://developer.apple.com/documentation/appstoreserverapi/offeridentifier)
     #[serde(rename = "offerIdentifier")]
@@ -116,7 +116,7 @@ pub struct JWSRenewalInfoDecodedPayload {
     #[serde(rename = "renewalPrice")]
     pub renewal_price: Option<i64>,
 
-    ///The payment mode of the discount offer.
+    ///The payment mode you configure for the offer.
     ///
     ///[offerDiscountType](https://developer.apple.com/documentation/appstoreserverapi/offerdiscounttype)
     #[serde(rename = "offerDiscountType")]

@@ -1,6 +1,6 @@
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
-/// The type of subscription offer.
+/// The type of offer.
 ///
 /// [offerType](https://developer.apple.com/documentation/appstoreserverapi/offertype)
 #[derive(Debug, Clone, Deserialize_repr, Serialize_repr, Hash, PartialEq, Eq)]
@@ -8,6 +8,6 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 pub enum OfferType {
     IntroductoryOffer = 1,
     PromotionalOffer = 2,
-    SubscriptionOfferCode = 3,
+    OfferCode = 3,
     WinBackOffer = 4,
 }
