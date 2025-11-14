@@ -7,6 +7,7 @@ use crate::primitives::environment::Environment;
 use crate::primitives::jws_renewal_info_decoded_payload::JWSRenewalInfoDecodedPayload;
 use crate::primitives::jws_transaction_decoded_payload::JWSTransactionDecodedPayload;
 use crate::primitives::response_body_v2_decoded_payload::ResponseBodyV2DecodedPayload;
+use crate::primitives::retention_messaging::decoded_realtime_request_body::DecodedRealtimeRequestBody;
 use crate::utils::{base64_url_to_base64, StringExt};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use serde::de::DeserializeOwned;
@@ -215,19 +216,19 @@ impl SignedDataVerifier {
         Ok(())
     }
 
-    /// Verifies and decodes a signed notification.
+    /// Verifies and decodes a signed app transaction.
     ///
-    /// This method takes a signed notification string, verifies its authenticity and
-    /// integrity, and returns the decoded payload as a `ResponseBodyV2DecodedPayload`
+    /// This method takes a signed app transaction string, verifies its authenticity and
+    /// integrity, and returns the decoded payload as an `AppTransaction`
     /// if the verification is successful.
     ///
     /// # Arguments
     ///
-    /// * `signed_payload` - The signed notification string to verify and decode.
+    /// * `signed_app_transaction` - The signed app transaction string to verify and decode.
     ///
     /// # Returns
     ///
-    /// - `Ok(ResponseBodyV2DecodedPayload)` if verification and decoding are successful.
+    /// - `Ok(AppTransaction)` if verification and decoding are successful.
     /// - `Err(SignedDataVerifierError)` if verification or decoding fails, with error details.
     pub fn verify_and_decode_app_transaction(
         &self,
@@ -252,6 +253,37 @@ impl SignedDataVerifier {
         }
 
         Ok(decoded_app_transaction)
+    }
+
+    /// Verifies and decodes a realtime request the App Store sends to your Get Retention Message endpoint.
+    ///
+    /// This method takes a signed realtime request string, verifies its authenticity and
+    /// integrity, and returns the decoded payload as a `DecodedRealtimeRequestBody`
+    /// if the verification is successful.
+    ///
+    /// # Arguments
+    ///
+    /// * `signed_payload` - The payload the App Store server sends to your server.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(DecodedRealtimeRequestBody)` if verification and decoding are successful.
+    /// - `Err(SignedDataVerifierError)` if verification or decoding fails, with error details.
+    pub fn verify_and_decode_realtime_request(
+        &self,
+        signed_payload: &str,
+    ) -> Result<DecodedRealtimeRequestBody, SignedDataVerifierError> {
+        let decoded_realtime_request: DecodedRealtimeRequestBody = self.decode_signed_object(signed_payload)?;
+
+        if self.environment == Environment::Production && self.app_apple_id != Some(decoded_realtime_request.app_apple_id) {
+            return Err(SignedDataVerifierError::InvalidAppIdentifier);
+        }
+
+        if self.environment != decoded_realtime_request.environment {
+            return Err(SignedDataVerifierError::InvalidEnvironment);
+        }
+
+        Ok(decoded_realtime_request)
     }
 
     /// Private method used for decoding a signed object (internal use).

@@ -96,6 +96,38 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
         method: Method,
         body: Option<&B>,
     ) -> Result<Request<Vec<u8>>, ApiServiceError<E>> {
+        let (body_bytes, content_type) = if let Some(body_data) = body {
+            let serialized = serde_json::to_vec(body_data).map_err(|_| ApiServiceError {
+                http_status_code: 400,
+                api_error: None,
+                error_code: None,
+                error_message: Some("Failed to serialize request body".to_string()),
+            })?;
+            (serialized, Some("application/json"))
+        } else {
+            (Vec::new(), None)
+        };
+
+        self.build_request_base(path, method, body_bytes, content_type)
+    }
+
+    pub(super) fn build_request_with_custom_content(
+        &self,
+        path: &str,
+        method: Method,
+        body: Vec<u8>,
+        content_type: &str,
+    ) -> Result<Request<Vec<u8>>, ApiServiceError<E>> {
+        self.build_request_base(path, method, body, Some(content_type))
+    }
+
+    fn build_request_base(
+        &self,
+        path: &str,
+        method: Method,
+        body: Vec<u8>,
+        content_type: Option<&str>,
+    ) -> Result<Request<Vec<u8>>, ApiServiceError<E>> {
         let url = format!("{}{}", self.base_url, path);
 
         let mut request_builder = Request::builder()
@@ -105,20 +137,12 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
             .header("Authorization", format!("Bearer {}", self.generate_token()))
             .header("Accept", "application/json");
 
-        let body_bytes = if let Some(body_data) = body {
-            request_builder = request_builder.header("Content-Type", "application/json");
-            serde_json::to_vec(body_data).map_err(|_| ApiServiceError {
-                http_status_code: 400,
-                api_error: None,
-                error_code: None,
-                error_message: Some("Failed to serialize request body".to_string()),
-            })?
-        } else {
-            Vec::new()
-        };
+        if let Some(ct) = content_type {
+            request_builder = request_builder.header("Content-Type", ct);
+        }
 
         request_builder
-            .body(body_bytes)
+            .body(body)
             .map_err(|e| e.into())
     }
 

@@ -1,0 +1,16 @@
+pub mod alternate_product;
+pub mod decoded_realtime_request_body;
+pub mod default_configuration_request;
+pub mod get_image_list_response;
+pub mod get_image_list_response_item;
+pub mod get_message_list_response;
+pub mod get_message_list_response_item;
+pub mod image_state;
+pub mod message;
+pub mod message_state;
+pub mod promotional_offer;
+pub mod promotional_offer_signature_v1;
+pub mod realtime_request_body;
+pub mod realtime_response_body;
+pub mod upload_message_image;
+pub mod upload_message_request_body;

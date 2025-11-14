@@ -1240,3 +1240,29 @@ fn generate_p256_private_key() -> Vec<u8> {
 
     private_key.as_ref().to_vec()
 }
+
+#[test]
+fn test_realtime_request_decoding() {
+    let signed_realtime_request = create_signed_data_from_json("tests/resources/models/decodedRealtimeRequest.json");
+
+    let signed_data_verifier = get_signed_data_verifier(Environment::LocalTesting, XCODE_BUNDLE_ID, Some(531412));
+
+    match signed_data_verifier.verify_and_decode_realtime_request(&signed_realtime_request) {
+        Ok(request) => {
+            assert_eq!("99371282", request.original_transaction_id);
+            assert_eq!(531412, request.app_apple_id);
+            assert_eq!("com.example.product", request.product_id);
+            assert_eq!("en-US", request.user_locale);
+            assert_eq!(
+                uuid::Uuid::parse_str("3db5c98d-8acf-4e29-831e-8e1f82f9f6e9").unwrap(),
+                request.request_identifier
+            );
+            assert_eq!(Environment::LocalTesting, request.environment);
+            assert_eq!(
+                1698148900,
+                request.signed_date.timestamp()
+            );
+        }
+        Err(err) => panic!("Failed to verify and decode realtime request: {:?}", err),
+    }
+}
