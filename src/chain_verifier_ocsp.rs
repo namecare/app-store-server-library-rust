@@ -4,6 +4,21 @@ use x509_parser::certificate::X509Certificate;
 use x509_parser::extensions::{GeneralName, ParsedExtension};
 use x509_parser::oid_registry::Oid;
 
+/// Internal error type for OCSP validation that helps distinguish retryable errors
+#[derive(Debug)]
+enum OcspError {
+    /// Network-related error (connection failure, timeout, etc.)
+    NetworkError(String),
+    /// HTTP error with non-200 status code
+    HttpError(u16),
+    /// Failed to read response body
+    FetchFailed,
+    /// Certificate has been revoked
+    CertificateRevoked,
+    /// Other validation errors (parsing, certificate issues, etc.)
+    ValidationError,
+}
+
 impl ChainVerifier {
     /// Checks the OCSP (Online Certificate Status Protocol) revocation status of a certificate.
     ///
@@ -30,12 +45,34 @@ impl ChainVerifier {
     /// - The certificate status is unknown
     /// - Network timeout occurs (5-second timeout is enforced)
     pub fn check_ocsp_status(&self, leaf: &X509Certificate<'_>, issuer: &X509Certificate<'_>) -> Result<(), ChainVerifierError> {
+        match self.check_ocsp_status_internal(leaf, issuer) {
+            Ok(()) => Ok(()),
+            Err(OcspError::NetworkError(_)) | Err(OcspError::HttpError(_)) | Err(OcspError::FetchFailed) => {
+                // Network-related errors are retryable
+                Err(ChainVerifierError::VerificationFailure(
+                    ChainVerificationFailureReason::RetryableVerificationFailure,
+                ))
+            }
+            Err(OcspError::CertificateRevoked) => {
+                // Certificate is revoked - this should fail immediately
+                Err(ChainVerifierError::VerificationFailure(
+                    ChainVerificationFailureReason::CertificateRevoked,
+                ))
+            }
+            Err(OcspError::ValidationError) => {
+                // Other errors are not retryable
+                Err(ChainVerifierError::VerificationFailure(InvalidCertificate))
+            }
+        }
+    }
+
+    fn check_ocsp_status_internal(&self, leaf: &X509Certificate<'_>, issuer: &X509Certificate<'_>) -> Result<(), OcspError> {
         use der::asn1::ObjectIdentifier;
         use der::{asn1::OctetString, Decode, Encode};
         use x509_cert::spki::AlgorithmIdentifierOwned;
         use x509_ocsp::{BasicOcspResponse, CertId, CertStatus, OcspRequest, OcspResponse, Request, TbsRequest};
 
-        let ocsp_url = self.extract_ocsp_url(leaf)?;
+        let ocsp_url = self.extract_ocsp_url(leaf).map_err(|_| OcspError::ValidationError)?;
 
         // Hash the issuer's distinguished name using SHA-1
         let issuer_name_hash = {
@@ -43,11 +80,11 @@ impl ChainVerifier {
             // Get the raw DER encoding of the issuer's distinguished name
             let issuer_name = issuer.subject().as_raw();
             let hash = digest::digest(&digest::SHA1_FOR_LEGACY_USE_ONLY, issuer_name);
-            OctetString::new(hash.as_ref()).map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?
+            OctetString::new(hash.as_ref()).map_err(|_| OcspError::ValidationError)?
         };
 
         // Extract and use the issuer's Subject Key Identifier as the key hash
-        let issuer_key_data = self.extract_ski(&issuer)?;
+        let issuer_key_data = self.extract_ski(&issuer).map_err(|_| OcspError::ValidationError)?;
         let issuer_key_hash = OctetString::new(issuer_key_data).unwrap();
 
         // SHA-1 OID: 1.3.14.3.2.26
@@ -59,7 +96,7 @@ impl ChainVerifier {
 
         use x509_cert::serial_number::SerialNumber;
         let serial = SerialNumber::new(&leaf.serial.to_bytes_be())
-            .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
+            .map_err(|_| OcspError::ValidationError)?;
 
         let cert_id = CertId {
             hash_algorithm,
@@ -87,48 +124,53 @@ impl ChainVerifier {
 
         let request_bytes = ocsp_request
             .to_der()
-            .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
+            .map_err(|_| OcspError::ValidationError)?;
 
         let client = reqwest::blocking::Client::builder()
             .timeout(std::time::Duration::from_secs(5))
             .build()
-            .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
+            .map_err(|e| OcspError::NetworkError(format!("Failed to build HTTP client: {}", e)))?;
 
         let response = client
             .post(&ocsp_url)
             .header("Content-Type", "application/ocsp-request")
             .body(request_bytes)
             .send()
-            .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
+            .map_err(|e| {
+                // reqwest errors can be network-related (timeout, connection failure, etc.)
+                OcspError::NetworkError(format!("OCSP request failed: {}", e))
+            })?;
 
-        if !response.status().is_success() {
-            return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
+        // Check HTTP status code
+        let status = response.status();
+        if !status.is_success() {
+            return Err(OcspError::HttpError(status.as_u16()));
         }
 
         let response_bytes = response
             .bytes()
-            .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
+            .map_err(|_| OcspError::FetchFailed)?;
 
         let ocsp_response = OcspResponse::from_der(&response_bytes)
-            .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
+            .map_err(|_| OcspError::ValidationError)?;
 
         use x509_ocsp::OcspResponseStatus;
         match ocsp_response.response_status {
             OcspResponseStatus::Successful => {} // Continue processing
-            _ => return Err(ChainVerifierError::VerificationFailure(InvalidCertificate)),
+            _ => return Err(OcspError::ValidationError),
         }
 
         let response_bytes = ocsp_response
             .response_bytes
-            .ok_or(ChainVerifierError::VerificationFailure(InvalidCertificate))?;
+            .ok_or(OcspError::ValidationError)?;
 
         const ID_PKIX_OCSP_BASIC: &str = "1.3.6.1.5.5.7.48.1.1";
         if response_bytes.response_type.to_string() != ID_PKIX_OCSP_BASIC {
-            return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
+            return Err(OcspError::ValidationError);
         }
 
         let basic_response = BasicOcspResponse::from_der(response_bytes.response.as_bytes())
-            .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
+            .map_err(|_| OcspError::ValidationError)?;
 
         for single_response in &basic_response.tbs_response_data.responses {
             // TODO: Verify the CertId matches our request to ensure this response is for our certificate
@@ -136,18 +178,16 @@ impl ChainVerifier {
                 CertStatus::Good(_) => return Ok(()), // Certificate is valid
                 CertStatus::Revoked(_) => {
                     // Certificate has been revoked
-                    return Err(ChainVerifierError::VerificationFailure(
-                        ChainVerificationFailureReason::CertificateRevoked,
-                    ));
+                    return Err(OcspError::CertificateRevoked);
                 }
                 CertStatus::Unknown(_) => {
-                    // Certificate status unknown - treat as error
-                    return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
+                    // Certificate status unknown - treat as validation error
+                    return Err(OcspError::ValidationError);
                 }
             }
         }
 
-        Err(ChainVerifierError::VerificationFailure(InvalidCertificate))
+        Err(OcspError::ValidationError)
     }
 
     /// Extracts the Subject Key Identifier (SKI) from an issuer certificate.
