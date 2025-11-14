@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// The payment mode you configure for an introductory offer, promotional offer, or offer code on an auto-renewable subscription.
+/// The payment mode for a discount offer on an In-App Purchase.
 ///
 /// [offerDiscountType](https://developer.apple.com/documentation/appstoreserverapi/offerdiscounttype)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -11,4 +11,6 @@ pub enum OfferDiscountType {
     PayAsYouGo,
     #[serde(rename = "PAY_UP_FRONT")]
     PayUpFront,
+    #[serde(rename = "ONE_TIME")]
+    OneTime,
 }
