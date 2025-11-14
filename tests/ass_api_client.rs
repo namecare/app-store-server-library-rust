@@ -633,6 +633,93 @@ async fn test_get_transaction_info() {
 }
 
 #[tokio::test]
+async fn test_app_transaction_info() {
+    let client = app_store_server_api_client_with_body_from_file(
+        "tests/resources/models/appTransactionInfoResponse.json",
+        StatusCode::OK,
+        Some(Box::new(|req, body| {
+            assert_eq!(&Method::GET, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/transactions/appTransactions/1234",
+                req.uri().to_string()
+            );
+            assert!(body.is_empty(), "GET request should have empty body");
+        })),
+    );
+
+    let response = client
+        .app_transaction_info("1234")
+        .await
+        .unwrap();
+    assert_eq!(
+        "signed_app_transaction_info_value",
+        response
+            .signed_app_transaction_info
+            .unwrap()
+    );
+}
+
+#[tokio::test]
+async fn test_app_transaction_info_invalid_transaction_id() {
+    let client = app_store_server_api_client_with_body_from_file(
+        "tests/resources/models/invalidTransactionIdError.json",
+        StatusCode::BAD_REQUEST,
+        None,
+    );
+
+    let result = client
+        .app_transaction_info("invalid_id")
+        .await;
+
+    assert!(result.is_err());
+    let err = result.unwrap_err();
+    assert_eq!(400, err.http_status_code);
+    assert_eq!(Some(ApiErrorCode::InvalidTransactionId), err.api_error);
+    assert_eq!(Some(4000006), err.error_code);
+    assert_eq!(Some("Invalid transaction id.".to_string()), err.error_message);
+}
+
+#[tokio::test]
+async fn test_app_transaction_info_transaction_id_not_found() {
+    let client = app_store_server_api_client_with_body_from_file(
+        "tests/resources/models/transactionIdNotFoundError.json",
+        StatusCode::NOT_FOUND,
+        None,
+    );
+
+    let result = client
+        .app_transaction_info("not_found_id")
+        .await;
+
+    assert!(result.is_err());
+    let err = result.unwrap_err();
+    assert_eq!(404, err.http_status_code);
+    assert_eq!(Some(ApiErrorCode::TransactionIdNotFound), err.api_error);
+    assert_eq!(Some(4040010), err.error_code);
+    assert_eq!(Some("Transaction id not found.".to_string()), err.error_message);
+}
+
+#[tokio::test]
+async fn test_app_transaction_info_app_transaction_does_not_exist() {
+    let client = app_store_server_api_client_with_body_from_file(
+        "tests/resources/models/appTransactionDoesNotExistError.json",
+        StatusCode::NOT_FOUND,
+        None,
+    );
+
+    let result = client
+        .app_transaction_info("no_app_transaction")
+        .await;
+
+    assert!(result.is_err());
+    let err = result.unwrap_err();
+    assert_eq!(404, err.http_status_code);
+    assert_eq!(Some(ApiErrorCode::AppTransactionDoesNotExist), err.api_error);
+    assert_eq!(Some(4040019), err.error_code);
+    assert_eq!(Some("No AppTransaction exists for the customer.".to_string()), err.error_message);
+}
+
+#[tokio::test]
 async fn test_look_up_order_id() {
     let client = app_store_server_api_client_with_body_from_file(
         "tests/resources/models/lookupOrderIdResponse.json",

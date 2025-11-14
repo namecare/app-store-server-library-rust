@@ -1,5 +1,6 @@
 pub mod account_tenure;
 pub mod app_transaction;
+pub mod app_transaction_info_response;
 pub mod auto_renew_status;
 pub mod check_test_notification_response;
 pub mod consumption_request;
