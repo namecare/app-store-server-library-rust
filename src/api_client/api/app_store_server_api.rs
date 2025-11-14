@@ -7,6 +7,7 @@ use crate::api_client::api::app_store_server_api::api_error_code::ApiErrorCode;
 use crate::api_client::api_client::{ApiClient};
 use crate::api_client::error::ApiServiceError;
 use crate::api_client::transport::Transport;
+use crate::primitives::app_transaction_info_response::AppTransactionInfoResponse;
 use crate::primitives::check_test_notification_response::CheckTestNotificationResponse;
 use crate::primitives::consumption_request::ConsumptionRequest;
 use crate::primitives::extend_renewal_date_request::ExtendRenewalDateRequest;
@@ -406,6 +407,27 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     /// Returns an `APIException` if the request could not be processed.
     pub async fn get_transaction_info(&self, transaction_id: &str) -> Result<TransactionInfoResponse, ApiError> {
         let path = format!("/inApps/v1/transactions/{}", transaction_id);
+        let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
+        self.make_request_with_response_body(req).await
+    }
+
+    /// Get a customer's app transaction information for your app.
+    ///
+    /// [Get App Transaction Info](https://developer.apple.com/documentation/appstoreserverapi/get-app-transaction-info)
+    ///
+    /// # Arguments
+    ///
+    /// * `transaction_id` - Any originalTransactionId, transactionId or appTransactionId that belongs to the customer for your app.
+    ///
+    /// # Returns
+    ///
+    /// A response that contains signed app transaction information for a customer.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn app_transaction_info(&self, transaction_id: &str) -> Result<AppTransactionInfoResponse, ApiError> {
+        let path = format!("/inApps/v1/transactions/appTransactions/{}", transaction_id);
         let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
         self.make_request_with_response_body(req).await
     }

@@ -239,6 +239,11 @@ pub enum ApiErrorCode {
     /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/transactionidnotfounderror)
     TransactionIdNotFound = 4040010,
 
+    /// An error response that indicates an app transaction doesn't exist for the specified customer.
+    ///
+    /// [AppTransactionDoesNotExistError](https://developer.apple.com/documentation/appstoreserverapi/apptransactiondoesnotexisterror)
+    AppTransactionDoesNotExist = 4040019,
+
     /// An error that indicates that the request exceeded the rate limit.
     /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/ratelimitexceedederror)
     RateLimitExceeded = 4290000,
