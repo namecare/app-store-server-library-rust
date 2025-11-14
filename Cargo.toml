@@ -64,6 +64,11 @@ path = "tests/ac_api_client.rs"
 required-features = ["api-client"]
 
 [[test]]
+name = "rm_api_client"
+path = "tests/rm_api_client.rs"
+required-features = ["api-client"]
+
+[[test]]
 name = "chain_verifier_ocsp"
 path = "tests/chain_verifier_ocsp.rs"
 required-features = ["ocsp"]

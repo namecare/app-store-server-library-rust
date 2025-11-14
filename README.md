@@ -1,5 +1,5 @@
 # Apple App Store Server Rust Library
-The Rust server library for the [App Store Server API](https://developer.apple.com/documentation/appstoreserverapi), [App Store Server Notifications](https://developer.apple.com/documentation/appstoreservernotifications) and [Advanced Commerce API](https://developer.apple.com/documentation/AdvancedCommerceAPI).
+The Rust server library for the [App Store Server API](https://developer.apple.com/documentation/appstoreserverapi), [App Store Server Notifications](https://developer.apple.com/documentation/appstoreservernotifications), the [Retention Messaging API](https://developer.apple.com/documentation/retentionmessaging), and [Advanced Commerce API](https://developer.apple.com/documentation/AdvancedCommerceAPI).
 
 ## Requirements
 
@@ -211,6 +211,7 @@ let signature: String = creator.create_signature(
 * The full documentation is available at [docs.rs](https://docs.rs/app-store-server-library/)
 * [App Store Server API Documentation](https://developer.apple.com/documentation/appstoreserverapi)
 * [App Store Server Notifications Documentation](https://developer.apple.com/documentation/appstoreservernotifications)
+* [Retention Messaging API Documentation](https://developer.apple.com/documentation/retentionmessaging)
 * [Advanced Commerce API Documentation](https://developer.apple.com/documentation/advancedcommerceapi)
 * [WWDC Video](https://developer.apple.com/videos/play/wwdc2023/10143/)
 

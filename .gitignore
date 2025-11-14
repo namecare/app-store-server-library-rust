@@ -93,3 +93,5 @@ Cargo.lock
 
 .env
 .claude
+CLAUDE.md
+rustfmt.toml
