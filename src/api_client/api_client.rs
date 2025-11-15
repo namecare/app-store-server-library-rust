@@ -133,7 +133,7 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
         let mut request_builder = Request::builder()
             .method(method)
             .uri(url)
-            .header("User-Agent", "app-store-server-library/rust/4.0.1")
+            .header("User-Agent", "app-store-server-library/rust/4.1.0")
             .header("Authorization", format!("Bearer {}", self.generate_token()))
             .header("Accept", "application/json");
 
