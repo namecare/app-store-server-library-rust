@@ -1,8 +1,6 @@
 use crate::chain_verifier::ChainVerificationFailureReason::InvalidCertificate;
 use crate::chain_verifier::{ChainVerificationFailureReason, ChainVerifier, ChainVerifierError};
-use x509_parser::certificate::X509Certificate;
-use x509_parser::extensions::{GeneralName, ParsedExtension};
-use x509_parser::oid_registry::Oid;
+use x509_cert::Certificate;
 
 /// Internal error type for OCSP validation that helps distinguish retryable errors
 #[derive(Debug)]
@@ -44,7 +42,7 @@ impl ChainVerifier {
     /// - The certificate is marked as revoked in the OCSP response
     /// - The certificate status is unknown
     /// - Network timeout occurs (5-second timeout is enforced)
-    pub fn check_ocsp_status(&self, leaf: &X509Certificate<'_>, issuer: &X509Certificate<'_>) -> Result<(), ChainVerifierError> {
+    pub fn check_ocsp_status(&self, leaf: &Certificate, issuer: &Certificate) -> Result<(), ChainVerifierError> {
         match self.check_ocsp_status_internal(leaf, issuer) {
             Ok(()) => Ok(()),
             Err(OcspError::NetworkError(_)) | Err(OcspError::HttpError(_)) | Err(OcspError::FetchFailed) => {
@@ -66,43 +64,53 @@ impl ChainVerifier {
         }
     }
 
-    fn check_ocsp_status_internal(&self, leaf: &X509Certificate<'_>, issuer: &X509Certificate<'_>) -> Result<(), OcspError> {
+    fn check_ocsp_status_internal(&self, leaf: &Certificate, issuer: &Certificate) -> Result<(), OcspError> {
         use der::asn1::ObjectIdentifier;
         use der::{asn1::OctetString, Decode, Encode};
-        use x509_cert::spki::AlgorithmIdentifierOwned;
+        use x509_cert::spki::AlgorithmIdentifier;
         use x509_ocsp::{BasicOcspResponse, CertId, CertStatus, OcspRequest, OcspResponse, Request, TbsRequest};
 
         let ocsp_url = self.extract_ocsp_url(leaf).map_err(|_| OcspError::ValidationError)?;
 
         // Hash the issuer's distinguished name using SHA-1
-        let issuer_name_hash = {
-            use ring::digest;
+        let issuer_name_hash_bytes = {
+            use sha1::{Sha1, Digest};
             // Get the raw DER encoding of the issuer's distinguished name
-            let issuer_name = issuer.subject().as_raw();
-            let hash = digest::digest(&digest::SHA1_FOR_LEGACY_USE_ONLY, issuer_name);
-            OctetString::new(hash.as_ref()).map_err(|_| OcspError::ValidationError)?
+            let issuer_name = issuer.tbs_certificate.subject.to_der()
+                .map_err(|_| OcspError::ValidationError)?;
+            let hash = Sha1::digest(&issuer_name);
+            hash.to_vec()
         };
 
         // Extract and use the issuer's Subject Key Identifier as the key hash
         let issuer_key_data = self.extract_ski(&issuer).map_err(|_| OcspError::ValidationError)?;
-        let issuer_key_hash = OctetString::new(issuer_key_data).unwrap();
 
         // SHA-1 OID: 1.3.14.3.2.26
         let sha1_oid = ObjectIdentifier::new_unwrap("1.3.14.3.2.26");
-        let hash_algorithm = AlgorithmIdentifierOwned {
+
+        // Convert to owned types for x509-ocsp compatibility
+        let hash_algorithm = AlgorithmIdentifier {
             oid: sha1_oid,
             parameters: None,
         };
 
+        let serial_bytes = leaf.tbs_certificate.serial_number.as_bytes();
+
+        let issuer_name_hash = OctetString::new(issuer_name_hash_bytes)
+            .map_err(|_| OcspError::ValidationError)?;
+        let issuer_key_hash = OctetString::new(issuer_key_data)
+            .map_err(|_| OcspError::ValidationError)?;
+
+        // Use the SerialNumber from x509-cert
         use x509_cert::serial_number::SerialNumber;
-        let serial = SerialNumber::new(&leaf.serial.to_bytes_be())
+        let serial_number = SerialNumber::new(serial_bytes)
             .map_err(|_| OcspError::ValidationError)?;
 
         let cert_id = CertId {
             hash_algorithm,
             issuer_name_hash,
             issuer_key_hash,
-            serial_number: serial,
+            serial_number,
         };
 
         let request = Request {
@@ -122,6 +130,7 @@ impl ChainVerifier {
             optional_signature: None,
         };
 
+        // Encode the OCSP request
         let request_bytes = ocsp_request
             .to_der()
             .map_err(|_| OcspError::ValidationError)?;
@@ -205,17 +214,24 @@ impl ChainVerifier {
     ///
     /// The Subject Key Identifier extension (OID: 2.5.29.14) contains a key identifier
     /// derived from the public key. This function extracts and returns the raw identifier bytes.
-    fn extract_ski(&self, issuer: &X509Certificate<'_>) -> Result<Vec<u8>, ChainVerifierError> {
-        // Subject Key Identifier OID: 2.5.29.14
-        let ski_oid = Oid::from(&[2, 5, 29, 14]).unwrap();
-        let ski_ext = issuer
-            .get_extension_unique(&ski_oid)
-            .ok()
-            .flatten()
-            .ok_or(ChainVerifierError::VerificationFailure(InvalidCertificate))?;
+    fn extract_ski(&self, issuer: &Certificate) -> Result<Vec<u8>, ChainVerifierError> {
+        use const_oid::ObjectIdentifier;
+        use der::Decode;
 
-        if let ParsedExtension::SubjectKeyIdentifier(ski) = ski_ext.parsed_extension() {
-            return Ok(ski.0.to_vec());
+        // Subject Key Identifier OID: 2.5.29.14
+        let ski_oid = ObjectIdentifier::new_unwrap("2.5.29.14");
+
+        let Some(extensions) = &issuer.tbs_certificate.extensions else {
+            return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
+        };
+
+        for ext in extensions {
+            if ext.extn_id == ski_oid {
+                // The extension value is an OCTET STRING containing the key identifier
+                let octet_string = der::asn1::OctetString::from_der(ext.extn_value.as_bytes())
+                    .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
+                return Ok(octet_string.as_bytes().to_vec());
+            }
         }
 
         Err(ChainVerifierError::VerificationFailure(InvalidCertificate))
@@ -237,26 +253,79 @@ impl ChainVerifier {
     /// This function looks for the Authority Information Access (AIA) extension (OID: 1.3.6.1.5.5.7.1.1)
     /// and searches for an access descriptor with the OCSP access method (OID: 1.3.6.1.5.5.7.48.1).
     /// The first OCSP URL found is returned.
-    fn extract_ocsp_url(&self, cert: &X509Certificate<'_>) -> Result<String, ChainVerifierError> {
-        // AIA extension OID: 1.3.6.1.5.5.7.1.1
-        let aia_oid = Oid::from(&[1, 3, 6, 1, 5, 5, 7, 1, 1]).unwrap();
-        let aia_ext = cert
-            .get_extension_unique(&aia_oid)
-            .ok()
-            .flatten()
-            .ok_or(ChainVerifierError::VerificationFailure(InvalidCertificate))?;
+    fn extract_ocsp_url(&self, cert: &Certificate) -> Result<String, ChainVerifierError> {
+        use const_oid::ObjectIdentifier;
 
-        // Parse AIA extension to find OCSP URL
-        if let ParsedExtension::AuthorityInfoAccess(aia) = aia_ext.parsed_extension() {
-            // OCSP OID: 1.3.6.1.5.5.7.48.1
-            let ocsp_oid = Oid::from(&[1, 3, 6, 1, 5, 5, 7, 48, 1]).unwrap();
-            for access_desc in &aia.accessdescs {
-                if access_desc.access_method == ocsp_oid {
-                    if let GeneralName::URI(uri) = &access_desc.access_location {
-                        return Ok(uri.to_string());
-                    }
+        // AIA extension OID: 1.3.6.1.5.5.7.1.1
+        let aia_oid = ObjectIdentifier::new_unwrap("1.3.6.1.5.5.7.1.1");
+
+        let Some(extensions) = &cert.tbs_certificate.extensions else {
+            return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
+        };
+
+        // OCSP OID: 1.3.6.1.5.5.7.48.1
+        let ocsp_oid = ObjectIdentifier::new_unwrap("1.3.6.1.5.5.7.48.1");
+
+        for ext in extensions {
+            if ext.extn_id == aia_oid {
+                // Try to extract OCSP URL from the extension
+                // This is a simplified parser - in production, you'd want more robust parsing
+                if let Ok(url) = self.parse_aia_for_ocsp(ext.extn_value.as_bytes(), &ocsp_oid) {
+                    return Ok(url);
                 }
             }
+        }
+
+        Err(ChainVerifierError::VerificationFailure(InvalidCertificate))
+    }
+
+    /// Helper function to parse AIA extension and extract OCSP URL
+    fn parse_aia_for_ocsp(&self, aia_bytes: &[u8], ocsp_oid: &const_oid::ObjectIdentifier) -> Result<String, ChainVerifierError> {
+        use crate::asn1::asn1_basics::{read_sequence, read_oid, read_tlv};
+
+        // AIA is a SEQUENCE of AccessDescription
+        // Each AccessDescription is a SEQUENCE of { accessMethod OID, accessLocation GeneralName }
+        // GeneralName for URI is [6] IMPLICIT IA5String
+
+        let (mut offset, length) = read_sequence(aia_bytes, 0)
+            .map_err(|e| ChainVerifierError::InternalX509Error(e.to_string()))?;
+
+        let end_offset = offset + length;
+
+        while offset < end_offset {
+            // Read AccessDescription SEQUENCE
+            let (desc_offset, desc_length) = read_sequence(aia_bytes, offset)
+                .map_err(|e| ChainVerifierError::InternalX509Error(e.to_string()))?;
+
+            let desc_end = desc_offset + desc_length;
+
+            // Read accessMethod OID
+            let (oid_offset, oid_length) = read_oid(aia_bytes, desc_offset)
+                .map_err(|e| ChainVerifierError::InternalX509Error(e.to_string()))?;
+
+            // Check if this is the OCSP OID
+            let oid_bytes = &aia_bytes[oid_offset..oid_offset + oid_length];
+
+            // OCSP OID bytes: 1.3.6.1.5.5.7.48.1 = 2B 06 01 05 05 07 30 01
+            let expected_ocsp_oid = [0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01];
+
+            if oid_bytes == expected_ocsp_oid {
+                // Read the accessLocation - should be [6] IMPLICIT IA5String (URI)
+                let location_offset = oid_offset + oid_length;
+                let (tag, uri_length, uri_offset) = read_tlv(aia_bytes, location_offset)
+                    .map_err(|e| ChainVerifierError::InternalX509Error(e.to_string()))?;
+
+                // Tag [6] for uniformResourceIdentifier is 0x86
+                if tag == 0x86 {
+                    let uri_bytes = &aia_bytes[uri_offset..uri_offset + uri_length];
+                    let uri = std::str::from_utf8(uri_bytes)
+                        .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
+                    return Ok(uri.to_string());
+                }
+            }
+
+            // Move to next AccessDescription
+            offset = desc_end;
         }
 
         Err(ChainVerifierError::VerificationFailure(InvalidCertificate))
@@ -266,15 +335,13 @@ impl ChainVerifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use x509_parser::prelude::*;
+    use crate::x509::x509;
 
     #[test]
     fn test_extract_ocsp_url_missing_aia() {
         // Create a minimal certificate without AIA extension
         let cert_der = include_bytes!("../tests/resources/certs/testCA.der");
-        let cert = X509Certificate::from_der(cert_der)
-            .unwrap()
-            .1;
+        let cert = x509::parse_certificate(cert_der).unwrap();
 
         let verifier = ChainVerifier::new(vec![]);
         let result = verifier.extract_ocsp_url(&cert);
@@ -286,9 +353,7 @@ mod tests {
         // This test would need a certificate with an AIA extension
         // For now, we'll test the error case
         let cert_der = include_bytes!("../tests/resources/certs/testCA.der");
-        let cert = X509Certificate::from_der(cert_der)
-            .unwrap()
-            .1;
+        let cert = x509::parse_certificate(cert_der).unwrap();
 
         let verifier = ChainVerifier::new(vec![]);
         let result = verifier.extract_ocsp_url(&cert);

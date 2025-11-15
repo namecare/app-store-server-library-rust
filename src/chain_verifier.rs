@@ -1,12 +1,12 @@
+use crate::x509::x509::X509Error;
 use crate::chain_verifier::ChainVerificationFailureReason::{
     CertificateExpired, InvalidCertificate, InvalidEffectiveDate,
 };
 use thiserror::Error;
 
-use x509_parser::certificate::X509Certificate;
-use x509_parser::der_parser::asn1_rs::oid;
-use x509_parser::error::X509Error;
-use x509_parser::prelude::{ASN1Time, FromDer};
+use x509_cert::Certificate;
+use const_oid::ObjectIdentifier;
+use crate::x509::x509;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ChainVerifierError {
@@ -14,10 +14,16 @@ pub enum ChainVerifierError {
     VerificationFailure(ChainVerificationFailureReason),
 
     #[error("InternalX509Error: [{0}]")]
-    InternalX509Error(#[from] X509Error),
+    InternalX509Error(String),
 
     #[error("InternalDecodeError: [{0}]")]
     InternalDecodeError(#[from] base64::DecodeError),
+}
+
+impl From<X509Error> for ChainVerifierError {
+    fn from(err: X509Error) -> Self {
+        ChainVerifierError::InternalX509Error(err.to_string())
+    }
 }
 
 #[derive(Error, Debug, PartialEq)]
@@ -96,37 +102,39 @@ impl ChainVerifier {
         if self.root_certificates.is_empty() {
             return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
         }
-        let Ok(leaf_certificate) = X509Certificate::from_der(leaf_certificate.as_slice()) else {
-            return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
-        };
-        let leaf_certificate = leaf_certificate.1;
 
-        let Some(_) = leaf_certificate.get_extension_unique(&oid!(1.2.840.113635.100.6.11.1))? else {
-            return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
-        };
+        let leaf_certificate = x509::parse_certificate(leaf_certificate.as_slice())
+            .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
 
-        let Ok(intermediate_certificate) = X509Certificate::from_der(intermediate_certificate.as_slice()) else {
-            return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
-        };
-        let intermediate_certificate = intermediate_certificate.1;
+        // Check for Apple-specific leaf certificate extension (1.2.840.113635.100.6.11.1)
+        let leaf_oid = ObjectIdentifier::new("1.2.840.113635.100.6.11.1")
+            .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
 
-        let Some(_) = intermediate_certificate.get_extension_unique(&oid!(1.2.840.113635.100.6.2.1))? else {
+        if !x509::has_extension(&leaf_certificate, &leaf_oid) {
             return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
-        };
+        }
 
-        let mut root_certificate: Option<X509Certificate> = None;
+        let intermediate_certificate = x509::parse_certificate(intermediate_certificate.as_slice())
+            .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
+
+        // Check for Apple-specific intermediate certificate extension (1.2.840.113635.100.6.2.1)
+        let intermediate_oid = ObjectIdentifier::new("1.2.840.113635.100.6.2.1")
+            .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
+
+        if !x509::has_extension(&intermediate_certificate, &intermediate_oid) {
+            return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
+        }
+
+        let mut root_certificate: Option<Certificate> = None;
 
         for cert in &self.root_certificates {
-            let Ok(cert) = X509Certificate::from_der(&cert) else {
-                return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
-            };
+            let cert = x509::parse_certificate(&cert)
+                .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
 
-            match intermediate_certificate.verify_signature(Some(cert.1.public_key())) {
-                Ok(_) => (),
-                Err(_) => continue,
+            if x509::verify_signature(&intermediate_certificate, &cert).is_ok() {
+                root_certificate = Some(cert);
+                break;
             }
-
-            root_certificate = Some(cert.1)
         }
 
         let Some(root_certificate) = root_certificate else {
@@ -143,31 +151,27 @@ impl ChainVerifier {
 
     fn verify_chain(
         &self,
-        leaf: &X509Certificate,
-        intermediate: &X509Certificate,
-        root_certificate: &X509Certificate,
+        leaf: &Certificate,
+        intermediate: &Certificate,
+        root_certificate: &Certificate,
         effective_date: Option<u64>,
     ) -> Result<Vec<u8>, ChainVerifierError> {
-        leaf.verify_signature(Some(intermediate.public_key()))?;
+        x509::verify_signature(leaf, intermediate)?;
 
         if let Some(date) = effective_date {
-            let Ok(time) = ASN1Time::from_timestamp(i64::try_from(date).unwrap()) else {
-                return Err(ChainVerifierError::VerificationFailure(
-                    InvalidEffectiveDate,
-                ));
-            };
+            let timestamp = i64::try_from(date)
+                .map_err(|_| ChainVerifierError::VerificationFailure(InvalidEffectiveDate))?;
 
-            if !(root_certificate.validity.is_valid_at(time) &&
-                leaf.validity.is_valid_at(time) &&
-                intermediate.validity.is_valid_at(time))
+            if !x509::is_valid_at(leaf, timestamp) ||
+               !x509::is_valid_at(intermediate, timestamp) ||
+               !x509::is_valid_at(root_certificate, timestamp)
             {
                 return Err(ChainVerifierError::VerificationFailure(CertificateExpired));
             }
         }
 
-        let k = leaf.public_key().raw.to_vec();
+        let public_key_bytes = x509::public_key_bytes(leaf);
 
-        // Make online verification as additional step if ocsp flag enabled
         #[cfg(all(feature = "ocsp"))]
         {
             // Perform OCSP check - this is best-effort, so we don't fail on OCSP errors
@@ -188,6 +192,6 @@ impl ChainVerifier {
             }
         };
 
-        Ok(k)
+        Ok(public_key_bytes)
     }
 }

@@ -20,10 +20,25 @@ impl Display for KeyRejectedWrapped {
     }
 }
 
+#[derive(Error, Debug)]
+pub struct UnspecifiedWrapped(error::Unspecified);
+
+impl PartialEq for UnspecifiedWrapped {
+    fn eq(&self, _other: &Self) -> bool {
+        true // Unspecified has no fields, so all instances are equal
+    }
+}
+
+impl Display for UnspecifiedWrapped {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Unspecified ring error")
+    }
+}
+
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum PromotionalOfferSignatureCreatorError {
     #[error("UnspecifiedRingError: [{0}]")]
-    UnspecifiedRingError(#[from] error::Unspecified),
+    UnspecifiedRingError(#[from] UnspecifiedWrapped),
 
     #[error("KeyRejectedError: [{0}]")]
     KeyRejectedError(#[from] KeyRejectedWrapped),
@@ -125,9 +140,11 @@ impl PromotionalOfferSignatureCreator {
     }
 
     fn sign(&self, payload: &str) -> Result<Signature, PromotionalOfferSignatureCreatorError> {
-        Ok(self
+        self
             .ec_private_key
-            .sign(&ring::rand::SystemRandom::new(), payload.as_bytes())?)
+            .sign(&ring::rand::SystemRandom::new(), payload.as_bytes())
+            .map_err(UnspecifiedWrapped)
+            .map_err(Into::into)
     }
 
     #[cfg(test)]
