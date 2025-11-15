@@ -58,7 +58,7 @@ fn test_missing_x5c_header() {
     assert!(
         matches!(
             result.err().unwrap(),
-            SignedDataVerifierError::VerificationFailure
+            SignedDataVerifierError::InternalJWTError(_)
         )
     );
 }
