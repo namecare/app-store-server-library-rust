@@ -45,6 +45,9 @@ pub enum ChainVerificationFailureReason {
 
     #[error("CertificateRevoked")]
     CertificateRevoked,
+
+    #[error("RetryableVerificationFailure")]
+    RetryableVerificationFailure,
 }
 
 /// A structure for verifying certificate chains.
