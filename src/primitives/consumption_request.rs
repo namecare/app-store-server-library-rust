@@ -1,3 +1,4 @@
+use crate::primitives::de_ext::deserialize_optional_uuid;
 use crate::primitives::account_tenure::AccountTenure;
 use crate::primitives::consumption_status::ConsumptionStatus;
 use crate::primitives::delivery_status::DeliveryStatus;
@@ -44,7 +45,10 @@ pub struct ConsumptionRequest {
     /// The UUID that an app optionally generates to map a customer's in-app purchase with its resulting App Store transaction.
     ///
     /// [appAccountToken](https://developer.apple.com/documentation/appstoreserverapi/appaccounttoken)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_optional_uuid"
+    )]
     pub app_account_token: Option<Uuid>,
 
     /// The age of the customer’s account.
