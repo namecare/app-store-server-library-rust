@@ -1229,10 +1229,11 @@ async fn test_send_consumption_data_with_null_app_account_token() {
                     .as_i64()
                     .unwrap()
             );
-            // When app_account_token is None, it should not be included in the JSON at all
-            assert!(
-                !decoded_json.contains_key("appAccountToken"),
-                "appAccountToken field should be omitted when None"
+            assert_eq!(
+                "",
+                decoded_json["appAccountToken"]
+                    .as_str()
+                    .unwrap()
             );
             assert_eq!(
                 4,
