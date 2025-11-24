@@ -63,4 +63,4 @@ pub mod advanced_commerce_transaction_info;
 pub mod advanced_commerce_renewal_info;
 pub mod advanced_commerce_renewal_item;
 pub mod retention_messaging;
-mod de_ext;
+mod serde_ext;

@@ -1,4 +1,4 @@
-use crate::primitives::de_ext::deserialize_optional_uuid;
+use crate::primitives::serde_ext::{de_string_as_optional_uuid, ser_optional_uuid_as_string};
 use crate::primitives::account_tenure::AccountTenure;
 use crate::primitives::consumption_status::ConsumptionStatus;
 use crate::primitives::delivery_status::DeliveryStatus;
@@ -46,8 +46,8 @@ pub struct ConsumptionRequest {
     ///
     /// [appAccountToken](https://developer.apple.com/documentation/appstoreserverapi/appaccounttoken)
     #[serde(
-        skip_serializing_if = "Option::is_none",
-        deserialize_with = "deserialize_optional_uuid"
+        deserialize_with = "de_string_as_optional_uuid",
+        serialize_with = "ser_optional_uuid_as_string"
     )]
     pub app_account_token: Option<Uuid>,
 
