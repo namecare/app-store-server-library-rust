@@ -3,7 +3,7 @@ use base64::{DecodeError, Engine};
 
 /// Converts a base64URL-encoded string to a standard base64-encoded string.
 ///
-/// Replaces '/' with '+' and '_' with '-', and adds padding if needed.
+/// Replaces '-' with '+' and '_' with '/', and adds padding if needed.
 ///
 /// # Examples
 ///
@@ -14,8 +14,8 @@ use base64::{DecodeError, Engine};
 /// ```
 pub(crate) fn base64_url_to_base64(encoded_string: &str) -> String {
     let replaced_string = encoded_string
-        .replace('/', "+")
-        .replace('_', "-");
+        .replace('-', "+")
+        .replace('_', "/");
 
     if replaced_string.len() % 4 != 0 {
         return replaced_string.clone() + &"=".repeat(4 - replaced_string.len() % 4);
