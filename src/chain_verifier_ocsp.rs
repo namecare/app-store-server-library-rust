@@ -171,7 +171,7 @@ impl ChainVerifier {
 
         let response_bytes = ocsp_response
             .response_bytes
-            .ok_or(OcspError::ValidationError)?;
+            .ok_or_else(|| OcspError::ValidationError)?;
 
         const ID_PKIX_OCSP_BASIC: &str = "1.3.6.1.5.5.7.48.1.1";
         if response_bytes.response_type.to_string() != ID_PKIX_OCSP_BASIC {
