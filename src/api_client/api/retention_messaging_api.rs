@@ -9,6 +9,9 @@ use crate::api_client::transport::Transport;
 use crate::primitives::retention_messaging::default_configuration_request::DefaultConfigurationRequest;
 use crate::primitives::retention_messaging::get_image_list_response::GetImageListResponse;
 use crate::primitives::retention_messaging::get_message_list_response::GetMessageListResponse;
+use crate::primitives::retention_messaging::performance_test_request::PerformanceTestRequest;
+use crate::primitives::retention_messaging::performance_test_response::PerformanceTestResponse;
+use crate::primitives::retention_messaging::performance_test_result_response::PerformanceTestResultResponse;
 use crate::primitives::retention_messaging::upload_message_request_body::UploadMessageRequestBody;
 
 pub struct RetentionMessagingApi;
@@ -251,5 +254,62 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
             None,
         )?;
         self.make_request_without_response_body(req).await
+    }
+
+    /// Initiate a performance test for retention messaging notifications.
+    ///
+    /// This endpoint only works in the sandbox environment.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/initiate-performance-test)
+    ///
+    /// # Arguments
+    ///
+    /// * `performance_test_request` - The request body containing the original transaction identifier.
+    ///
+    /// # Returns
+    ///
+    /// A response containing the performance test configuration and request identifier.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn initiate_performance_test(
+        &self,
+        performance_test_request: &PerformanceTestRequest,
+    ) -> Result<PerformanceTestResponse, ApiError> {
+        let req = self.build_request(
+            "/inApps/v1/messaging/performanceTest",
+            Method::POST,
+            Some(performance_test_request),
+        )?;
+        self.make_request_with_response_body(req).await
+    }
+
+    /// Get the results of a performance test.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/get-performance-test-results)
+    ///
+    /// # Arguments
+    ///
+    /// * `request_id` - The ID of the performance test to return.
+    ///
+    /// # Returns
+    ///
+    /// A response containing the performance test results.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn performance_test_result(
+        &self,
+        request_id: Uuid,
+    ) -> Result<PerformanceTestResultResponse, ApiError> {
+        let path = format!("/inApps/v1/messaging/performanceTest/result/{}", request_id);
+        let req = self.build_request::<()>(
+            &path,
+            Method::GET,
+            None,
+        )?;
+        self.make_request_with_response_body(req).await
     }
 }
