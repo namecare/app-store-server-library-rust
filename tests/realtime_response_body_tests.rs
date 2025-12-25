@@ -16,6 +16,7 @@ fn test_realtime_response_body_with_message() {
         message: Some(message),
         alternate_product: None,
         promotional_offer: None,
+        advanced_commerce_info: None,
     };
 
     // Serialize to JSON
@@ -59,6 +60,7 @@ fn test_realtime_response_body_with_alternate_product() {
         message: None,
         alternate_product: Some(alternate_product),
         promotional_offer: None,
+        advanced_commerce_info: None,
     };
 
     // Serialize to JSON
@@ -115,6 +117,7 @@ fn test_realtime_response_body_with_promotional_offer_v2() {
         message: None,
         alternate_product: None,
         promotional_offer: Some(promotional_offer),
+        advanced_commerce_info: None,
     };
 
     // Serialize to JSON
@@ -190,6 +193,7 @@ fn test_realtime_response_body_with_promotional_offer_v1() {
         message: None,
         alternate_product: None,
         promotional_offer: Some(promotional_offer),
+        advanced_commerce_info: None,
     };
 
     // Serialize to JSON
@@ -270,6 +274,7 @@ fn test_realtime_response_body_serialization() {
         message: Some(message),
         alternate_product: None,
         promotional_offer: None,
+        advanced_commerce_info: None,
     };
 
     let json_string = serde_json::to_string(&response_body).unwrap();

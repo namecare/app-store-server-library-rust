@@ -2,6 +2,7 @@ use crate::primitives::retention_messaging::alternate_product::AlternateProduct;
 use crate::primitives::retention_messaging::message::Message;
 use crate::primitives::retention_messaging::promotional_offer::PromotionalOffer;
 use serde::{Deserialize, Serialize};
+use crate::primitives::retention_messaging::advanced_commerce_info::AdvancedCommerceInfo;
 
 /// A response you provide to choose, in real time, a retention message the system displays to the customer.
 ///
@@ -25,4 +26,12 @@ pub struct RealtimeResponseBody {
     /// [promotionalOffer](https://developer.apple.com/documentation/retentionmessaging/promotionaloffer)
     #[serde(rename = "promotionalOffer", skip_serializing_if = "Option::is_none")]
     pub promotional_offer: Option<PromotionalOffer>,
+
+    /// A retention offer or switch plan option.
+    /// If you pass this object for a subscription that’s not an Advanced Commerce subscription, the framework treats the request as invalid and ignores the response.
+    /// If you supply this field, don’t include the other fields.
+    ///
+    /// [advancedCommerceInfo](https://developer.apple.com/documentation/retentionmessaging/promotionaloffer)
+    #[serde(rename = "advancedCommerceInfo", skip_serializing_if = "Option::is_none")]
+    pub advanced_commerce_info: Option<AdvancedCommerceInfo>,
 }
