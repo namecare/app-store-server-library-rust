@@ -1,3 +1,4 @@
+use app_store_server_library::primitives::app_data::AppData;
 use app_store_server_library::primitives::auto_renew_status::AutoRenewStatus;
 use app_store_server_library::primitives::consumption_request_reason::ConsumptionRequestReason;
 use app_store_server_library::primitives::environment::Environment;
@@ -10,6 +11,7 @@ use app_store_server_library::primitives::price_increase_status::PriceIncreaseSt
 use app_store_server_library::primitives::product_type::ProductType;
 use app_store_server_library::primitives::purchase_platform::PurchasePlatform;
 use app_store_server_library::primitives::revocation_reason::RevocationReason;
+use app_store_server_library::primitives::revocation_type::RevocationType;
 use app_store_server_library::primitives::status::Status;
 use app_store_server_library::primitives::subtype::Subtype;
 use app_store_server_library::primitives::transaction_reason::TransactionReason;
@@ -1265,4 +1267,278 @@ fn test_realtime_request_decoding() {
         }
         Err(err) => panic!("Failed to verify and decode realtime request: {:?}", err),
     }
+}
+
+#[test]
+fn test_transaction_with_revocation_decoding() {
+    let signed_transaction = create_signed_data_from_json("tests/resources/models/signedTransactionWithRevocation.json");
+
+    let signed_data_verifier = get_default_signed_data_verifier();
+
+    match signed_data_verifier.verify_and_decode_signed_transaction(&signed_transaction) {
+        Ok(transaction) => {
+            assert_eq!(
+                "12345",
+                transaction
+                    .original_transaction_id
+                    .as_deref()
+                    .expect("Expect original_transaction_id")
+            );
+            assert_eq!(
+                "23456",
+                transaction
+                    .transaction_id
+                    .as_deref()
+                    .expect("Expect transaction_id")
+            );
+            assert_eq!(
+                "34343",
+                transaction
+                    .web_order_line_item_id
+                    .as_deref()
+                    .expect("Expect web_order_line_item_id")
+            );
+            assert_eq!(
+                "com.example",
+                transaction
+                    .bundle_id
+                    .as_deref()
+                    .expect("Expect bundle_id")
+            );
+            assert_eq!(
+                "com.example.product",
+                transaction
+                    .product_id
+                    .as_deref()
+                    .expect("Expect product_id")
+            );
+            assert_eq!(
+                "55555",
+                transaction
+                    .subscription_group_identifier
+                    .as_deref()
+                    .expect("Expect subscription_group_identifier")
+            );
+            assert_eq!(
+                1698148800,
+                transaction
+                    .original_purchase_date
+                    .expect("Expect original_purchase_date")
+                    .timestamp()
+            );
+            assert_eq!(
+                1698148900,
+                transaction
+                    .purchase_date
+                    .expect("Expect purchase_date")
+                    .timestamp()
+            );
+            assert_eq!(
+                1698148950,
+                transaction
+                    .revocation_date
+                    .expect("Expect revocation_date")
+                    .timestamp()
+            );
+            assert_eq!(
+                1698149000,
+                transaction
+                    .expires_date
+                    .expect("Expect expires_date")
+                    .timestamp()
+            );
+            assert_eq!(
+                1,
+                transaction
+                    .quantity
+                    .expect("Expect quantity")
+            );
+            assert_eq!(
+                ProductType::AutoRenewableSubscription,
+                transaction.r#type.expect("Expect type")
+            );
+            assert_eq!(
+                "7e3fb20b-4cdb-47cc-936d-99d65f608138",
+                transaction
+                    .app_account_token
+                    .expect("Expect app_account_token")
+                    .to_string()
+            );
+            assert_eq!(
+                InAppOwnershipType::Purchased,
+                transaction
+                    .in_app_ownership_type
+                    .expect("Expect in_app_ownership_type")
+            );
+            assert_eq!(
+                1698148900,
+                transaction
+                    .signed_date
+                    .expect("Expect signed_date")
+                    .timestamp()
+            );
+            assert_eq!(
+                RevocationReason::RefundedDueToIssue,
+                transaction
+                    .revocation_reason
+                    .expect("Expect revocation_reason")
+            );
+            assert_eq!(
+                "abc.123",
+                transaction
+                    .offer_identifier
+                    .as_deref()
+                    .expect("Expect offer_identifier")
+            );
+            assert!(transaction
+                .is_upgraded
+                .unwrap_or_default());
+            assert_eq!(
+                OfferType::IntroductoryOffer,
+                transaction
+                    .offer_type
+                    .expect("Expect offer_type")
+            );
+            assert_eq!(
+                "USA",
+                transaction
+                    .storefront
+                    .as_deref()
+                    .expect("Expect storefront")
+            );
+            assert_eq!(
+                "143441",
+                transaction
+                    .storefront_id
+                    .as_deref()
+                    .expect("Expect storefront_id")
+            );
+            assert_eq!(
+                TransactionReason::Purchase,
+                transaction
+                    .transaction_reason
+                    .expect("Expect transaction_reason")
+            );
+            assert_eq!(
+                Environment::LocalTesting,
+                transaction
+                    .environment
+                    .expect("Expect environment")
+            );
+            assert_eq!(10990, transaction.price.expect("Expect price"));
+            assert_eq!(
+                "USD",
+                transaction
+                    .currency
+                    .as_deref()
+                    .expect("Expect currency")
+            );
+            assert_eq!(
+                OfferDiscountType::PayAsYouGo,
+                transaction
+                    .offer_discount_type
+                    .expect("Expect offer_discount_type")
+            );
+            assert_eq!(
+                "71134",
+                transaction
+                    .app_transaction_id
+                    .expect("Expect app_transaction_id")
+                    .to_string()
+            );
+            assert_eq!(
+                "P1Y",
+                transaction
+                    .offer_period
+                    .expect("Expect offer_period")
+                    .to_string()
+            );
+            assert_eq!(
+                RevocationType::RefundProrated,
+                transaction
+                    .revocation_type
+                    .expect("Expect revocation_type")
+            );
+            assert_eq!(
+                50000,
+                transaction
+                    .revocation_percentage
+                    .expect("Expect revocation_percentage")
+            );
+        }
+        Err(err) => panic!("Failed to verify and decode signed transaction: {:?}", err),
+    }
+}
+
+#[test]
+fn test_rescind_consent_notification_decoding() {
+    let signed_notification = create_signed_data_from_json("tests/resources/models/signedRescindConsentNotification.json");
+
+    let signed_data_verifier = get_default_signed_data_verifier();
+
+    match signed_data_verifier.verify_and_decode_notification(&signed_notification) {
+        Ok(notification) => {
+            assert_eq!(
+                NotificationTypeV2::RescindConsent,
+                notification.notification_type
+            );
+            assert!(notification.subtype.is_none());
+            assert_eq!(
+                "002e14d5-51f5-4503-b5a8-c3a1af68eb20",
+                notification.notification_uuid
+            );
+            assert_eq!("2.0", notification.version.unwrap());
+            assert_eq!(
+                1698148900,
+                notification
+                    .signed_date
+                    .unwrap()
+                    .timestamp()
+            );
+            assert!(notification.data.is_none());
+            assert!(notification.summary.is_none());
+            assert!(notification.external_purchase_token.is_none());
+            assert!(notification.app_data.is_some());
+
+            if let Some(app_data) = notification.app_data {
+                assert_eq!(
+                    Environment::LocalTesting,
+                    app_data.environment.expect("Expect environment")
+                );
+                assert_eq!(
+                    41234,
+                    app_data.app_apple_id.expect("Expect app_apple_id")
+                );
+                assert_eq!(
+                    "com.example",
+                    app_data.bundle_id.as_deref().expect("Expect bundle_id")
+                );
+                assert_eq!(
+                    "signed_app_transaction_info_value",
+                    app_data.signed_app_transaction_info.as_deref().expect("Expect signed_app_transaction_info")
+                );
+            } else {
+                panic!("AppData field is expected to be present in the notification");
+            }
+        }
+        Err(err) => panic!(
+            "Failed to verify and decode rescind consent notification: {:?}",
+            err
+        ),
+    }
+}
+
+#[test]
+fn test_app_data() {
+    let json = fs::read_to_string("tests/resources/models/appData.json").expect("Failed to read file");
+
+    let app_data: AppData = serde_json::from_str(&json).expect("Failed to decode AppData");
+
+    assert_eq!(987654321, app_data.app_apple_id.expect("Expect app_apple_id"));
+    assert_eq!("com.example", app_data.bundle_id.as_deref().expect("Expect bundle_id"));
+    assert_eq!(Environment::Sandbox, app_data.environment.expect("Expect environment"));
+    assert_eq!(
+        "signed-app-transaction-info",
+        app_data.signed_app_transaction_info.as_deref().expect("Expect signed_app_transaction_info")
+    );
 }

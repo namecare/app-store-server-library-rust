@@ -1,13 +1,14 @@
-use serde_repr::{Deserialize_repr, Serialize_repr};
+use serde::{Deserialize, Serialize};
 
 /// A value that indicates your preferred outcome for the refund request.
 ///
 /// [refundPreference](https://developer.apple.com/documentation/appstoreserverapi/refundpreference)
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize_repr, Deserialize_repr)]
-#[repr(u8)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash,  Deserialize, Serialize)]
 pub enum RefundPreference {
-    Undeclared = 0,
-    PreferGrant = 1,
-    PreferDecline = 2,
-    NoPreference = 3,
+    #[serde(rename = "MIGRATION")]
+    Migration,
+    #[serde(rename = "GRANT_FULL")]
+    GrantFull,
+    #[serde(rename = "GRANT_PRORATED")]
+    GrantProrated,
 }

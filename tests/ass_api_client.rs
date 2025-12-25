@@ -40,6 +40,9 @@ use uuid::Uuid;
 use app_store_server_library::api_client::api::app_store_server_api::api_error_code::ApiErrorCode;
 use app_store_server_library::api_client::api::app_store_server_api::{AppStoreServerApiClient, GetTransactionHistoryVersion};
 use app_store_server_library::api_client::error::ConfigurationError;
+use app_store_server_library::primitives::consumption_request_v1::ConsumptionRequestV1;
+use app_store_server_library::primitives::delivery_status_v1::DeliveryStatusV1;
+use app_store_server_library::primitives::refund_preference_v1::RefundPreferenceV1;
 
 #[tokio::test]
 async fn test_extend_renewal_date_for_all_active_subscribers() {
@@ -874,12 +877,12 @@ async fn test_send_consumption_data() {
         })),
     );
 
-    let consumption_request = ConsumptionRequest {
+    let consumption_request = ConsumptionRequestV1 {
         customer_consented: true.into(),
         consumption_status: ConsumptionStatus::NotConsumed.into(),
         platform: Platform::NonApple.into(),
         sample_content_provided: false.into(),
-        delivery_status: DeliveryStatus::DidNotDeliverDueToServerOutage.into(),
+        delivery_status: DeliveryStatusV1::DidNotDeliverDueToServerOutage.into(),
         app_account_token: Some(Uuid::parse_str("7389a31a-fb6d-4569-a2a6-db7d85d84813").unwrap()),
         account_tenure: AccountTenure::ThirtyDaysToNinetyDays.into(),
         play_time: PlayTime::OneDayToFourDays.into(),
@@ -888,11 +891,135 @@ async fn test_send_consumption_data() {
                 .into(),
         lifetime_dollars_purchased: LifetimeDollarsPurchased::TwoThousandDollarsOrGreater.into(),
         user_status: UserStatus::LimitedAccess.into(),
-        refund_preference: RefundPreference::NoPreference.into(),
+        refund_preference: RefundPreferenceV1::NoPreference.into(),
     };
 
     let _ = client
         .send_consumption_data("49571273", &consumption_request)
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn test_send_consumption_information() {
+    let client = app_store_server_api_client(
+        "".into(),
+        StatusCode::OK,
+        Some(Box::new(|req, body| {
+            assert_eq!(&Method::PUT, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v2/transactions/consumption/49571273",
+                req.uri().to_string()
+            );
+            assert_eq!(
+                "application/json",
+                req.headers()
+                    .get("Content-Type")
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+            );
+            let decoded_json: HashMap<String, Value> = serde_json::from_slice(body).unwrap();
+            assert_eq!(
+                true,
+                decoded_json["customerConsented"]
+                    .as_bool()
+                    .unwrap()
+            );
+            assert_eq!(
+                false,
+                decoded_json["sampleContentProvided"]
+                    .as_bool()
+                    .unwrap()
+            );
+            assert_eq!(
+                "DELIVERED",
+                decoded_json["deliveryStatus"]
+                    .as_str()
+                    .unwrap()
+            );
+            assert_eq!(
+                50000,
+                decoded_json["consumptionPercentage"]
+                    .as_i64()
+                    .unwrap()
+            );
+            assert_eq!(
+                "GRANT_FULL",
+                decoded_json["refundPreference"]
+                    .as_str()
+                    .unwrap()
+            );
+        })),
+    );
+
+    let consumption_request = ConsumptionRequest {
+        customer_consented: Some(true),
+        delivery_status: Some(DeliveryStatus::Delivered),
+        sample_content_provided: false,
+        consumption_percentage: Some(50000),
+        refund_preference: Some(RefundPreference::GrantFull),
+    };
+
+    let _ = client
+        .send_consumption_information("49571273", &consumption_request)
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn test_send_consumption_information_with_minimal_fields() {
+    let client = app_store_server_api_client(
+        "".into(),
+        StatusCode::OK,
+        Some(Box::new(|req, body| {
+            assert_eq!(&Method::PUT, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v2/transactions/consumption/49571273",
+                req.uri().to_string()
+            );
+            assert_eq!(
+                "application/json",
+                req.headers()
+                    .get("Content-Type")
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+            );
+            let decoded_json: HashMap<String, Value> = serde_json::from_slice(body).unwrap();
+            assert_eq!(
+                true,
+                decoded_json["customerConsented"]
+                    .as_bool()
+                    .unwrap()
+            );
+            assert_eq!(
+                false,
+                decoded_json["sampleContentProvided"]
+                    .as_bool()
+                    .unwrap()
+            );
+            assert_eq!(
+                "UNDELIVERED_QUALITY_ISSUE",
+                decoded_json["deliveryStatus"]
+                    .as_str()
+                    .unwrap()
+            );
+            assert!(decoded_json.get("consumptionPercentage").is_none());
+            assert!(decoded_json.get("refundPreference").is_none());
+        })),
+    );
+
+    let consumption_request = ConsumptionRequest {
+        customer_consented: Some(true),
+        delivery_status: Some(DeliveryStatus::UndeliveredQualityIssue),
+        sample_content_provided: false,
+        consumption_percentage: None,
+        refund_preference: None,
+    };
+
+    let _ = client
+        .send_consumption_information("49571273", &consumption_request)
         .await
         .unwrap();
 }
@@ -1269,12 +1396,12 @@ async fn test_send_consumption_data_with_null_app_account_token() {
         })),
     );
 
-    let consumption_request = ConsumptionRequest {
+    let consumption_request = ConsumptionRequestV1 {
         customer_consented: true.into(),
         consumption_status: ConsumptionStatus::NotConsumed.into(),
         platform: Platform::NonApple.into(),
         sample_content_provided: false.into(),
-        delivery_status: DeliveryStatus::DidNotDeliverDueToServerOutage.into(),
+        delivery_status: DeliveryStatusV1::DidNotDeliverDueToServerOutage.into(),
         app_account_token: None,
         account_tenure: AccountTenure::ThirtyDaysToNinetyDays.into(),
         play_time: PlayTime::OneDayToFourDays.into(),

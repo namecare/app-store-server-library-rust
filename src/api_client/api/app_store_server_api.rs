@@ -10,6 +10,7 @@ use crate::api_client::transport::Transport;
 use crate::primitives::app_transaction_info_response::AppTransactionInfoResponse;
 use crate::primitives::check_test_notification_response::CheckTestNotificationResponse;
 use crate::primitives::consumption_request::ConsumptionRequest;
+use crate::primitives::consumption_request_v1::ConsumptionRequestV1;
 use crate::primitives::extend_renewal_date_request::ExtendRenewalDateRequest;
 use crate::primitives::extend_renewal_date_response::ExtendRenewalDateResponse;
 use crate::primitives::history_response::HistoryResponse;
@@ -470,6 +471,28 @@ impl<T: Transport> AppStoreServerApiClient<T> {
         self.make_request_with_response_body(req).await
     }
 
+    /// Send consumption information about an In-App Purchase to the App Store after your server receives a consumption request notification.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/send-consumption-information)
+    ///
+    /// # Arguments
+    ///
+    /// * `transaction_id` - The transaction identifier for which you're providing consumption information.
+    /// * `consumption_request` - The request body containing consumption information.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIException` if the request could not be processed.
+    pub async fn send_consumption_information(
+        &self,
+        transaction_id: &str,
+        consumption_request: &ConsumptionRequest
+    ) -> Result<(), ApiError> {
+        let path = format!("/inApps/v2/transactions/consumption/{}", transaction_id);
+        let req = self.build_request(path.as_str(), Method::PUT, Some(consumption_request))?;
+        self.make_request_without_response_body(req).await
+    }
+
     /// Send consumption information about a consumable in-app purchase to the App Store after your server receives a consumption request notification.
     ///
     /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/send_consumption_information)
@@ -482,10 +505,11 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     /// # Errors
     ///
     /// Returns an `APIException` if the request could not be processed.
+    #[deprecated(note = "Use `send_consumption_information` instead.")]
     pub async fn send_consumption_data(
         &self,
         transaction_id: &str,
-        consumption_request: &ConsumptionRequest,
+        consumption_request: &ConsumptionRequestV1,
     ) -> Result<(), ApiError> {
         let path = format!("/inApps/v1/transactions/consumption/{}", transaction_id);
         let req = self.build_request(path.as_str(), Method::PUT, Some(consumption_request))?;
