@@ -1,3 +1,4 @@
+use crate::primitives::app_data::AppData;
 use crate::primitives::data::Data;
 use crate::primitives::external_purchase_token::ExternalPurchaseToken;
 use crate::primitives::notification_type_v2::NotificationTypeV2;
@@ -61,4 +62,11 @@ pub struct ResponseBodyV2DecodedPayload {
     /// [externalPurchaseToken](https://developer.apple.com/documentation/appstoreservernotifications/externalpurchasetoken)
     #[serde(rename = "externalPurchaseToken")]
     pub external_purchase_token: Option<ExternalPurchaseToken>,
+
+    /// App data that appears in version 2 notifications.
+    /// The data, summary, externalPurchaseToken, and appData fields are mutually exclusive.
+    ///
+    /// [appData](https://developer.apple.com/documentation/appstoreservernotifications/appdata)
+    #[serde(rename = "appData")]
+    pub app_data: Option<AppData>,
 }

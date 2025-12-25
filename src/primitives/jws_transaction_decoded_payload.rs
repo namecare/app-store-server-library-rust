@@ -4,6 +4,7 @@ use crate::primitives::offer_discount_type::OfferDiscountType;
 use crate::primitives::offer_type::OfferType;
 use crate::primitives::product_type::ProductType;
 use crate::primitives::revocation_reason::RevocationReason;
+use crate::primitives::revocation_type::RevocationType;
 use crate::primitives::transaction_reason::TransactionReason;
 use chrono::{DateTime, Utc};
 use serde_with::formats::Flexible;
@@ -22,6 +23,11 @@ pub struct JWSTransactionDecodedPayload {
     ///
     /// [originalTransactionId](https://developer.apple.com/documentation/appstoreserverapi/originaltransactionid)
     pub original_transaction_id: Option<String>,
+
+    /// The original transaction identifier of a subscription before migration.
+    ///
+    /// [previousOriginalTransactionId](https://developer.apple.com/documentation/appstoreserverapi/previousoriginaltransactionid)
+    pub previous_original_transaction_id: Option<String>,
 
     /// The unique identifier for a transaction such as an in-app purchase, restored in-app purchase, or subscription renewal.
     ///
@@ -103,6 +109,16 @@ pub struct JWSTransactionDecodedPayload {
     /// [revocationDate](https://developer.apple.com/documentation/appstoreserverapi/revocationdate)
     #[serde_as(as = "Option<TimestampMilliSeconds<String, Flexible>>")]
     pub revocation_date: Option<DateTime<Utc>>,
+
+    /// The type of revocation for the transaction.
+    ///
+    /// [revocationType](https://developer.apple.com/documentation/appstoreserverapi/revocationtype)
+    pub revocation_type: Option<RevocationType>,
+
+    /// The percentage of the refund amount.
+    ///
+    /// [revocationPercentage](https://developer.apple.com/documentation/appstoreserverapi/revocationpercentage)
+    pub revocation_percentage: Option<i32>,
 
     /// The Boolean value that indicates whether the user upgraded to another subscription.
     ///
