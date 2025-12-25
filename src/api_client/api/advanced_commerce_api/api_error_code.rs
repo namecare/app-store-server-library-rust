@@ -4,6 +4,10 @@ use crate::api_client::error::APIServiceErrorCode;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize_repr, Serialize_repr)]
 #[repr(i64)]
 pub enum ApiErrorCode {
+
+    /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/acapriceincreaseisnotcurrentlysupportedinindiaerror)
+    ACAPriceIncreaseIsNotCurrentlySupportedInIndiaError = 4000221,
+
     /// The transaction was already refunded.
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/alreadyrefunded)
     AlreadyRefunded = 4030021,
@@ -23,6 +27,13 @@ pub enum ApiErrorCode {
     /// The targeted item in changeItems wasn't found.
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/changeitemnotfound)
     ChangeItemNotFound = 4000146,
+
+    /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/dependentskuscannotbechainederror)
+    DependentSKUsCannotBeChainedError = 4000193,
+
+    /// Invalid request. dependentSKUs can't be shared between multiple SKUs.
+    /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/dependentskuscannotbesharederror)
+    DependentSKUsCannotBeSharedError = 4000192,
 
     /// Exceeds the maximum length of the description field.
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/descriptionlengthexceeded)
@@ -108,6 +119,10 @@ pub enum ApiErrorCode {
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/invalidprevioustransactionid)
     InvalidPreviousTransactionID = 4000096,
 
+    /// Price provided for a changed item with an offer while subject to a price increase was invalid.
+    /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/invalidpriceforchangeiteminpriceincreaseerror)
+    InvalidPriceForChangeItemInPriceIncreaseError = 4000214,
+
     /// Product changes are invalid.
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/invalidproductchanges)
     InvalidProductChanges = 4000115,
@@ -156,6 +171,10 @@ pub enum ApiErrorCode {
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/invalidsku)
     InvalidSKU = 4000122,
 
+    /// SKU values provided in request must be a SKU that will renew.
+    /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/invalidskuprovidedmustbecurrentskusettorenewerror)
+    InvalidSKUProvidedMustBeCurrentSKUSetToRenewError = 4000220,
+
     /// The storefront value is invalid.
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/invalidstorefront)
     InvalidStorefront = 4000028,
@@ -171,6 +190,10 @@ pub enum ApiErrorCode {
     /// The transactionId is invalid.
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/invalidtransactionid)
     InvalidTransactionId = 4000006,
+
+    /// The same SKU can't be repeated in this request.
+    /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/itemcannotbespecifiedmultipletimeserror)
+    ItemCannotBeSpecifiedMultipleTimesError = 4000194,
 
     /// The number of items in subscription exceeds the limit.
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/itemlimitexceeded)
@@ -376,6 +399,10 @@ pub enum ApiErrorCode {
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/periodresetwithretainbillingcycle)
     PeriodResetWithRetainBillingCycle = 4000141,
 
+    /// A price change can't be issued when the price increase has already been communicated.
+    /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/pricechangecannotbeissuedwhenalreadycommunicatederror)
+    PriceChangeCannotBeIssuedWhenAlreadyCommunicatedError = 4000205,
+
     /// Changing the price isn't supported as part of a modify items request.
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/pricechangenotsupportedthroughmodifyitems)
     PriceChangeNotSupportedThroughModifyItems = 4000178,
@@ -494,129 +521,3 @@ impl APIServiceErrorCode for ApiErrorCode {
     }
 }
 
-impl ApiErrorCode {
-    pub fn message(&self) -> &'static str {
-        match self {
-            ApiErrorCode::AlreadyRefunded => "The transaction was already refunded.",
-            ApiErrorCode::AtLeastOneItem => "When included, provide at least one item in items.",
-            ApiErrorCode::AtLeastOneOfDisplayNameOrDescription => "Provide either the displayName or a description.",
-            ApiErrorCode::BillingCycleResetWithEffectiveLater => "Bill cycle reset with effective later.",
-            ApiErrorCode::ChangeItemNotFound => "The targeted item in changeItems wasn't found.",
-            ApiErrorCode::DescriptionLengthExceeded => "Exceeds the maximum length of the description field.",
-            ApiErrorCode::DisplayNameLengthExceeded => "Exceeds the maximum length of the displayName field.",
-            ApiErrorCode::EmptyAddChangeItems => "The addItems and changeItems entries cannot be empty.",
-            ApiErrorCode::GeneralInternal => "An unknown error occurred.",
-            ApiErrorCode::GeneralInternalRetryable => "An unknown error occurred. Please try again.",
-            ApiErrorCode::InactiveACASub => "The subscription is not active.",
-            ApiErrorCode::InsufficientFunds => "Insufficient funds for refund.",
-            ApiErrorCode::InvalidAmount => "The amount is invalid.",
-            ApiErrorCode::InvalidAppAccountToken => "The appAccountToken field must contain a valid UUID or an empty string.",
-            ApiErrorCode::InvalidChangeReason => "The change reason is invalid.",
-            ApiErrorCode::InvalidConsistencyToken => "The consistencyToken value is invalid.",
-            ApiErrorCode::InvalidCurrency => "The currency value is invalid.",
-            ApiErrorCode::InvalidDescription => "The description is invalid.",
-            ApiErrorCode::InvalidDisplayName => "The displayName is invalid.",
-            ApiErrorCode::InvalidOfferPeriodCount => "The offer periodCount is invalid.",
-            ApiErrorCode::InvalidOfferPeriod => "The offer period is invalid.",
-            ApiErrorCode::InvalidOfferPrice => "The subscription offer price is higher than the regular subscription price.",
-            ApiErrorCode::InvalidOfferReason => "The offer reason is invalid.",
-            ApiErrorCode::InvalidOperation => "The operation is invalid.",
-            ApiErrorCode::InvalidPreviousSubscription => "The previous subscription targeted is invalid.",
-            ApiErrorCode::InvalidPreviousTransactionID => "Previous original transaction id is invalid.",
-            ApiErrorCode::InvalidProductChanges => "Product changes are invalid.",
-            ApiErrorCode::InvalidProduct => "The requested product to change doesn't exist.",
-            ApiErrorCode::InvalidProratedPrice => "The prorated price was invalid.",
-            ApiErrorCode::InvalidRefundReason => "The refundReason is invalid.",
-            ApiErrorCode::InvalidRefundType => "The refundType is invalid.",
-            ApiErrorCode::InvalidRenewalPeriod => "The renewal period is invalid.",
-            ApiErrorCode::InvalidRenewalPrice => "The renewal price is invalid.",
-            ApiErrorCode::InvalidRequestReferenceID => "The requestReferenceId value is invalid.",
-            ApiErrorCode::InvalidSalableDuration => "The salable duration is invalid.",
-            ApiErrorCode::InvalidSalable => "The targeted salable isn't configured as a generic salable.",
-            ApiErrorCode::InvalidSignature => "The signature is invalid.",
-            ApiErrorCode::InvalidSKU => "The SKU was invalid.",
-            ApiErrorCode::InvalidStorefront => "The storefront value is invalid.",
-            ApiErrorCode::InvalidTargetProductID => "The targetProductID value is invalid.",
-            ApiErrorCode::InvalidTaxProductCode => "The taxCode is invalid.",
-            ApiErrorCode::InvalidTransactionId => "The transactionId is invalid.",
-            ApiErrorCode::ItemLimitExceeded => "The number of items in subscription exceeds the limit.",
-            ApiErrorCode::MalformedPayload => "The payload is malformed.",
-            ApiErrorCode::MisalignedBillingCycle => "The request contains a billing period that doesn't align with the subscription's billing cycle.",
-            ApiErrorCode::MismatchedStorefront => "The storefronts mismatch.",
-            ApiErrorCode::MissingPricingConfigForStorefront => "Pricing isn't configured for the storefront.",
-            ApiErrorCode::MissingUpdatedItemsWithPeriodChange => "All items must be updated on a period change.",
-            ApiErrorCode::MoreItemsThanAllowed => "More items were provided than allowed.",
-            ApiErrorCode::MoreOffersThanAllowed => "More offers were provided than allowed.",
-            ApiErrorCode::MultipleOperationsOnSingleSKU => "Multiple operations on a single SKU isn't allowed.",
-            ApiErrorCode::MultiplePrices => "Prorated price and offer price are mutually exclusive.",
-            ApiErrorCode::NegativePrice => "The price field must contain a positive number.",
-            ApiErrorCode::NegativeProratedPrice => "Exceeds the maximum length of the price field.",
-            ApiErrorCode::NegativeRefundAmount => "The refundAmount must be a positive number.",
-            ApiErrorCode::NullAdvancedCommerceData => "The required field, advancedCommerceData, was null.",
-            ApiErrorCode::NullCurrency => "The required field, currency, is missing.",
-            ApiErrorCode::NullCurrentSKU => "The required field, currentSKU, is missing.",
-            ApiErrorCode::NullDescription => "The required field, description, is missing.",
-            ApiErrorCode::NullDescriptors => "The required field, descriptors, is missing.",
-            ApiErrorCode::NullDisplayName => "The required field, displayName, is missing.",
-            ApiErrorCode::NullEffective => "The required field, effective, is missing.",
-            ApiErrorCode::NullItem => "The required field, item, is missing.",
-            ApiErrorCode::NullItems => "The required field, items, is missing.",
-            ApiErrorCode::NullNewSKU => "The required field, SKU in changeItems, is missing.",
-            ApiErrorCode::NullOfferPeriod => "The required field, offer period, is missing.",
-            ApiErrorCode::NullPeriodCount => "The required field, periodCount, is missing.",
-            ApiErrorCode::NullPeriod => "The required field, period, is missing.",
-            ApiErrorCode::NullPrice => "The required field, price, is missing.",
-            ApiErrorCode::NullReason => "The required field, reason, is missing.",
-            ApiErrorCode::NullRefundAmount => "The refundAmount value is invalid.",
-            ApiErrorCode::NullRefundReason => "The required field, refundReason, is missing.",
-            ApiErrorCode::NullRefundRisking => "The required field, refundRiskingPreference, is missing.",
-            ApiErrorCode::NullRefundType => "The required field, refundType, is missing.",
-            ApiErrorCode::NullRequestInfo => "The required field, requestInfo, is missing.",
-            ApiErrorCode::NullRequestReferenceID => "The required field, requestReferenceId, is missing.",
-            ApiErrorCode::NullRetainBillingCycle => "The required field, retainBillingCycle, is missing.",
-            ApiErrorCode::NullSKU => "The required field, SKU, is missing.",
-            ApiErrorCode::NullStorefront => "The required field, storefront, is missing.",
-            ApiErrorCode::NullTargetProductID => "The required field, targetProductID, is missing.",
-            ApiErrorCode::NullTaxCode => "The required field, taxCode, is missing.",
-            ApiErrorCode::NullTransactionId => "The required field, transactionId, is missing.",
-            ApiErrorCode::NullVersion => "The required field, version, is missing.",
-            ApiErrorCode::OfferPreventsItemMidCycleChange => "An existing offer prevents changes to the item mid-cycle.",
-            ApiErrorCode::OneItemNeededInModify => "At least one type of change must be provided in a modify subscription request.",
-            ApiErrorCode::OperationNotAllowed => "The operation isn't allowed.",
-            ApiErrorCode::PartialSimulateRefundDecline => "If one item has a refundReason value of SIMULATE_REFUND_DECLINE, all items must have a refundReason value of SIMULATE_REFUND_DECLINE.",
-            ApiErrorCode::PendingChangesMismatch => "Pending subscription changes must specify a renewalItem, and if there are no pending changes, a renewalItem cannot be specified.",
-            ApiErrorCode::PendingRefund => "The transaction has pending refunds.",
-            ApiErrorCode::PeriodChangeEffectiveConflict => "A period change at next cycle conflicts with addition at the current period.",
-            ApiErrorCode::PeriodChangeImmediateWithEffectiveAtNextBillingCycle => "Period change immediately with effective later.",
-            ApiErrorCode::PeriodCountNotPositive => "Period count must be a positive number.",
-            ApiErrorCode::PeriodResetWithRetainBillingCycle => "Period reset conflicts with retaining billing cycle.",
-            ApiErrorCode::PriceChangeNotSupportedThroughModifyItems => "Changing the price isn't supported as part of a modify items request.",
-            ApiErrorCode::ProductAlreadyExists => "Provided SKU is already owned.",
-            ApiErrorCode::ProductNotEligible => "The product isn't eligible for the requested operation.",
-            ApiErrorCode::ProductNotFound => "Product not found.",
-            ApiErrorCode::ProductNotOwned => "The customer doesn't own the product.",
-            ApiErrorCode::ProratedOnlyLatestTransaction => "Only requests against the latest transaction can have a PRORATED refundType value.",
-            ApiErrorCode::RateLimitExceeded => "Rate limit exceeded.",
-            ApiErrorCode::RefundAmountWithoutCustom => "Can't provide the refund amount because the refundType isn't CUSTOM.",
-            ApiErrorCode::RemovalAllNotAllowed => "The active subscription must contain at least one item and cannot be completely empty.",
-            ApiErrorCode::RemoveItemNotFound => "A product in removeItems wasn't found for the given subscription.",
-            ApiErrorCode::RemoveItemsWithoutAddOrChangeItems => "The removeItems object was present without addItems or changeItems.",
-            ApiErrorCode::RepeatedRequestReferenceId => "The requestReferenceId was repeated.",
-            ApiErrorCode::RevokeOnInactiveSubscription => "Only active subscriptions are revocable.",
-            ApiErrorCode::SimulateRefundDeclineOnlyInSandbox => "The type SIMULATE_REFUND_DECLINE is only valid in Sandbox.",
-            ApiErrorCode::SKULengthExceeded => "Exceeds the maximum length of the SKU field.",
-            ApiErrorCode::StorefrontChange => "The storefront changed.",
-            ApiErrorCode::SubscriptionAlreadyActive => "The subscription is already active, and cannot be reactivated or renewed at this time.",
-            ApiErrorCode::SubscriptionAlreadyExists => "The subscription already exists.",
-            ApiErrorCode::SubscriptionAlreadyMigrated => "The subscription was already migrated.",
-            ApiErrorCode::SubscriptionDoesNotExist => "The subscription doesn't exist.",
-            ApiErrorCode::SubscriptionNotEligible => "The subscription isn't eligible for the requested changes.",
-            ApiErrorCode::TransactionIdNotFound => "Transaction id not found.",
-            ApiErrorCode::TransactionNotRefundable => "The transaction is not refundable.",
-            ApiErrorCode::TransactionCannotBeRefundedContactSupport => "The transaction can't be refunded; customer can contact Apple Support for assistance.",
-            ApiErrorCode::Unauthorized => "Unauthorized.",
-            ApiErrorCode::UnexpectedVersion => "The value of version is invalid.",
-            ApiErrorCode::Unknown => "Unknown error.",
-        }
-    }
-}
