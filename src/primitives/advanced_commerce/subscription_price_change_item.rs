@@ -12,6 +12,12 @@ pub struct SubscriptionPriceChangeItem {
     #[serde(rename = "SKU")]
     pub sku: String,
 
+    /// The product identifier of a dependent SKU in a subscription price change.
+    /// The dependentSKU value is a string with a maximum length of 128 characters.
+    ///
+    /// [dependentSKU](https://developer.apple.com/documentation/advancedcommerceapi/dependentsku)
+    #[serde(rename = "dependentSKUs")]
+    pub dependent_skus: String,
     /// The new price in milliunits.
     ///
     /// [Price](https://developer.apple.com/documentation/advancedcommerceapi/price)
