@@ -1,15 +1,23 @@
-use serde_repr::{Deserialize_repr, Serialize_repr};
+use serde::{Deserialize, Serialize};
 
-/// A value that indicates whether the app successfully delivered an in-app purchase that works properly.
+/// A value that indicates whether the app successfully delivered an In-App Purchase that works properly.
 ///
 /// [deliveryStatus](https://developer.apple.com/documentation/appstoreserverapi/deliverystatus)
-#[derive(Debug, Clone, Deserialize_repr, Serialize_repr, Hash, PartialEq, Eq)]
-#[repr(u8)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub enum DeliveryStatus {
-    DeliveredAndWorkingProperly = 0,
-    DidNotDeliverDueToQualityIssue = 1,
-    DeliveredWrongItem = 2,
-    DidNotDeliverDueToServerOutage = 3,
-    DidNotDeliverDueToIngameCurrencyChange = 4,
-    DidNotDeliverForOtherReason = 5,
+    /// The app delivered the In-App Purchase and it's working properly.
+    #[serde(rename = "DELIVERED")]
+    Delivered,
+    /// The app didn't deliver the In-App Purchase due to a quality issue.
+    #[serde(rename = "UNDELIVERED_QUALITY_ISSUE")]
+    UndeliveredQualityIssue,
+    /// The app delivered the wrong item.
+    #[serde(rename = "UNDELIVERED_WRONG_ITEM")]
+    UndeliveredWrongItem,
+    /// The app didn't deliver the In-App Purchase due to a server outage.
+    #[serde(rename = "UNDELIVERED_SERVER_OUTAGE")]
+    UndeliveredServerOutage,
+    /// The app didn't deliver the In-App Purchase for other reasons.
+    #[serde(rename = "UNDELIVERED_OTHER")]
+    UndeliveredOther,
 }

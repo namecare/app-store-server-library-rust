@@ -67,3 +67,6 @@ pub mod advanced_commerce_renewal_info;
 pub mod advanced_commerce_renewal_item;
 pub mod retention_messaging;
 mod serde_ext;
+pub mod consumption_request_v1;
+pub mod refund_preference_v1;
+pub mod delivery_status_v1;

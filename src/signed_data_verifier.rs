@@ -180,6 +180,10 @@ impl SignedDataVerifier {
             } else {
                 environment = Some(Environment::Production)
             }
+        } else if let Some(app_data) = &decoded_signed_notification.app_data {
+            bundle_id = app_data.bundle_id.clone();
+            app_apple_id = app_data.app_apple_id.clone();
+            environment = app_data.environment.clone();
         } else {
             bundle_id = None;
             app_apple_id = None;
