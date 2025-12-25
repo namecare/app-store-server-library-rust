@@ -43,4 +43,27 @@ pub enum NotificationTypeV2 {
     ExternalPurchaseToken,
     #[serde(rename = "ONE_TIME_CHARGE")]
     OneTimeCharge,
+    /// A notification type that indicates you used the Change Subscription Metadata endpoint to change the metadata for a subscription.
+    /// This notification only applies to apps that use the Advanced Commerce API.
+    ///
+    /// [METADATA_UPDATE](https://developer.apple.com/documentation/appstoreservernotifications/notificationtype)
+    #[serde(rename = "METADATA_UPDATE")]
+    MetadataUpdate,
+    /// A notification type that indicates you used the Migrate a Subscription to Advanced Commerce API endpoint.
+    /// This notification only applies to apps that use the Advanced Commerce API.
+    ///
+    /// [MIGRATION](https://developer.apple.com/documentation/appstoreservernotifications/notificationtype)
+    #[serde(rename = "MIGRATION")]
+    Migration,
+    /// A notification type that indicates that you called the Change Subscription Price endpoint.
+    /// This notification only applies to apps that use the Advanced Commerce API.
+    ///
+    /// [PRICE_CHANGE](https://developer.apple.com/documentation/appstoreservernotifications/notificationtype)
+    #[serde(rename = "PRICE_CHANGE")]
+    PriceChange,
+    /// A notification type that indicates the parent or guardian has withdrawn consent for a child's app usage.
+    ///
+    /// [RESCIND_CONSENT](https://developer.apple.com/documentation/appstoreservernotifications/notificationtype)
+    #[serde(rename = "RESCIND_CONSENT")]
+    RescindConsent,
 }
