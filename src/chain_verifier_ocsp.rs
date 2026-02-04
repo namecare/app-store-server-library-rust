@@ -1,6 +1,9 @@
+use const_oid::db::rfc5280::ID_AD_OCSP;
 use crate::chain_verifier::ChainVerificationFailureReason::InvalidCertificate;
 use crate::chain_verifier::{ChainVerificationFailureReason, ChainVerifier, ChainVerifierError};
 use x509_cert::Certificate;
+use x509_ocsp::builder::OcspRequestBuilder;
+use x509_ocsp::Version;
 
 /// Internal error type for OCSP validation that helps distinguish retryable errors
 #[derive(Debug)]
@@ -19,9 +22,6 @@ enum OcspError {
 
 impl ChainVerifier {
     /// Checks the OCSP (Online Certificate Status Protocol) revocation status of a certificate.
-    ///
-    /// This function performs a real-time check to verify if a certificate has been revoked
-    /// by contacting the OCSP responder specified in the certificate's Authority Information Access extension.
     ///
     /// # Arguments
     ///
@@ -65,72 +65,19 @@ impl ChainVerifier {
     }
 
     fn check_ocsp_status_internal(&self, leaf: &Certificate, issuer: &Certificate) -> Result<(), OcspError> {
-        use der::asn1::ObjectIdentifier;
-        use der::{asn1::OctetString, Decode, Encode};
-        use x509_cert::spki::AlgorithmIdentifier;
-        use x509_ocsp::{BasicOcspResponse, CertId, CertStatus, OcspRequest, OcspResponse, Request, TbsRequest};
+        use der::{Decode, Encode};
+        use x509_ocsp::{BasicOcspResponse, CertStatus, OcspResponse, Request};
+        use sha1::Sha1;
 
         let ocsp_url = self.extract_ocsp_url(leaf).map_err(|_| OcspError::ValidationError)?;
 
-        // Hash the issuer's distinguished name using SHA-1
-        let issuer_name_hash_bytes = {
-            use sha1::{Sha1, Digest};
-            // Get the raw DER encoding of the issuer's distinguished name
-            let issuer_name = issuer.tbs_certificate.subject.to_der()
-                .map_err(|_| OcspError::ValidationError)?;
-            let hash = Sha1::digest(&issuer_name);
-            hash.to_vec()
-        };
-
-        // Extract and use the issuer's Subject Key Identifier as the key hash
-        let issuer_key_data = self.extract_ski(&issuer).map_err(|_| OcspError::ValidationError)?;
-
-        // SHA-1 OID: 1.3.14.3.2.26
-        let sha1_oid = ObjectIdentifier::new_unwrap("1.3.14.3.2.26");
-
-        // Convert to owned types for x509-ocsp compatibility
-        let hash_algorithm = AlgorithmIdentifier {
-            oid: sha1_oid,
-            parameters: None,
-        };
-
-        let serial_bytes = leaf.tbs_certificate.serial_number.as_bytes();
-
-        let issuer_name_hash = OctetString::new(issuer_name_hash_bytes)
-            .map_err(|_| OcspError::ValidationError)?;
-        let issuer_key_hash = OctetString::new(issuer_key_data)
+        let request = Request::from_cert::<Sha1>(issuer, leaf)
             .map_err(|_| OcspError::ValidationError)?;
 
-        // Use the SerialNumber from x509-cert
-        use x509_cert::serial_number::SerialNumber;
-        let serial_number = SerialNumber::new(serial_bytes)
-            .map_err(|_| OcspError::ValidationError)?;
+        let ocsp_request = OcspRequestBuilder::new(Version::V1)
+            .with_request(request)
+            .build();
 
-        let cert_id = CertId {
-            hash_algorithm,
-            issuer_name_hash,
-            issuer_key_hash,
-            serial_number,
-        };
-
-        let request = Request {
-            req_cert: cert_id,
-            single_request_extensions: None,
-        };
-
-        let tbs_request = TbsRequest {
-            version: x509_ocsp::Version::V1,
-            requestor_name: None,
-            request_list: vec![request],
-            request_extensions: None,
-        };
-
-        let ocsp_request = OcspRequest {
-            tbs_request,
-            optional_signature: None,
-        };
-
-        // Encode the OCSP request
         let request_bytes = ocsp_request
             .to_der()
             .map_err(|_| OcspError::ValidationError)?;
@@ -146,11 +93,9 @@ impl ChainVerifier {
             .body(request_bytes)
             .send()
             .map_err(|e| {
-                // reqwest errors can be network-related (timeout, connection failure, etc.)
                 OcspError::NetworkError(format!("OCSP request failed: {}", e))
             })?;
 
-        // Check HTTP status code
         let status = response.status();
         if !status.is_success() {
             return Err(OcspError::HttpError(status.as_u16()));
@@ -165,7 +110,7 @@ impl ChainVerifier {
 
         use x509_ocsp::OcspResponseStatus;
         match ocsp_response.response_status {
-            OcspResponseStatus::Successful => {} // Continue processing
+            OcspResponseStatus::Successful => {}
             _ => return Err(OcspError::ValidationError),
         }
 
@@ -199,44 +144,6 @@ impl ChainVerifier {
         Err(OcspError::ValidationError)
     }
 
-    /// Extracts the Subject Key Identifier (SKI) from an issuer certificate.
-    ///
-    /// # Arguments
-    ///
-    /// * `issuer` - The issuer certificate from which to extract the SKI
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(Vec<u8>)` - The raw bytes of the Subject Key Identifier
-    /// * `Err(ChainVerifierError)` - If the SKI extension is not present or cannot be parsed
-    ///
-    /// # Details
-    ///
-    /// The Subject Key Identifier extension (OID: 2.5.29.14) contains a key identifier
-    /// derived from the public key. This function extracts and returns the raw identifier bytes.
-    fn extract_ski(&self, issuer: &Certificate) -> Result<Vec<u8>, ChainVerifierError> {
-        use const_oid::ObjectIdentifier;
-        use der::Decode;
-
-        // Subject Key Identifier OID: 2.5.29.14
-        let ski_oid = ObjectIdentifier::new_unwrap("2.5.29.14");
-
-        let Some(extensions) = &issuer.tbs_certificate.extensions else {
-            return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
-        };
-
-        for ext in extensions {
-            if ext.extn_id == ski_oid {
-                // The extension value is an OCTET STRING containing the key identifier
-                let octet_string = der::asn1::OctetString::from_der(ext.extn_value.as_bytes())
-                    .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
-                return Ok(octet_string.as_bytes().to_vec());
-            }
-        }
-
-        Err(ChainVerifierError::VerificationFailure(InvalidCertificate))
-    }
-
     /// Extracts the OCSP responder URL from a certificate's Authority Information Access extension.
     ///
     /// # Arguments
@@ -263,14 +170,9 @@ impl ChainVerifier {
             return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
         };
 
-        // OCSP OID: 1.3.6.1.5.5.7.48.1
-        let ocsp_oid = ObjectIdentifier::new_unwrap("1.3.6.1.5.5.7.48.1");
-
         for ext in extensions {
             if ext.extn_id == aia_oid {
-                // Try to extract OCSP URL from the extension
-                // This is a simplified parser - in production, you'd want more robust parsing
-                if let Ok(url) = self.parse_aia_for_ocsp(ext.extn_value.as_bytes(), &ocsp_oid) {
+                if let Ok(url) = self.parse_aia_for_ocsp(ext.extn_value.as_bytes()) {
                     return Ok(url);
                 }
             }
@@ -280,13 +182,12 @@ impl ChainVerifier {
     }
 
     /// Helper function to parse AIA extension and extract OCSP URL
-    fn parse_aia_for_ocsp(&self, aia_bytes: &[u8], ocsp_oid: &const_oid::ObjectIdentifier) -> Result<String, ChainVerifierError> {
+    fn parse_aia_for_ocsp(&self, aia_bytes: &[u8]) -> Result<String, ChainVerifierError> {
         use crate::asn1::asn1_basics::{read_sequence, read_oid, read_tlv};
 
         // AIA is a SEQUENCE of AccessDescription
         // Each AccessDescription is a SEQUENCE of { accessMethod OID, accessLocation GeneralName }
         // GeneralName for URI is [6] IMPLICIT IA5String
-
         let (mut offset, length) = read_sequence(aia_bytes, 0)
             .map_err(|e| ChainVerifierError::InternalX509Error(e.to_string()))?;
 
@@ -307,7 +208,7 @@ impl ChainVerifier {
             let oid_bytes = &aia_bytes[oid_offset..oid_offset + oid_length];
 
             // OCSP OID bytes: 1.3.6.1.5.5.7.48.1 = 2B 06 01 05 05 07 30 01
-            let expected_ocsp_oid = [0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01];
+            let expected_ocsp_oid = ID_AD_OCSP.as_bytes();
 
             if oid_bytes == expected_ocsp_oid {
                 // Read the accessLocation - should be [6] IMPLICIT IA5String (URI)

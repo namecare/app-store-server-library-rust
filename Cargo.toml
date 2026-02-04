@@ -18,7 +18,7 @@ jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"]  }
 pem-rfc7468 = "1.0.0"
 der = { version = "0.7.10", features = ["alloc", "oid"] }
 x509-cert = { version = "0.2.5", features = ["std"] }
-x509-ocsp = { version = "0.2.1" , optional = true }
+x509-ocsp = { version = "0.2.1" , optional = true, features = ["builder"] }
 const-oid = { version = "0.9.6" }
 spki = { version = "0.7.3" }
 sha1 = { version = "0.10.6" , features = ["oid"]}
