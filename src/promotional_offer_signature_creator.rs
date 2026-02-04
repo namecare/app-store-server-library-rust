@@ -1,47 +1,16 @@
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
-use ring::signature::{EcdsaKeyPair, Signature, ECDSA_P256_SHA256_ASN1_SIGNING};
-use ring::{error, rand};
-use std::fmt::{Display, Formatter};
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-pub struct KeyRejectedWrapped(error::KeyRejected);
-
-impl PartialEq for KeyRejectedWrapped {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.to_string() == other.0.to_string()
-    }
-}
-
-impl Display for KeyRejectedWrapped {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-#[derive(Error, Debug)]
-pub struct UnspecifiedWrapped(error::Unspecified);
-
-impl PartialEq for UnspecifiedWrapped {
-    fn eq(&self, _other: &Self) -> bool {
-        true // Unspecified has no fields, so all instances are equal
-    }
-}
-
-impl Display for UnspecifiedWrapped {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Unspecified ring error")
-    }
-}
+use p256::ecdsa::signature::Signer;
+use p256::ecdsa::{DerSignature, SigningKey};
+use p256::pkcs8::DecodePrivateKey;
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum PromotionalOfferSignatureCreatorError {
-    #[error("UnspecifiedRingError: [{0}]")]
-    UnspecifiedRingError(#[from] UnspecifiedWrapped),
+    #[error("SignatureError: [{0}]")]
+    SignatureError(String),
 
     #[error("KeyRejectedError: [{0}]")]
-    KeyRejectedError(#[from] KeyRejectedWrapped),
+    KeyRejectedError(String),
 
     #[error("InternalPemError: [{0}]")]
     InternalPemError(#[from] pem_rfc7468::Error),
@@ -49,7 +18,7 @@ pub enum PromotionalOfferSignatureCreatorError {
 
 /// Struct responsible for creating promotional offer signatures.
 pub struct PromotionalOfferSignatureCreator {
-    ec_private_key: EcdsaKeyPair,
+    ec_private_key: SigningKey,
     key_id: String,
     bundle_id: String,
 }
@@ -72,11 +41,9 @@ impl PromotionalOfferSignatureCreator {
         bundle_id: String,
     ) -> Result<Self, PromotionalOfferSignatureCreatorError> {
         let mut buf = [0u8; 2048];
-        let (_, private_key) = pem_rfc7468::decode(private_key.as_bytes(), &mut buf)?;
-        let alg = &ECDSA_P256_SHA256_ASN1_SIGNING;
-        let rng = rand::SystemRandom::new();
-
-        let ec_private_key = EcdsaKeyPair::from_pkcs8(alg, private_key, &rng).map_err(KeyRejectedWrapped)?;
+        let (_, private_key_der) = pem_rfc7468::decode(private_key.as_bytes(), &mut buf)?;
+        let ec_private_key = SigningKey::from_pkcs8_der(private_key_der)
+            .map_err(|e| PromotionalOfferSignatureCreatorError::KeyRejectedError(e.to_string()))?;
 
         Ok(PromotionalOfferSignatureCreator {
             ec_private_key,
@@ -113,7 +80,7 @@ impl PromotionalOfferSignatureCreator {
             nonce,
             timestamp,
         );
-        let signature = self.sign(payload.as_str())?;
+        let signature = self.sign(payload.as_str());
         let signature_base64 = BASE64_STANDARD.encode(signature.as_ref());
 
         Ok(signature_base64)
@@ -139,30 +106,20 @@ impl PromotionalOfferSignatureCreator {
         )
     }
 
-    fn sign(&self, payload: &str) -> Result<Signature, PromotionalOfferSignatureCreatorError> {
-        self
-            .ec_private_key
-            .sign(&ring::rand::SystemRandom::new(), payload.as_bytes())
-            .map_err(UnspecifiedWrapped)
-            .map_err(Into::into)
+    fn sign(&self, payload: &str) -> DerSignature {
+        self.ec_private_key.sign(payload.as_bytes())
     }
 
     #[cfg(test)]
-    fn public_key(&self) -> Vec<u8> {
-        use ring::signature::KeyPair;
-
-        return self
-            .ec_private_key
-            .public_key()
-            .as_ref()
-            .to_vec();
+    fn verifying_key(&self) -> p256::ecdsa::VerifyingKey {
+        p256::ecdsa::VerifyingKey::from(&self.ec_private_key)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ring::signature::{UnparsedPublicKey, ECDSA_P256_SHA256_ASN1};
+    use p256::ecdsa::signature::Verifier;
 
     #[test]
     fn test_promotional_offer_signature_creator_verified() {
@@ -182,16 +139,12 @@ mod tests {
             &uuid::Uuid::new_v4(),
             12345,
         );
-        let signature = creator.sign(payload.as_str()).unwrap();
+        let signature = creator.sign(payload.as_str());
 
         // Verify
-        let public_key = creator.public_key();
-        let public_key = UnparsedPublicKey::new(&ECDSA_P256_SHA256_ASN1, public_key.as_slice());
-        assert_eq!(
-            (),
-            public_key
-                .verify(payload.as_bytes(), signature.as_ref())
-                .unwrap()
-        );
+        let verifying_key = creator.verifying_key();
+        verifying_key
+            .verify(payload.as_bytes(), &signature)
+            .unwrap();
     }
 }

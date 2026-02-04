@@ -50,17 +50,14 @@ pub fn has_extension(cert: &Certificate, oid: &ObjectIdentifier) -> bool {
 
 /// Extract the public key bytes from a certificate
 /// This returns the full SPKI (SubjectPublicKeyInfo) structure in DER format
-/// to maintain compatibility with x509-parser behavior
 pub fn public_key_bytes(cert: &Certificate) -> Vec<u8> {
     use der::referenced::OwnedToRef;
     use der::Encode;
 
-    // Get SPKI and convert to reference
     let spki_owned = &cert.tbs_certificate.subject_public_key_info;
     let spki_ref = spki_owned.owned_to_ref();
 
     // Return the full SPKI DER encoding (not just the raw key bytes)
-    // This matches the behavior of x509-parser
     spki_ref.to_der().unwrap_or_default()
 }
 
@@ -101,12 +98,15 @@ pub fn is_valid_at(cert: &Certificate, timestamp: i64) -> bool {
 pub fn verify_signature(cert: &Certificate, issuer: &Certificate) -> Result<(), X509Error> {
     use der::referenced::OwnedToRef;
 
-    // Get the issuer's public key info
     let issuer_spki = (&issuer.tbs_certificate.subject_public_key_info).owned_to_ref();
-
-    // Verify the signature based on the algorithm
     verify_signature_with_spki(cert, &issuer_spki)
 }
+
+// Signature algorithm OIDs
+const OID_RSA_SHA256: &str = "1.2.840.113549.1.1.11";
+const OID_RSA_SHA384: &str = "1.2.840.113549.1.1.12";
+const OID_ECDSA_SHA256: &str = "1.2.840.10045.4.3.2";
+const OID_ECDSA_SHA384: &str = "1.2.840.10045.4.3.3";
 
 /// Verify signature using SPKI (Subject Public Key Info)
 fn verify_signature_with_spki(
@@ -115,148 +115,176 @@ fn verify_signature_with_spki(
 ) -> Result<(), X509Error> {
     use der::Encode;
 
-    // Get the signed data (TBS certificate)
     let tbs_bytes = cert
         .tbs_certificate
         .to_der()
         .map_err(|e| X509Error::VerificationError(e.to_string()))?;
 
     let signature_bytes = cert.signature.raw_bytes();
+    let sig_alg_oid = cert.signature_algorithm.oid.to_string();
 
-    // Determine the signature algorithm
-    let sig_alg_oid = &cert.signature_algorithm.oid;
-
-    // RSA with SHA-256: 1.2.840.113549.1.1.11
-    let rsa_sha256_oid = ObjectIdentifier::new("1.2.840.113549.1.1.11")
-        .map_err(|e| X509Error::InvalidCertificate(e.to_string()))?;
-
-    // ECDSA with SHA-256: 1.2.840.10045.4.3.2
-    let ecdsa_sha256_oid = ObjectIdentifier::new("1.2.840.10045.4.3.2")
-        .map_err(|e| X509Error::InvalidCertificate(e.to_string()))?;
-
-    // RSA with SHA-384: 1.2.840.113549.1.1.12
-    let rsa_sha384_oid = ObjectIdentifier::new("1.2.840.113549.1.1.12")
-        .map_err(|e| X509Error::InvalidCertificate(e.to_string()))?;
-
-    // ECDSA with SHA-384: 1.2.840.10045.4.3.3
-    let ecdsa_sha384_oid = ObjectIdentifier::new("1.2.840.10045.4.3.3")
-        .map_err(|e| X509Error::InvalidCertificate(e.to_string()))?;
-
-    if *sig_alg_oid == rsa_sha256_oid {
-        verify_rsa_sha256_signature(&tbs_bytes, signature_bytes, issuer_spki)?;
-    } else if *sig_alg_oid == ecdsa_sha256_oid {
-        verify_ecdsa_p256_sha256_signature(&tbs_bytes, signature_bytes, issuer_spki)?;
-    } else if *sig_alg_oid == rsa_sha384_oid {
-        verify_rsa_sha384_signature(&tbs_bytes, signature_bytes, issuer_spki)?;
-    } else if *sig_alg_oid == ecdsa_sha384_oid {
-        verify_ecdsa_p384_sha384_signature(&tbs_bytes, signature_bytes, issuer_spki)?;
-    } else {
-        return Err(X509Error::InvalidCertificate(format!(
+    match sig_alg_oid.as_str() {
+        OID_RSA_SHA256 => verify_rsa_sha256_signature(&tbs_bytes, signature_bytes, issuer_spki),
+        OID_RSA_SHA384 => verify_rsa_sha384_signature(&tbs_bytes, signature_bytes, issuer_spki),
+        OID_ECDSA_SHA256 => verify_ecdsa_p256_sha256_signature(&tbs_bytes, signature_bytes, issuer_spki),
+        OID_ECDSA_SHA384 => verify_ecdsa_p384_sha384_signature(&tbs_bytes, signature_bytes, issuer_spki),
+        _ => Err(X509Error::InvalidCertificate(format!(
             "Unsupported signature algorithm: {}",
             sig_alg_oid
-        )));
+        ))),
     }
-
-    Ok(())
 }
 
-/// Verify RSA-SHA256 signature using ring
+/// Verify RSA-SHA256 signature
 fn verify_rsa_sha256_signature(
     message: &[u8],
     signature: &[u8],
     spki: &spki::SubjectPublicKeyInfoRef,
 ) -> Result<(), X509Error> {
     use der::Encode;
+    use rsa::pkcs8::DecodePublicKey;
+    use rsa::RsaPublicKey;
+    use rsa::pkcs1v15;
+    use sha2::Sha256;
 
-    // For RSA, ring needs the full SPKI DER encoding, not just the raw key bytes
     let spki_der = spki.to_der()
         .map_err(|e| X509Error::VerificationError(format!("Failed to encode SPKI: {:?}", e)))?;
 
-    let public_key = ring::signature::UnparsedPublicKey::new(
-        &ring::signature::RSA_PKCS1_2048_8192_SHA256,
-        &spki_der,
-    );
+    let public_key = RsaPublicKey::from_public_key_der(&spki_der)
+        .map_err(|e| X509Error::VerificationError(format!("Failed to parse RSA public key: {:?}", e)))?;
 
-    public_key
-        .verify(message, signature)
+    let verifying_key = pkcs1v15::VerifyingKey::<Sha256>::new(public_key);
+    let sig = pkcs1v15::Signature::try_from(signature)
+        .map_err(|e| X509Error::VerificationError(format!("Invalid RSA signature: {:?}", e)))?;
+
+    signature::Verifier::verify(&verifying_key, message, &sig)
         .map_err(|e| X509Error::VerificationError(format!("RSA-SHA256 verification failed: {:?}", e)))
 }
 
-/// Verify RSA-SHA384 signature using ring
+/// Verify RSA-SHA384 signature
 fn verify_rsa_sha384_signature(
     message: &[u8],
     signature: &[u8],
     spki: &spki::SubjectPublicKeyInfoRef,
 ) -> Result<(), X509Error> {
     use der::Encode;
+    use rsa::pkcs8::DecodePublicKey;
+    use rsa::RsaPublicKey;
+    use rsa::pkcs1v15;
+    use sha2::Sha384;
 
-    // For RSA, ring needs the full SPKI DER encoding, not just the raw key bytes
     let spki_der = spki.to_der()
         .map_err(|e| X509Error::VerificationError(format!("Failed to encode SPKI: {:?}", e)))?;
 
-    let public_key = ring::signature::UnparsedPublicKey::new(
-        &ring::signature::RSA_PKCS1_2048_8192_SHA384,
-        &spki_der,
-    );
+    let public_key = RsaPublicKey::from_public_key_der(&spki_der)
+        .map_err(|e| X509Error::VerificationError(format!("Failed to parse RSA public key: {:?}", e)))?;
 
-    public_key
-        .verify(message, signature)
+    let verifying_key = pkcs1v15::VerifyingKey::<Sha384>::new(public_key);
+    let sig = pkcs1v15::Signature::try_from(signature)
+        .map_err(|e| X509Error::VerificationError(format!("Invalid RSA signature: {:?}", e)))?;
+
+    signature::Verifier::verify(&verifying_key, message, &sig)
         .map_err(|e| X509Error::VerificationError(format!("RSA-SHA384 verification failed: {:?}", e)))
 }
 
-/// Verify ECDSA P-256 SHA-256 signature using ring
+/// Verify ECDSA P-256 SHA-256 signature
 fn verify_ecdsa_p256_sha256_signature(
     message: &[u8],
     signature: &[u8],
     spki: &spki::SubjectPublicKeyInfoRef,
 ) -> Result<(), X509Error> {
-    // For ECDSA, ring expects the raw public key bytes (EC point), not the full SPKI
+    use p256::ecdsa::VerifyingKey;
+
     let public_key_bytes = spki.subject_public_key.raw_bytes();
 
-    let public_key = ring::signature::UnparsedPublicKey::new(
-        &ring::signature::ECDSA_P256_SHA256_ASN1,
-        public_key_bytes,
-    );
+    let verifying_key = VerifyingKey::from_sec1_bytes(public_key_bytes)
+        .map_err(|e| X509Error::VerificationError(
+            format!("Failed to parse P-256 public key: {:?}", e)
+        ))?;
 
-    public_key
-        .verify(message, signature)
-        .map_err(|e| {
-            X509Error::VerificationError(format!("ECDSA-P256-SHA256 verification failed: {:?}", e))
-        })
+    let der_sig = p256::ecdsa::DerSignature::from_bytes(signature)
+        .map_err(|e| X509Error::VerificationError(
+            format!("Invalid ECDSA signature: {:?}", e)
+        ))?;
+
+    signature::Verifier::verify(&verifying_key, message, &der_sig)
+        .map_err(|e| X509Error::VerificationError(
+            format!("ECDSA-P256-SHA256 verification failed: {:?}", e)
+        ))
 }
 
-/// Verify ECDSA P-384 SHA-384 signature using ring
+/// Verify ECDSA SHA-384 signature (supports both P-256 and P-384 keys)
 fn verify_ecdsa_p384_sha384_signature(
     message: &[u8],
     signature: &[u8],
     spki: &spki::SubjectPublicKeyInfoRef,
 ) -> Result<(), X509Error> {
-    // For ECDSA, ring expects the raw public key bytes (EC point), not the full SPKI
     let public_key_bytes = spki.subject_public_key.raw_bytes();
 
     // Check the key size to determine if this is actually P-256 or P-384
     // P-256: 65 bytes (1 prefix + 32*2)
     // P-384: 97 bytes (1 prefix + 48*2)
-    let (algorithm, key_type) = if public_key_bytes.len() == 65 {
-        // Some test certificates use P-256 keys with SHA-384 signatures
-        (&ring::signature::ECDSA_P256_SHA384_ASN1, "P-256")
+    if public_key_bytes.len() == 65 {
+        verify_ecdsa_p256_sha384_signature(message, signature, public_key_bytes)
     } else if public_key_bytes.len() == 97 {
-        (&ring::signature::ECDSA_P384_SHA384_ASN1, "P-384")
+        verify_ecdsa_p384_sha384_standard(message, signature, public_key_bytes)
     } else {
-        return Err(X509Error::VerificationError(format!(
+        Err(X509Error::VerificationError(format!(
             "Unexpected ECDSA key length: {} bytes",
             public_key_bytes.len()
-        )));
-    };
+        )))
+    }
+}
 
-    let public_key = ring::signature::UnparsedPublicKey::new(
-        algorithm,
-        public_key_bytes,
-    );
+/// Verify ECDSA P-384 SHA-384 signature with a P-384 key
+fn verify_ecdsa_p384_sha384_standard(
+    message: &[u8],
+    signature: &[u8],
+    public_key_bytes: &[u8],
+) -> Result<(), X509Error> {
+    use p384::ecdsa::VerifyingKey;
 
-    public_key
-        .verify(message, signature)
-        .map_err(|e| X509Error::VerificationError(format!("ECDSA-{}-SHA384 verification failed: {:?}", key_type, e)))
+    let verifying_key = VerifyingKey::from_sec1_bytes(public_key_bytes)
+        .map_err(|e| X509Error::VerificationError(
+            format!("Failed to parse P-384 public key: {:?}", e)
+        ))?;
+
+    let der_sig = p384::ecdsa::DerSignature::from_bytes(signature)
+        .map_err(|e| X509Error::VerificationError(
+            format!("Invalid ECDSA signature: {:?}", e)
+        ))?;
+
+    signature::Verifier::verify(&verifying_key, message, &der_sig)
+        .map_err(|e| X509Error::VerificationError(
+            format!("ECDSA-P384-SHA384 verification failed: {:?}", e)
+        ))
+}
+
+/// Verify ECDSA P-256 key with SHA-384 signature (edge case for some test certificates)
+fn verify_ecdsa_p256_sha384_signature(
+    message: &[u8],
+    signature: &[u8],
+    public_key_bytes: &[u8],
+) -> Result<(), X509Error> {
+    use p256::ecdsa::VerifyingKey;
+    use sha2::{Sha384, Digest};
+    use signature::hazmat::PrehashVerifier;
+
+    let verifying_key = VerifyingKey::from_sec1_bytes(public_key_bytes)
+        .map_err(|e| X509Error::VerificationError(
+            format!("Failed to parse P-256 public key: {:?}", e)
+        ))?;
+
+    let der_sig = p256::ecdsa::DerSignature::from_bytes(signature)
+        .map_err(|e| X509Error::VerificationError(
+            format!("Invalid ECDSA signature: {:?}", e)
+        ))?;
+
+    let prehash = Sha384::digest(message);
+    verifying_key.verify_prehash(&prehash, &der_sig)
+        .map_err(|e| X509Error::VerificationError(
+            format!("ECDSA-P256-SHA384 verification failed: {:?}", e)
+        ))
 }
 
 #[cfg(test)]
