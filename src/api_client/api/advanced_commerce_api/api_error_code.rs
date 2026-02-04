@@ -8,6 +8,14 @@ pub enum ApiErrorCode {
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/acapriceincreaseisnotcurrentlysupportedinindiaerror)
     ACAPriceIncreaseIsNotCurrentlySupportedInIndiaError = 4000221,
 
+    /// Prorated price should not be present for change items with type effective later.
+    /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/invalidproratedpriceforchangeitemwitheffectivelatererror)
+    InvalidProratedPriceForChangeItemWithEffectiveLaterError = 4000222,
+
+    /// The subscription offer configuration is invalid. Free trial offers must use a period count of 1.
+    /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/freetrialoffermustuseperiodcountofoneerror)
+    FreeTrialOfferMustUsePeriodCountOfOneError = 4000223,
+
     /// The transaction was already refunded.
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/alreadyrefunded)
     AlreadyRefunded = 4030021,
