@@ -18,7 +18,8 @@ use app_store_server_library::primitives::transaction_reason::TransactionReason;
 use app_store_server_library::signed_data_verifier::{SignedDataVerifier, SignedDataVerifierError};
 use app_store_server_library::utils::StringExt;
 use jsonwebtoken::Algorithm;
-use ring::signature::ECDSA_P256_SHA256_FIXED_SIGNING;
+use p256::ecdsa::SigningKey;
+use p256::pkcs8::EncodePrivateKey;
 use serde_json::{Map, Value};
 use std::fs;
 
@@ -1236,11 +1237,12 @@ fn create_signed_data_from_json(path: &str) -> String {
 }
 
 fn generate_p256_private_key() -> Vec<u8> {
-    let rng = ring::rand::SystemRandom::new();
-    let private_key = ring::signature::EcdsaKeyPair::generate_pkcs8(&ECDSA_P256_SHA256_FIXED_SIGNING, &rng)
-        .expect("Failed to generate private key");
-
-    private_key.as_ref().to_vec()
+    let signing_key = SigningKey::random(&mut p256::elliptic_curve::rand_core::OsRng);
+    signing_key
+        .to_pkcs8_der()
+        .expect("Failed to encode private key")
+        .as_bytes()
+        .to_vec()
 }
 
 #[test]
