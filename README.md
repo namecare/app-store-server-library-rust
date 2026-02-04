@@ -11,7 +11,7 @@ Specify `app-store-server-library` in your project's `Cargo.toml` file, under th
 
 ```toml
 [dependencies]
-app-store-server-library = { version = "4.2.0", features = ["receipt-utility", "api-client", "ocsp"] }
+app-store-server-library = { version = "4.3.0", features = ["receipt-utility", "api-client", "ocsp"] }
 ```
 
 ### Feature Flags
@@ -129,7 +129,7 @@ To enable OCSP verification:
 
 ```toml
 [dependencies]
-app-store-server-library = { version = "4.2.0", features = ["ocsp"] }
+app-store-server-library = { version = "4.3.0", features = ["ocsp"] }
 ```
 
 OCSP verification is performed automatically when verifying signed data.

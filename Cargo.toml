@@ -1,7 +1,7 @@
 [package]
 name = "app-store-server-library"
 description = "The Rust server library for the App Store Server API, App Store Server Notifications and Advanced Commerce API"
-version = "4.2.0"
+version = "4.3.0"
 repository = "https://github.com/namecare/app-store-server-library-rust"
 homepage = "https://github.com/namecare/app-store-server-library-rust"
 authors = ["tkhp", "namecare"]
@@ -24,7 +24,6 @@ spki = { version = "0.7.3" }
 sha1 = { version = "0.10.6" , features = ["oid"]}
 p256 = { version = "0.13.2", features = ["ecdsa", "pkcs8"] }
 p384 = { version = "0.13.1", features = ["ecdsa"] }
-ecdsa = { version = "0.16.9", features = ["signing", "verifying", "der"] }
 rsa = "0.9.10"
 sha2 = "0.10.9"
 signature = "2.2.0"
