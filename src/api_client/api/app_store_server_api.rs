@@ -495,7 +495,7 @@ impl<T: Transport> AppStoreServerApiClient<T> {
 
     /// Send consumption information about a consumable in-app purchase to the App Store after your server receives a consumption request notification.
     ///
-    /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/send_consumption_information)
+    /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/send-consumption-information-v1)
     ///
     /// # Arguments
     ///

@@ -954,8 +954,8 @@ async fn test_send_consumption_information() {
     );
 
     let consumption_request = ConsumptionRequest {
-        customer_consented: Some(true),
-        delivery_status: Some(DeliveryStatus::Delivered),
+        customer_consented: true,
+        delivery_status: DeliveryStatus::Delivered,
         sample_content_provided: false,
         consumption_percentage: Some(50000),
         refund_preference: Some(RefundPreference::GrantFull),
@@ -1011,8 +1011,8 @@ async fn test_send_consumption_information_with_minimal_fields() {
     );
 
     let consumption_request = ConsumptionRequest {
-        customer_consented: Some(true),
-        delivery_status: Some(DeliveryStatus::UndeliveredQualityIssue),
+        customer_consented: true,
+        delivery_status: DeliveryStatus::UndeliveredQualityIssue,
         sample_content_provided: false,
         consumption_percentage: None,
         refund_preference: None,
