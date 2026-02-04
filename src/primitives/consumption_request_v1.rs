@@ -1,7 +1,6 @@
 use crate::primitives::serde_ext::{de_string_as_optional_uuid, ser_optional_uuid_as_string};
 use crate::primitives::account_tenure::AccountTenure;
 use crate::primitives::consumption_status::ConsumptionStatus;
-use crate::primitives::delivery_status::DeliveryStatus;
 use crate::primitives::lifetime_dollars_purchased::LifetimeDollarsPurchased;
 use crate::primitives::lifetime_dollars_refunded::LifetimeDollarsRefunded;
 use crate::primitives::platform::Platform;
