@@ -5,6 +5,9 @@ use std::sync::OnceLock;
 #[cfg(feature = "rust_crypto")]
 pub mod rust_crypto;
 
+#[cfg(feature = "aws_lc")]
+pub mod aws_lc;
+
 use crate::chain_verifier::ChainVerifier;
 
 pub type ChainVerifierFactory = fn() -> Box<dyn ChainVerifier>;
@@ -40,6 +43,11 @@ impl CryptoProvider {
             return &rust_crypto::DEFAULT_PROVIDER;
         }
 
-        panic!("No crypto backend. Enable 'rust_crypto' feature.");
+        #[cfg(feature = "aws_lc")]
+        {
+            return &aws_lc::DEFAULT_PROVIDER;
+        }
+
+        panic!("No crypto backend. Enable 'rust_crypto' or 'aws_lc' feature.");
     }
 }

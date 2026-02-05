@@ -18,8 +18,6 @@ use app_store_server_library::primitives::transaction_reason::TransactionReason;
 use app_store_server_library::signed_data_verifier::{SignedDataVerifier, SignedDataVerifierError};
 use app_store_server_library::utils::StringExt;
 use jsonwebtoken::Algorithm;
-use p256::ecdsa::SigningKey;
-use p256::pkcs8::EncodePrivateKey;
 use serde_json::{Map, Value};
 use std::fs;
 
@@ -1230,19 +1228,10 @@ fn create_signed_data_from_json(path: &str) -> String {
     let json: Map<String, Value> = serde_json::from_str(json_payload.as_str()).expect("Expect JSON");
 
     let header = jsonwebtoken::Header::new(Algorithm::ES256);
-    let private_key = generate_p256_private_key();
-    let key = jsonwebtoken::EncodingKey::from_ec_der(private_key.as_ref());
+    let private_key_pem = include_str!("resources/certs/testSigningKey.p8");
+    let key = jsonwebtoken::EncodingKey::from_ec_pem(private_key_pem.as_bytes()).expect("Failed to load test key");
     let payload = jsonwebtoken::encode(&header, &json, &key).expect("Failed to encode JWT");
     payload
-}
-
-fn generate_p256_private_key() -> Vec<u8> {
-    let signing_key = SigningKey::random(&mut p256::elliptic_curve::rand_core::OsRng);
-    signing_key
-        .to_pkcs8_der()
-        .expect("Failed to encode private key")
-        .as_bytes()
-        .to_vec()
 }
 
 #[test]
