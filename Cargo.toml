@@ -13,8 +13,8 @@ edition = "2021"
 
 [dependencies]
 
-# Cryptography
-jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"]  }
+# Cryptography - common
+jsonwebtoken = { version = "10.3.0" }
 pem-rfc7468 = "1.0.0"
 der = { version = "0.7.10", features = ["alloc", "oid"] }
 x509-cert = { version = "0.2.5", features = ["std"] }
@@ -22,11 +22,13 @@ x509-ocsp = { version = "0.2.1" , optional = true, features = ["builder"] }
 const-oid = { version = "0.9.6" }
 spki = { version = "0.7.3" }
 sha1 = { version = "0.10.6" , features = ["oid"]}
-p256 = { version = "0.13.2", features = ["ecdsa", "pkcs8"] }
-p384 = { version = "0.13.1", features = ["ecdsa"] }
-rsa = "0.9.10"
-sha2 = "0.10.9"
 signature = "2.2.0"
+
+# Cryptography - RustCrypto backend (optional)
+p256 = { version = "0.13.2", features = ["ecdsa", "pkcs8"], optional = true }
+p384 = { version = "0.13.1", features = ["ecdsa"], optional = true }
+rsa = { version = "0.9.10", optional = true }
+sha2 = { version = "0.10.9", optional = true }
 
 # Serialization
 serde = { version = "1.0.228", features = ["derive"] }
@@ -53,6 +55,11 @@ tokio = { version = "1.49.0", features = ["test-util", "macros"] }
 jsonwebtoken = { version = "10.3.0", features = ["use_pem"] }
 
 [features]
+default = ["rust_crypto"]
+
+# Crypto backends
+rust_crypto = ["dep:p256", "dep:p384", "dep:rsa", "dep:sha2", "jsonwebtoken/rust_crypto"]
+
 api-client = ["dep:http"]
 api-client-reqwest = ["api-client", "dep:reqwest"]
 api-client-reqwest-native-tls = ["api-client", "dep:reqwest", "reqwest/native-tls"]
