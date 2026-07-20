@@ -1,5 +1,6 @@
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
+use sha2::{Digest, Sha256};
 
 use crate::crypto::CryptoProvider;
 
@@ -51,7 +52,12 @@ impl PromotionalOfferSignatureCreator {
             nonce,
             timestamp,
         );
-        let signature = self.signer.sign(payload.as_bytes())?;
+
+        let mut hasher = Sha256::new();
+        hasher.update(payload.as_bytes());
+        let payload_hash = hasher.finalize();
+
+        let signature = self.signer.sign(&payload_hash)?;
         Ok(BASE64_STANDARD.encode(&signature))
     }
 

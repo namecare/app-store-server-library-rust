@@ -133,20 +133,20 @@ fn parse_certificate(der_bytes: &[u8]) -> Result<Certificate, String> {
 }
 
 fn has_extension(cert: &Certificate, oid: &ObjectIdentifier) -> bool {
-    cert.tbs_certificate
-        .extensions
+    cert.tbs_certificate()
+        .extensions()
         .as_ref()
         .map(|exts| exts.iter().any(|ext| ext.extn_id == *oid))
         .unwrap_or(false)
 }
 
 fn public_key_bytes(cert: &Certificate) -> Vec<u8> {
-    let spki = &cert.tbs_certificate.subject_public_key_info;
+    let spki = &cert.tbs_certificate().subject_public_key_info();
     spki.owned_to_ref().to_der().unwrap_or_default()
 }
 
 fn is_valid_at(cert: &Certificate, timestamp: i64) -> bool {
-    let validity = &cert.tbs_certificate.validity;
+    let validity = &cert.tbs_certificate().validity();
 
     let not_before_ok = match &validity.not_before {
         Time::UtcTime(t) => timestamp >= t.to_unix_duration().as_secs() as i64,
@@ -162,15 +162,15 @@ fn is_valid_at(cert: &Certificate, timestamp: i64) -> bool {
 }
 
 fn verify_signature(cert: &Certificate, issuer: &Certificate) -> Result<(), String> {
-    let issuer_spki = (&issuer.tbs_certificate.subject_public_key_info).owned_to_ref();
+    let issuer_spki = (&issuer.tbs_certificate().subject_public_key_info()).owned_to_ref();
 
     let tbs_bytes = cert
-        .tbs_certificate
+        .tbs_certificate()
         .to_der()
         .map_err(|e| e.to_string())?;
 
-    let signature_bytes = cert.signature.raw_bytes();
-    let sig_alg_oid = cert.signature_algorithm.oid.to_string();
+    let signature_bytes = cert.signature().raw_bytes();
+    let sig_alg_oid = cert.signature_algorithm().oid.to_string();
 
     match sig_alg_oid.as_str() {
         OID_RSA_SHA256 => {
@@ -349,6 +349,7 @@ mod ocsp_support {
             .bytes()
             .map_err(|_| OcspError::FetchFailed)?;
 
+
         let ocsp_response = OcspResponse::from_der(&response_bytes)
             .map_err(|_| OcspError::ValidationError)?;
 
@@ -385,7 +386,7 @@ mod ocsp_support {
         // AIA extension OID: 1.3.6.1.5.5.7.1.1
         let aia_oid = ObjectIdentifier::new_unwrap("1.3.6.1.5.5.7.1.1");
 
-        let Some(extensions) = &cert.tbs_certificate.extensions else {
+        let Some(extensions) = cert.tbs_certificate().extensions() else {
             return Err(ChainVerifierError::VerificationFailure(
                 ChainVerificationFailureReason::InvalidCertificate,
             ));

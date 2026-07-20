@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 /// [refundPreference](https://developer.apple.com/documentation/appstoreserverapi/refundpreference)
 #[derive(Debug, Clone, PartialEq, Eq, Hash,  Deserialize, Serialize)]
 pub enum RefundPreference {
-    #[serde(rename = "MIGRATION")]
-    Migration,
+    #[serde(rename = "DECLINE")]
+    Declined,
     #[serde(rename = "GRANT_FULL")]
     GrantFull,
     #[serde(rename = "GRANT_PRORATED")]
