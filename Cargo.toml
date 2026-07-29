@@ -62,8 +62,11 @@ rust_crypto = ["dep:pem-rfc7468", "dep:p256", "dep:p384", "dep:rsa", "dep:der", 
 aws_lc = ["dep:aws-lc-rs", "dep:aws-lc-sys", "jsonwebtoken/aws_lc_rs"]
 
 api-client = ["dep:http"]
-api-client-reqwest = ["api-client", "dep:reqwest"]
-api-client-reqwest-native-tls = ["api-client", "dep:reqwest", "reqwest/native-tls"]
+api-client-reqwest = ["api-client", "dep:reqwest", "reqwest-tls-rustls"]
+api-client-reqwest-native-tls = ["api-client", "dep:reqwest", "reqwest-tls-native"]
+# reqwest TLS backend markers; the reqwest transport asserts one is set.
+reqwest-tls-rustls = ["reqwest/rustls"]
+reqwest-tls-native = ["reqwest/native-tls"]
 receipt-utility = ["dep:regex"]
 ocsp = ["dep:x509-ocsp", "dep:reqwest", "reqwest/blocking", "dep:der", "dep:x509-cert", "dep:const-oid", "dep:sha1"]
 
