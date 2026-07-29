@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::primitives::advanced_commerce::offer::Offer;
+use serde::{Deserialize, Serialize};
 
 /// The data your app provides to add items when it makes changes to an auto-renewable subscription.
 ///
@@ -42,12 +42,7 @@ pub struct SubscriptionModifyAddItem {
 }
 
 impl SubscriptionModifyAddItem {
-    pub fn new(
-        sku: String,
-        description: String,
-        display_name: String,
-        price: i64,
-    ) -> Self {
+    pub fn new(sku: String, description: String, display_name: String, price: i64) -> Self {
         Self {
             sku,
             description,

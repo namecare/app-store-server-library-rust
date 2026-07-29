@@ -1,5 +1,4 @@
 mod common;
-use common::transport_mock::{MockTransport, RequestVerifier};
 use app_store_server_library::api_client::api::retention_messaging_api::RetentionMessagingApiClient;
 use app_store_server_library::primitives::environment::Environment;
 use app_store_server_library::primitives::retention_messaging::default_configuration_request::DefaultConfigurationRequest;
@@ -7,6 +6,7 @@ use app_store_server_library::primitives::retention_messaging::image_state::Imag
 use app_store_server_library::primitives::retention_messaging::message_state::MessageState;
 use app_store_server_library::primitives::retention_messaging::upload_message_image::UploadMessageImage;
 use app_store_server_library::primitives::retention_messaging::upload_message_request_body::UploadMessageRequestBody;
+use common::transport_mock::{MockTransport, RequestVerifier};
 use http::{Method, StatusCode};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -86,14 +86,29 @@ async fn test_image_list() {
 
     assert!(result.is_ok());
     let response = result.unwrap();
-    assert_eq!(1, response.image_identifiers.as_ref().unwrap().len());
+    assert_eq!(
+        1,
+        response
+            .image_identifiers
+            .as_ref()
+            .unwrap()
+            .len()
+    );
     assert_eq!(
         Some(Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap()),
-        response.image_identifiers.as_ref().unwrap()[0].image_identifier
+        response
+            .image_identifiers
+            .as_ref()
+            .unwrap()[0]
+            .image_identifier
     );
     assert_eq!(
         Some(ImageState::Approved),
-        response.image_identifiers.as_ref().unwrap()[0].image_state
+        response
+            .image_identifiers
+            .as_ref()
+            .unwrap()[0]
+            .image_state
     );
 }
 
@@ -114,12 +129,8 @@ async fn test_upload_message() {
         })),
     );
 
-    let upload_message_request_body = UploadMessageRequestBody::new(
-        "Header text".to_string(),
-        "Body text".to_string(),
-        None,
-    )
-    .unwrap();
+    let upload_message_request_body =
+        UploadMessageRequestBody::new("Header text".to_string(), "Body text".to_string(), None).unwrap();
     let result = client
         .upload_message(
             Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap(),
@@ -144,10 +155,14 @@ async fn test_upload_message_with_image() {
             let decoded_json: HashMap<String, Value> = serde_json::from_slice(body).unwrap();
             assert_eq!("Header text", decoded_json["header"].as_str().unwrap());
             assert_eq!("Body text", decoded_json["body"].as_str().unwrap());
-            let image = decoded_json["image"].as_object().unwrap();
+            let image = decoded_json["image"]
+                .as_object()
+                .unwrap();
             assert_eq!(
                 "b2c3d4e5-f6a7-8901-b2c3-d4e5f6a78901",
-                image["imageIdentifier"].as_str().unwrap()
+                image["imageIdentifier"]
+                    .as_str()
+                    .unwrap()
             );
             assert_eq!("Alt text", image["altText"].as_str().unwrap());
         })),
@@ -213,14 +228,29 @@ async fn test_message_list() {
 
     assert!(result.is_ok());
     let response = result.unwrap();
-    assert_eq!(1, response.message_identifiers.as_ref().unwrap().len());
+    assert_eq!(
+        1,
+        response
+            .message_identifiers
+            .as_ref()
+            .unwrap()
+            .len()
+    );
     assert_eq!(
         Some(Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap()),
-        response.message_identifiers.as_ref().unwrap()[0].message_identifier
+        response
+            .message_identifiers
+            .as_ref()
+            .unwrap()[0]
+            .message_identifier
     );
     assert_eq!(
         Some(MessageState::Approved),
-        response.message_identifiers.as_ref().unwrap()[0].message_state
+        response
+            .message_identifiers
+            .as_ref()
+            .unwrap()[0]
+            .message_state
     );
 }
 
@@ -238,7 +268,9 @@ async fn test_set_default_configuration() {
             let decoded_json: HashMap<String, Value> = serde_json::from_slice(body).unwrap();
             assert_eq!(
                 "a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890",
-                decoded_json["messageIdentifier"].as_str().unwrap()
+                decoded_json["messageIdentifier"]
+                    .as_str()
+                    .unwrap()
             );
         })),
     );
@@ -247,7 +279,11 @@ async fn test_set_default_configuration() {
         message_identifier: Some(Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap()),
     };
     let result = client
-        .set_default_configuration("com.example.product", "en-US", &default_configuration_request)
+        .set_default_configuration(
+            "com.example.product",
+            "en-US",
+            &default_configuration_request,
+        )
         .await;
 
     assert!(result.is_ok());

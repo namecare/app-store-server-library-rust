@@ -1,3 +1,4 @@
+use crate::primitives::advanced_commerce::in_app_request::AdvancedCommerceInAppRequest;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
 use chrono::Utc;
@@ -5,7 +6,6 @@ use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
-use crate::primitives::advanced_commerce::in_app_request::AdvancedCommerceInAppRequest;
 
 #[derive(Error, Debug)]
 pub enum JWSSignatureCreatorError {

@@ -1,7 +1,7 @@
 use base64::engine::general_purpose::STANDARD;
 use base64::{DecodeError, Engine};
 
-use crate::chain_verifier::{ChainVerifier, ChainVerifierError, ChainVerificationFailureReason};
+use crate::chain_verifier::{ChainVerificationFailureReason, ChainVerifier, ChainVerifierError};
 use crate::crypto::CryptoProvider;
 use crate::primitives::app_transaction::AppTransaction;
 use crate::primitives::environment::Environment;
@@ -282,7 +282,9 @@ impl SignedDataVerifier {
     ) -> Result<DecodedRealtimeRequestBody, SignedDataVerifierError> {
         let decoded_realtime_request: DecodedRealtimeRequestBody = self.decode_signed_object(signed_payload)?;
 
-        if self.environment == Environment::Production && self.app_apple_id != Some(decoded_realtime_request.app_apple_id) {
+        if self.environment == Environment::Production
+            && self.app_apple_id != Some(decoded_realtime_request.app_apple_id)
+        {
             return Err(SignedDataVerifierError::InvalidAppIdentifier);
         }
 
@@ -349,20 +351,23 @@ impl SignedDataVerifier {
 
     fn verify_chain(&self, chain: &Vec<Vec<u8>>, effective_date: Option<u64>) -> Result<Vec<u8>, ChainVerifierError> {
         if chain.len() != EXPECTED_CHAIN_LENGTH {
-            return Err(ChainVerifierError::VerificationFailure(ChainVerificationFailureReason::InvalidChainLength))
+            return Err(ChainVerifierError::VerificationFailure(
+                ChainVerificationFailureReason::InvalidChainLength,
+            ));
         }
 
         let leaf = &chain[0];
         let intermediate = &chain[1];
 
-        self.chain_verifier.verify(leaf, intermediate, &self.root_certificates, effective_date)
+        self.chain_verifier
+            .verify(leaf, intermediate, &self.root_certificates, effective_date)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::chain_verifier::ChainVerificationFailureReason::InvalidChainLength;
     use super::*;
+    use crate::chain_verifier::ChainVerificationFailureReason::InvalidChainLength;
 
     #[test]
     fn test_invalid_chain_length() -> Result<(), ChainVerifierError> {
@@ -371,15 +376,18 @@ mod tests {
         let intermediate = Vec::new();
 
         let chain = vec![leaf, intermediate, Vec::new(), Vec::new()];
-        let verifier = SignedDataVerifier::new(vec![root], Environment::Production, "com.example".into(), Some(1234));
+        let verifier = SignedDataVerifier::new(
+            vec![root],
+            Environment::Production,
+            "com.example".into(),
+            Some(1234),
+        );
         let public_key = verifier.verify_chain(&chain, None);
 
-        assert!(
-            matches!(
-                public_key.expect_err("Expect error"),
-                ChainVerifierError::VerificationFailure(InvalidChainLength)
-            )
-        );
+        assert!(matches!(
+            public_key.expect_err("Expect error"),
+            ChainVerifierError::VerificationFailure(InvalidChainLength)
+        ));
         Ok(())
     }
 }

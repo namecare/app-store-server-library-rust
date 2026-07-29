@@ -1,10 +1,9 @@
-use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::api_client::error::APIServiceErrorCode;
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize_repr, Serialize_repr)]
 #[repr(i64)]
 pub enum ApiErrorCode {
-
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/acapriceincreaseisnotcurrentlysupportedinindiaerror)
     ACAPriceIncreaseIsNotCurrentlySupportedInIndiaError = 4000221,
 
@@ -528,4 +527,3 @@ impl APIServiceErrorCode for ApiErrorCode {
         Self::Unknown
     }
 }
-

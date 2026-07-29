@@ -12,13 +12,13 @@ pub struct RequestInfo {
     /// [App Account Token](https://developer.apple.com/documentation/advancedcommerceapi/appaccounttoken)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub app_account_token: Option<Uuid>,
-    
+
     /// The consistency token for the request.
     ///
     /// [Consistency Token](https://developer.apple.com/documentation/advancedcommerceapi/consistencytoken)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub consistency_token: Option<String>,
-    
+
     /// The request reference identifier.
     ///
     /// [Request Reference ID](https://developer.apple.com/documentation/advancedcommerceapi/requestreferenceid)
@@ -33,12 +33,12 @@ impl RequestInfo {
             request_reference_id,
         }
     }
-    
+
     pub fn with_app_account_token(mut self, token: Uuid) -> Self {
         self.app_account_token = Some(token);
         self
     }
-    
+
     pub fn with_consistency_token(mut self, token: String) -> Self {
         self.consistency_token = Some(token);
         self

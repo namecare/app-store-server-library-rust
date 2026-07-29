@@ -34,7 +34,11 @@ impl PromotionalOfferSignatureCreator {
         let provider = CryptoProvider::default_provider();
         let signer = (provider.promotional_offer_signer)(private_key)?;
 
-        Ok(Self { signer, key_id, bundle_id })
+        Ok(Self {
+            signer,
+            key_id,
+            bundle_id,
+        })
     }
 
     pub fn create_signature(
@@ -93,16 +97,11 @@ mod tests {
             private_key,
             "key123".to_string(),
             "com.example.app".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let nonce = uuid::Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
-        let result = creator.create_signature(
-            "product1",
-            "offer1",
-            "user123",
-            &nonce,
-            1234567890,
-        );
+        let result = creator.create_signature("product1", "offer1", "user123", &nonce, 1234567890);
 
         assert!(result.is_ok());
         let sig = result.unwrap();

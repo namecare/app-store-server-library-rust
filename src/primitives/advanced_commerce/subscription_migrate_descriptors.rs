@@ -10,7 +10,7 @@ pub struct SubscriptionMigrateDescriptors {
     ///
     /// [Description](https://developer.apple.com/documentation/advancedcommerceapi/description)
     pub description: String,
-    
+
     /// The display name of the subscription to migrate to. This string displays to customers.
     ///
     /// [Display Name](https://developer.apple.com/documentation/advancedcommerceapi/displayname)

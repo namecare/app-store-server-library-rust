@@ -1,5 +1,5 @@
-use crate::primitives::advanced_commerce::subscription_migrate_descriptors::SubscriptionMigrateDescriptors;
 use crate::primitives::advanced_commerce::request_info::RequestInfo;
+use crate::primitives::advanced_commerce::subscription_migrate_descriptors::SubscriptionMigrateDescriptors;
 use crate::primitives::advanced_commerce::subscription_migrate_item::SubscriptionMigrateItem;
 use crate::primitives::advanced_commerce::subscription_migrate_renewal_item::SubscriptionMigrateRenewalItem;
 use serde::{Deserialize, Serialize};
@@ -45,7 +45,12 @@ pub struct SubscriptionMigrateRequest {
 }
 
 impl SubscriptionMigrateRequest {
-    pub fn new(request_reference_id: Uuid, items: Vec<SubscriptionMigrateItem>, target_product_id: String, tax_code: String) -> Self {
+    pub fn new(
+        request_reference_id: Uuid,
+        items: Vec<SubscriptionMigrateItem>,
+        target_product_id: String,
+        tax_code: String,
+    ) -> Self {
         Self {
             request_info: RequestInfo::new(request_reference_id),
             descriptors: None,

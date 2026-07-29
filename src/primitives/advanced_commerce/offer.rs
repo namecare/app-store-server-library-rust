@@ -12,16 +12,16 @@ pub struct Offer {
     ///
     /// [Period](https://developer.apple.com/documentation/advancedcommerceapi/period)
     pub period: OfferPeriod,
-    
+
     /// The number of periods the offer is active.
     /// Minimum: 1, Maximum: 12
     pub period_count: i32,
-    
+
     /// The offer price, in milliunits.
     ///
     /// [Price](https://developer.apple.com/documentation/advancedcommerceapi/price)
     pub price: i64,
-    
+
     /// The reason for the offer.
     ///
     /// [Reason](https://developer.apple.com/documentation/advancedcommerceapi/reason)

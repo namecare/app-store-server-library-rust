@@ -44,7 +44,12 @@ impl Serialize for PromotionalOfferSignatureV1 {
         state.serialize_field("keyId", &self.key_id)?;
         state.serialize_field("offerIdentifier", &self.offer_identifier)?;
         if let Some(app_account_token) = &self.app_account_token {
-            state.serialize_field("appAccountToken", &app_account_token.to_string().to_lowercase())?;
+            state.serialize_field(
+                "appAccountToken",
+                &app_account_token
+                    .to_string()
+                    .to_lowercase(),
+            )?;
         } else {
             state.skip_field("appAccountToken")?;
         }
@@ -70,8 +75,8 @@ impl<'de> Deserialize<'de> for PromotionalOfferSignatureV1 {
         }
 
         let helper = Helper::deserialize(deserializer)?;
-        let nonce = Uuid::parse_str(&helper.nonce)
-            .map_err(|_| serde::de::Error::custom("Invalid UUID string for nonce"))?;
+        let nonce =
+            Uuid::parse_str(&helper.nonce).map_err(|_| serde::de::Error::custom("Invalid UUID string for nonce"))?;
         let app_account_token = helper
             .app_account_token
             .map(|s| Uuid::parse_str(&s))

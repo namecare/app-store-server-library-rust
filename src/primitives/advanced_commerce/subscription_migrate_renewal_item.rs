@@ -25,11 +25,7 @@ pub struct SubscriptionMigrateRenewalItem {
 }
 
 impl SubscriptionMigrateRenewalItem {
-    pub fn new(
-        sku: String,
-        description: String,
-        display_name: String,
-    ) -> Self {
+    pub fn new(sku: String, description: String, display_name: String) -> Self {
         Self {
             sku,
             description,

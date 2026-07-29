@@ -1,18 +1,10 @@
 //! AWS-LC backend implementation using aws-lc-sys directly for X509 parsing.
 
-use aws_lc_rs::signature::{
-    EcdsaKeyPair, ECDSA_P256_SHA256_ASN1_SIGNING,
-};
+use aws_lc_rs::signature::{EcdsaKeyPair, ECDSA_P256_SHA256_ASN1_SIGNING};
 
-use crate::chain_verifier::{
-    ChainVerifier, ChainVerifierError, ChainVerificationFailureReason,
-};
-use crate::crypto::{
-    CryptoProvider, ChainVerifierFactory, PromotionalOfferSignerFactory,
-};
-use crate::promotional_offer_signature_creator::{
-    PromotionalOfferSigner, PromotionalOfferSignatureCreatorError,
-};
+use crate::chain_verifier::{ChainVerificationFailureReason, ChainVerifier, ChainVerifierError};
+use crate::crypto::{ChainVerifierFactory, CryptoProvider, PromotionalOfferSignerFactory};
+use crate::promotional_offer_signature_creator::{PromotionalOfferSignatureCreatorError, PromotionalOfferSigner};
 
 struct AwsLcPromotionalOfferSigner {
     key_pair: EcdsaKeyPair,
@@ -21,7 +13,8 @@ struct AwsLcPromotionalOfferSigner {
 impl PromotionalOfferSigner for AwsLcPromotionalOfferSigner {
     fn sign(&self, message: &[u8]) -> Result<Vec<u8>, PromotionalOfferSignatureCreatorError> {
         let rng = aws_lc_rs::rand::SystemRandom::new();
-        let sig = self.key_pair
+        let sig = self
+            .key_pair
             .sign(&rng, message)
             .map_err(|e| PromotionalOfferSignatureCreatorError::SigningError(e.to_string()))?;
         Ok(sig.as_ref().to_vec())
@@ -31,14 +24,11 @@ impl PromotionalOfferSigner for AwsLcPromotionalOfferSigner {
 fn new_promotional_offer_signer(
     private_key_pem: &str,
 ) -> Result<Box<dyn PromotionalOfferSigner>, PromotionalOfferSignatureCreatorError> {
-    let der = decode_pem(private_key_pem)
-        .map_err(|e| PromotionalOfferSignatureCreatorError::KeyError(e.to_string()))?;
+    let der =
+        decode_pem(private_key_pem).map_err(|e| PromotionalOfferSignatureCreatorError::KeyError(e.to_string()))?;
 
-    let key_pair = EcdsaKeyPair::from_pkcs8(
-        &ECDSA_P256_SHA256_ASN1_SIGNING,
-        &der,
-    )
-    .map_err(|e| PromotionalOfferSignatureCreatorError::KeyError(e.to_string()))?;
+    let key_pair = EcdsaKeyPair::from_pkcs8(&ECDSA_P256_SHA256_ASN1_SIGNING, &der)
+        .map_err(|e| PromotionalOfferSignatureCreatorError::KeyError(e.to_string()))?;
 
     Ok(Box::new(AwsLcPromotionalOfferSigner { key_pair }))
 }
@@ -50,9 +40,13 @@ fn decode_pem(pem: &str) -> Result<Vec<u8>, &'static str> {
     let lines: Vec<&str> = pem.lines().collect();
 
     // Find BEGIN and END markers
-    let start = lines.iter().position(|l| l.starts_with("-----BEGIN"))
+    let start = lines
+        .iter()
+        .position(|l| l.starts_with("-----BEGIN"))
         .ok_or("missing BEGIN marker")?;
-    let end = lines.iter().position(|l| l.starts_with("-----END"))
+    let end = lines
+        .iter()
+        .position(|l| l.starts_with("-----END"))
         .ok_or("missing END marker")?;
 
     if end <= start + 1 {
@@ -62,15 +56,16 @@ fn decode_pem(pem: &str) -> Result<Vec<u8>, &'static str> {
     // Concatenate base64 lines
     let b64: String = lines[start + 1..end].concat();
 
-    BASE64_STANDARD.decode(&b64).map_err(|_| "invalid base64")
+    BASE64_STANDARD
+        .decode(&b64)
+        .map_err(|_| "invalid base64")
 }
 
 mod x509 {
     use aws_lc_sys::{
-        d2i_X509, X509_free, X509_verify, X509_get0_pubkey, X509_get0_notBefore,
-        X509_get0_notAfter, X509_get_ext_count, X509_get_ext, X509_EXTENSION_get_object,
-        X509_get_X509_PUBKEY, i2d_X509_PUBKEY, OBJ_get0_data, OBJ_length,
-        ASN1_TIME_to_posix, X509, EVP_PKEY, OPENSSL_free,
+        d2i_X509, i2d_X509_PUBKEY, ASN1_TIME_to_posix, OBJ_get0_data, OBJ_length, OPENSSL_free,
+        X509_EXTENSION_get_object, X509_free, X509_get0_notAfter, X509_get0_notBefore, X509_get0_pubkey,
+        X509_get_X509_PUBKEY, X509_get_ext, X509_get_ext_count, X509_verify, EVP_PKEY, X509,
     };
     use std::os::raw::c_long;
     use std::ptr::null_mut;
@@ -262,9 +257,11 @@ impl ChainVerifier for AwsLcChainVerifier {
                 if let Some(date) = effective_date {
                     let timestamp = i64::try_from(date)
                         .map_err(|_| ChainVerifierError::VerificationFailure(InvalidEffectiveDate))?;
-                    let not_before = root.not_before()
+                    let not_before = root
+                        .not_before()
                         .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
-                    let not_after = root.not_after()
+                    let not_after = root
+                        .not_after()
                         .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
                     if timestamp < not_before || timestamp > not_after {
                         return Err(ChainVerifierError::VerificationFailure(CertificateExpired));
@@ -279,7 +276,8 @@ impl ChainVerifier for AwsLcChainVerifier {
         }
 
         // Verify leaf signature using intermediate's public key
-        let intermediate_pubkey = intermediate.pubkey()
+        let intermediate_pubkey = intermediate
+            .pubkey()
             .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
 
         if !leaf.verify(intermediate_pubkey) {
@@ -288,20 +286,26 @@ impl ChainVerifier for AwsLcChainVerifier {
 
         // Check validity dates if effective_date provided
         if let Some(date) = effective_date {
-            let timestamp = i64::try_from(date)
-                .map_err(|_| ChainVerifierError::VerificationFailure(InvalidEffectiveDate))?;
+            let timestamp =
+                i64::try_from(date).map_err(|_| ChainVerifierError::VerificationFailure(InvalidEffectiveDate))?;
 
-            let leaf_not_before = leaf.not_before()
+            let leaf_not_before = leaf
+                .not_before()
                 .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
-            let leaf_not_after = leaf.not_after()
+            let leaf_not_after = leaf
+                .not_after()
                 .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
-            let int_not_before = intermediate.not_before()
+            let int_not_before = intermediate
+                .not_before()
                 .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
-            let int_not_after = intermediate.not_after()
+            let int_not_after = intermediate
+                .not_after()
                 .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
 
-            if timestamp < leaf_not_before || timestamp > leaf_not_after
-                || timestamp < int_not_before || timestamp > int_not_after
+            if timestamp < leaf_not_before
+                || timestamp > leaf_not_after
+                || timestamp < int_not_before
+                || timestamp > int_not_after
             {
                 return Err(ChainVerifierError::VerificationFailure(CertificateExpired));
             }

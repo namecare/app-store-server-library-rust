@@ -22,9 +22,7 @@ pub struct ReqwestHttpTransport {
 
 impl ReqwestHttpTransport {
     pub fn new() -> ReqwestHttpTransport {
-        Self {
-            client: Client::new()
-        }
+        Self { client: Client::new() }
     }
 }
 

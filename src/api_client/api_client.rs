@@ -1,14 +1,14 @@
-use crate::primitives::environment::Environment;
+use crate::api_client::error::{APIServiceErrorCode, ApiServiceError, ConfigurationError, ErrorPayload};
 use crate::api_client::transport::Transport;
-use crate::api_client::error::{ApiServiceError, APIServiceErrorCode, ConfigurationError, ErrorPayload};
+use crate::primitives::environment::Environment;
 
 use chrono::Utc;
 use http::Method;
 use http::{Request, Response};
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
-use serde::de::DeserializeOwned;
 
 pub struct ApiClient<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> {
     base_url: String,
@@ -146,7 +146,10 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
             .map_err(|e| e.into())
     }
 
-    pub(super) async fn make_request_with_response_body<Res>(&self, request: Request<Vec<u8>>) -> Result<Res, ApiServiceError<E>>
+    pub(super) async fn make_request_with_response_body<Res>(
+        &self,
+        request: Request<Vec<u8>>,
+    ) -> Result<Res, ApiServiceError<E>>
     where
         Res: for<'de> Deserialize<'de>,
     {
@@ -161,15 +164,19 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
         Ok(json_result)
     }
 
-    pub(super) async fn make_request_without_response_body(&self, request: Request<Vec<u8>>) -> Result<(), ApiServiceError<E>> {
+    pub(super) async fn make_request_without_response_body(
+        &self,
+        request: Request<Vec<u8>>,
+    ) -> Result<(), ApiServiceError<E>> {
         let _ = self.make_request(request).await?;
         Ok(())
     }
 
-    pub(super) async fn make_request(&self, request: Request<Vec<u8>>) -> Result<Response<Vec<u8>>, ApiServiceError<E>> {
-        let response = self
-            .transport
-            .send(request).await?;
+    pub(super) async fn make_request(
+        &self,
+        request: Request<Vec<u8>>,
+    ) -> Result<Response<Vec<u8>>, ApiServiceError<E>> {
+        let response = self.transport.send(request).await?;
 
         let status_code = response.status().as_u16();
 
@@ -184,13 +191,11 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
         let status_code = response.status().as_u16();
 
         serde_json::from_slice::<ErrorPayload<E>>(response.body())
-            .map(|payload| {
-                ApiServiceError {
-                    http_status_code: status_code,
-                    api_error: Some(payload.error_code),
-                    error_code: payload.raw_error_code,
-                    error_message: payload.error_message,
-                }
+            .map(|payload| ApiServiceError {
+                http_status_code: status_code,
+                api_error: Some(payload.error_code),
+                error_code: payload.raw_error_code,
+                error_message: payload.error_message,
             })
             .unwrap_or_else(|_| ApiServiceError {
                 http_status_code: status_code,

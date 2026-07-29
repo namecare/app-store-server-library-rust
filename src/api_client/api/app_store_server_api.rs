@@ -1,10 +1,7 @@
 pub mod api_error_code;
 
-use std::collections::HashMap;
-use http::Method;
-use serde_json::Value;
 use crate::api_client::api::app_store_server_api::api_error_code::ApiErrorCode;
-use crate::api_client::api_client::{ApiClient};
+use crate::api_client::api_client::ApiClient;
 use crate::api_client::error::ApiServiceError;
 use crate::api_client::transport::Transport;
 use crate::primitives::app_transaction_info_response::AppTransactionInfoResponse;
@@ -26,6 +23,9 @@ use crate::primitives::status_response::StatusResponse;
 use crate::primitives::transaction_history_request::TransactionHistoryRequest;
 use crate::primitives::transaction_info_response::TransactionInfoResponse;
 use crate::primitives::update_app_account_token_request::UpdateAppAccountTokenRequest;
+use http::Method;
+use serde_json::Value;
+use std::collections::HashMap;
 
 pub struct AppStoreServerApi;
 pub type AppStoreServerApiClient<T> = ApiClient<T, AppStoreServerApi, ApiErrorCode>;
@@ -56,7 +56,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
             Method::POST,
             Some(mass_extend_renewal_date_request),
         )?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Extends the renewal date of a customer's active subscription using the original transaction identifier.
@@ -89,7 +90,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
             Method::PUT,
             Some(extend_renewal_date_request),
         )?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Get the statuses for all of a customer's auto-renewable subscriptions in your app.
@@ -127,7 +129,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
         }
 
         let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Get a paginated list of all of a customer's refunded in-app purchases for your app.
@@ -159,7 +162,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
             path.push_str(&format!("?revision={}", revision));
         }
         let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Checks whether a renewal date extension request completed, and provides the final count of successful or failed extensions.
@@ -190,7 +194,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
             product_id, request_identifier
         );
         let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Check the status of the test App Store server notification sent to your server.
@@ -216,7 +221,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     ) -> Result<CheckTestNotificationResponse, ApiError> {
         let path = format!("/inApps/v1/notifications/test/{}", test_notification_token);
         let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Get the transaction history for a given transaction ID.
@@ -249,7 +255,7 @@ impl<T: Transport> AppStoreServerApiClient<T> {
             &transaction_history_request,
             GetTransactionHistoryVersion::V1,
         )
-            .await
+        .await
     }
 
     /// Get a list of notifications that the App Store server attempted to send to your server.
@@ -290,7 +296,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
             Method::POST,
             Some(notification_history_request),
         )?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Get a customer's in-app purchase transaction history for your app.
@@ -388,7 +395,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
         }
 
         let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Get information about a single transaction for your app.
@@ -409,7 +417,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     pub async fn get_transaction_info(&self, transaction_id: &str) -> Result<TransactionInfoResponse, ApiError> {
         let path = format!("/inApps/v1/transactions/{}", transaction_id);
         let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Get a customer's app transaction information for your app.
@@ -430,7 +439,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     pub async fn app_transaction_info(&self, transaction_id: &str) -> Result<AppTransactionInfoResponse, ApiError> {
         let path = format!("/inApps/v1/transactions/appTransactions/{}", transaction_id);
         let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Get a customer's in-app purchases from a receipt using the order ID.
@@ -451,7 +461,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     pub async fn look_up_order_id(&self, order_id: &str) -> Result<OrderLookupResponse, ApiError> {
         let path = format!("/inApps/v1/lookup/{}", order_id);
         let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Ask App Store Server Notifications to send a test notification to your server.
@@ -468,7 +479,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     pub async fn request_test_notification(&self) -> Result<SendTestNotificationResponse, ApiError> {
         let path = "/inApps/v1/notifications/test";
         let req = self.build_request::<()>(path, Method::POST, None)?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Send consumption information about an In-App Purchase to the App Store after your server receives a consumption request notification.
@@ -486,11 +498,12 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     pub async fn send_consumption_information(
         &self,
         transaction_id: &str,
-        consumption_request: &ConsumptionRequest
+        consumption_request: &ConsumptionRequest,
     ) -> Result<(), ApiError> {
         let path = format!("/inApps/v2/transactions/consumption/{}", transaction_id);
         let req = self.build_request(path.as_str(), Method::PUT, Some(consumption_request))?;
-        self.make_request_without_response_body(req).await
+        self.make_request_without_response_body(req)
+            .await
     }
 
     /// Send consumption information about a consumable in-app purchase to the App Store after your server receives a consumption request notification.
@@ -513,7 +526,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     ) -> Result<(), ApiError> {
         let path = format!("/inApps/v1/transactions/consumption/{}", transaction_id);
         let req = self.build_request(path.as_str(), Method::PUT, Some(consumption_request))?;
-        self.make_request_without_response_body(req).await
+        self.make_request_without_response_body(req)
+            .await
     }
 
     /// Sets the app account token value for a purchase the customer makes outside your app,
@@ -547,7 +561,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
             Method::PUT,
             Some(update_app_account_token_request),
         )?;
-        self.make_request_without_response_body(req).await
+        self.make_request_without_response_body(req)
+            .await
     }
 }
 

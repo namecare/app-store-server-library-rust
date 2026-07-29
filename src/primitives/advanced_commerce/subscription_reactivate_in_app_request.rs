@@ -1,9 +1,9 @@
-use crate::primitives::advanced_commerce::request_info::RequestInfo;
-use crate::primitives::advanced_commerce::subscription_reactivate_item::SubscriptionReactivateItem;
-use serde::{Deserialize, Serialize};
 use crate::primitives::advanced_commerce::in_app_request::AdvancedCommerceInAppRequest;
 use crate::primitives::advanced_commerce::in_app_request_operation::InAppRequestOperation;
 use crate::primitives::advanced_commerce::in_app_request_version::InAppRequestVersion;
+use crate::primitives::advanced_commerce::request_info::RequestInfo;
+use crate::primitives::advanced_commerce::subscription_reactivate_item::SubscriptionReactivateItem;
+use serde::{Deserialize, Serialize};
 
 /// The metadata your app provides to reactivate an auto-renewable subscription.
 ///

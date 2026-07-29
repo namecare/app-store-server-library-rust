@@ -20,32 +20,52 @@ impl fmt::Display for ValidationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ValidationError::InvalidCurrencyLength(len) => {
-                write!(f, "Currency must be a 3-letter ISO 4217 code, got {} characters", len)
+                write!(
+                    f,
+                    "Currency must be a 3-letter ISO 4217 code, got {} characters",
+                    len
+                )
             }
             ValidationError::InvalidCurrencyFormat(currency) => {
-                write!(f, "Currency must contain only uppercase letters: {}", currency)
+                write!(
+                    f,
+                    "Currency must contain only uppercase letters: {}",
+                    currency
+                )
             }
             ValidationError::EmptyTaxCode => write!(f, "Tax code cannot be empty"),
             ValidationError::EmptyTransactionId => write!(f, "Transaction ID cannot be empty"),
             ValidationError::EmptyTargetProductId => write!(f, "Target Product ID cannot be empty"),
             ValidationError::UuidTooLong(len) => {
-                write!(f, "UUID string representation cannot exceed {} characters, got {}", 
-                    MAXIMUM_REQUEST_REFERENCE_ID_LENGTH, len)
+                write!(
+                    f,
+                    "UUID string representation cannot exceed {} characters, got {}",
+                    MAXIMUM_REQUEST_REFERENCE_ID_LENGTH, len
+                )
             }
             ValidationError::NegativePrice(price) => {
                 write!(f, "Price cannot be negative: {}", price)
             }
             ValidationError::DescriptionTooLong(len) => {
-                write!(f, "Description length ({}) exceeds maximum allowed ({})", 
-                    len, MAXIMUM_DESCRIPTION_LENGTH)
+                write!(
+                    f,
+                    "Description length ({}) exceeds maximum allowed ({})",
+                    len, MAXIMUM_DESCRIPTION_LENGTH
+                )
             }
             ValidationError::DisplayNameTooLong(len) => {
-                write!(f, "Display name length ({}) exceeds maximum allowed ({})", 
-                    len, MAXIMUM_DISPLAY_NAME_LENGTH)
+                write!(
+                    f,
+                    "Display name length ({}) exceeds maximum allowed ({})",
+                    len, MAXIMUM_DISPLAY_NAME_LENGTH
+                )
             }
             ValidationError::SkuTooLong(len) => {
-                write!(f, "SKU length ({}) exceeds maximum allowed ({})", 
-                    len, MAXIMUM_SKU_LENGTH)
+                write!(
+                    f,
+                    "SKU length ({}) exceeds maximum allowed ({})",
+                    len, MAXIMUM_SKU_LENGTH
+                )
             }
         }
     }
@@ -62,10 +82,10 @@ pub const MAXIMUM_DISPLAY_NAME_LENGTH: usize = 30;
 const MAXIMUM_SKU_LENGTH: usize = 128;
 
 /// Validates currency code according to ISO 4217 standard.
-/// 
+///
 /// # Arguments
 /// * `currency` - The currency code to validate
-/// 
+///
 /// # Returns
 /// * `Ok(String)` - The validated currency code
 /// * `Err(ValidationError)` - If validation fails
@@ -73,19 +93,22 @@ pub fn validate_currency(currency: &str) -> Result<String, ValidationError> {
     if currency.len() != CURRENCY_CODE_LENGTH {
         return Err(ValidationError::InvalidCurrencyLength(currency.len()));
     }
-    
-    if !currency.chars().all(|c| c.is_ascii_uppercase()) {
+
+    if !currency
+        .chars()
+        .all(|c| c.is_ascii_uppercase())
+    {
         return Err(ValidationError::InvalidCurrencyFormat(currency.to_string()));
     }
-    
+
     Ok(currency.to_string())
 }
 
 /// Validates tax code is not empty.
-/// 
+///
 /// # Arguments
 /// * `tax_code` - The tax code to validate
-/// 
+///
 /// # Returns
 /// * `Ok(String)` - The validated tax code
 /// * `Err(ValidationError)` - If validation fails
@@ -97,10 +120,10 @@ pub fn validate_tax_code(tax_code: &str) -> Result<String, ValidationError> {
 }
 
 /// Validates transaction ID is not empty.
-/// 
+///
 /// # Arguments
 /// * `transaction_id` - The transaction ID to validate
-/// 
+///
 /// # Returns
 /// * `Ok(String)` - The validated transaction ID
 /// * `Err(ValidationError)` - If validation fails
@@ -112,10 +135,10 @@ pub fn validate_transaction_id(transaction_id: &str) -> Result<String, Validatio
 }
 
 /// Validates target product ID is not empty.
-/// 
+///
 /// # Arguments
 /// * `target_product_id` - The target product ID to validate
-/// 
+///
 /// # Returns
 /// * `Ok(String)` - The validated target product ID
 /// * `Err(ValidationError)` - If validation fails
@@ -127,10 +150,10 @@ pub fn validate_target_product_id(target_product_id: &str) -> Result<String, Val
 }
 
 /// Validates UUID string representation doesn't exceed maximum length.
-/// 
+///
 /// # Arguments
 /// * `uuid` - The UUID to validate
-/// 
+///
 /// # Returns
 /// * `Ok(Uuid)` - The validated UUID
 /// * `Err(ValidationError)` - If validation fails
@@ -143,10 +166,10 @@ pub fn validate_uuid(uuid: &Uuid) -> Result<Uuid, ValidationError> {
 }
 
 /// Validates price is non-negative.
-/// 
+///
 /// # Arguments
 /// * `price` - The price to validate
-/// 
+///
 /// # Returns
 /// * `Ok(i64)` - The validated price
 /// * `Err(ValidationError)` - If validation fails
@@ -158,10 +181,10 @@ pub fn validate_price(price: i64) -> Result<i64, ValidationError> {
 }
 
 /// Validates description does not exceed maximum length.
-/// 
+///
 /// # Arguments
 /// * `description` - The description to validate
-/// 
+///
 /// # Returns
 /// * `Ok(String)` - The validated description
 /// * `Err(ValidationError)` - If validation fails
@@ -173,10 +196,10 @@ pub fn validate_description(description: &str) -> Result<String, ValidationError
 }
 
 /// Validates display name does not exceed maximum length.
-/// 
+///
 /// # Arguments
 /// * `display_name` - The display name to validate
-/// 
+///
 /// # Returns
 /// * `Ok(String)` - The validated display name
 /// * `Err(ValidationError)` - If validation fails
@@ -188,10 +211,10 @@ pub fn validate_display_name(display_name: &str) -> Result<String, ValidationErr
 }
 
 /// Validates SKU does not exceed maximum length.
-/// 
+///
 /// # Arguments
 /// * `sku` - The SKU to validate
-/// 
+///
 /// # Returns
 /// * `Ok(String)` - The validated SKU
 /// * `Err(ValidationError)` - If validation fails
@@ -276,25 +299,25 @@ mod tests {
             validate_description(&long_description),
             Err(ValidationError::DescriptionTooLong(46))
         ));
-        
+
         let ok_description = "a".repeat(45);
         assert!(validate_description(&ok_description).is_ok());
-        
+
         let long_display_name = "a".repeat(31);
         assert!(matches!(
             validate_display_name(&long_display_name),
             Err(ValidationError::DisplayNameTooLong(31))
         ));
-        
+
         let ok_display_name = "a".repeat(30);
         assert!(validate_display_name(&ok_display_name).is_ok());
-        
+
         let long_sku = "a".repeat(129);
         assert!(matches!(
             validate_sku(&long_sku),
             Err(ValidationError::SkuTooLong(129))
         ));
-        
+
         let ok_sku = "a".repeat(128);
         assert!(validate_sku(&ok_sku).is_ok());
     }

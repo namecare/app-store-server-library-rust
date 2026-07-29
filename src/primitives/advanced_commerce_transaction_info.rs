@@ -1,13 +1,12 @@
-use serde::{Deserialize, Serialize};
 use crate::primitives::advanced_commerce::descriptors::Descriptors;
 use crate::primitives::advanced_commerce::period::Period;
 use crate::primitives::advanced_commerce_transaction_item::AdvancedCommerceTransactionItem;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
 /// [AdvancedCommerceTransactionInfo](https://developer.apple.com/documentation/appstoreserverapi/advancedcommercetransactioninfo)
 pub struct AdvancedCommerceTransactionInfo {
-
     /// [descriptors](https://developer.apple.com/documentation/appstoreserverapi/advancedcommercedescriptors)
     pub descriptors: Descriptors,
 

@@ -1,4 +1,5 @@
 use crate::primitives::advanced_commerce_price_increase_info::AdvancedCommercePriceIncreaseInfo;
+use crate::primitives::advanced_commerce_renewal_info::AdvancedCommerceRenewalInfo;
 use crate::primitives::auto_renew_status::AutoRenewStatus;
 use crate::primitives::environment::Environment;
 use crate::primitives::expiration_intent::ExpirationIntent;
@@ -10,7 +11,6 @@ use serde::{Deserialize, Serialize};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
 use uuid::Uuid;
-use crate::primitives::advanced_commerce_renewal_info::AdvancedCommerceRenewalInfo;
 
 /// A decoded payload containing subscription renewal information for an auto-renewable subscription.
 ///

@@ -1,3 +1,4 @@
+use crate::primitives::advanced_commerce_transaction_info::AdvancedCommerceTransactionInfo;
 use crate::primitives::environment::Environment;
 use crate::primitives::in_app_ownership_type::InAppOwnershipType;
 use crate::primitives::offer_discount_type::OfferDiscountType;
@@ -10,7 +11,6 @@ use chrono::{DateTime, Utc};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
 use uuid::Uuid;
-use crate::primitives::advanced_commerce_transaction_info::AdvancedCommerceTransactionInfo;
 
 /// A decoded payload containing transaction information.
 ///

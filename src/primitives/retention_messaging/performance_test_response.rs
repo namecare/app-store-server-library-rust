@@ -1,6 +1,6 @@
+use crate::primitives::retention_messaging::performance_test_config::PerformanceTestConfig;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::primitives::retention_messaging::performance_test_config::PerformanceTestConfig;
 
 /// The response from initiating a performance test.
 ///

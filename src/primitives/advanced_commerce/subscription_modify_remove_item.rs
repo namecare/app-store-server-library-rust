@@ -10,5 +10,5 @@ pub struct SubscriptionModifyRemoveItem {
     ///
     /// [SKU](https://developer.apple.com/documentation/advancedcommerceapi/sku)
     #[serde(rename = "SKU")]
-    pub sku: String
+    pub sku: String,
 }

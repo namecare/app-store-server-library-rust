@@ -26,8 +26,8 @@ const XCODE_BUNDLE_ID: &str = "com.example.naturelab.backyardbirds.example";
 
 #[test]
 fn test_app_store_server_notification_decoding() {
-    let test_notification_data = fs::read_to_string("tests/resources/mock_signed_data/testNotification")
-        .expect("Failed to read file");
+    let test_notification_data =
+        fs::read_to_string("tests/resources/mock_signed_data/testNotification").expect("Failed to read file");
     let verifier = get_signed_data_verifier(Environment::Sandbox, "com.example", None);
     let notification = verifier
         .verify_and_decode_notification(&test_notification_data)
@@ -37,64 +37,57 @@ fn test_app_store_server_notification_decoding() {
 
 #[test]
 fn test_app_store_server_notification_decoding_production() {
-    let test_notification_data = fs::read_to_string("tests/resources/mock_signed_data/testNotification")
-        .expect("Failed to read file");
+    let test_notification_data =
+        fs::read_to_string("tests/resources/mock_signed_data/testNotification").expect("Failed to read file");
     let verifier = get_signed_data_verifier(Environment::Production, "com.example", None);
     let error = verifier
         .verify_and_decode_notification(&test_notification_data)
         .err()
         .unwrap();
 
-    assert!(
-        matches!(error, SignedDataVerifierError::InvalidEnvironment)
-    );
+    assert!(matches!(error, SignedDataVerifierError::InvalidEnvironment));
 }
 
 #[test]
 fn test_missing_x5c_header() {
-    let missing_x5c_header_claim_data = fs::read_to_string("tests/resources/mock_signed_data/missingX5CHeaderClaim")
-        .expect("Failed to read file");
+    let missing_x5c_header_claim_data =
+        fs::read_to_string("tests/resources/mock_signed_data/missingX5CHeaderClaim").expect("Failed to read file");
     let verifier = get_signed_data_verifier(Environment::Sandbox, "com.example", None);
     let result = verifier.verify_and_decode_notification(&missing_x5c_header_claim_data);
-    assert!(
-        matches!(
-            result.err().unwrap(),
-            SignedDataVerifierError::InternalJWTError(_)
-        )
-    );
+    assert!(matches!(
+        result.err().unwrap(),
+        SignedDataVerifierError::VerificationFailure
+    ));
 }
 
 #[test]
 fn test_wrong_bundle_id_for_server_notification() {
-    let wrong_bundle_id_data = fs::read_to_string("tests/resources/mock_signed_data/wrongBundleId")
-        .expect("Failed to read file");
+    let wrong_bundle_id_data =
+        fs::read_to_string("tests/resources/mock_signed_data/wrongBundleId").expect("Failed to read file");
     let verifier = get_signed_data_verifier(Environment::Sandbox, "com.example", None);
     let result = verifier.verify_and_decode_notification(&wrong_bundle_id_data);
-    assert!(
-        matches!(
-            result.err().unwrap(),
-            SignedDataVerifierError::InvalidAppIdentifier
-        )
-    );
+    assert!(matches!(
+        result.err().unwrap(),
+        SignedDataVerifierError::InvalidAppIdentifier
+    ));
 }
 
 #[test]
 fn test_wrong_app_apple_id_for_server_notification() {
-    let test_notification_data = fs::read_to_string("tests/resources/mock_signed_data/testNotification")
-        .expect("Failed to read file");
+    let test_notification_data =
+        fs::read_to_string("tests/resources/mock_signed_data/testNotification").expect("Failed to read file");
     let verifier = get_signed_data_verifier(Environment::Production, "com.example", Some(1235));
     let result = verifier.verify_and_decode_notification(&test_notification_data);
-    assert!(
-        matches!(
-            result.err().unwrap(),
-            SignedDataVerifierError::InvalidAppIdentifier
-        )
-    );
+    assert!(matches!(
+        result.err().unwrap(),
+        SignedDataVerifierError::InvalidAppIdentifier
+    ));
 }
 
 #[test]
 fn test_renewal_info_decoding() {
-    let renewal_info_data = fs::read_to_string("tests/resources/mock_signed_data/renewalInfo").expect("Failed to read file");
+    let renewal_info_data =
+        fs::read_to_string("tests/resources/mock_signed_data/renewalInfo").expect("Failed to read file");
     let verifier = get_signed_data_verifier(Environment::Sandbox, "com.example", None);
     let renewal_info = verifier
         .verify_and_decode_renewal_info(&renewal_info_data)
@@ -104,7 +97,8 @@ fn test_renewal_info_decoding() {
 
 #[test]
 fn test_external_purchase_token_notification_decoding() {
-    let signed_notification = create_signed_data_from_json("tests/resources/models/signedExternalPurchaseTokenNotification.json");
+    let signed_notification =
+        create_signed_data_from_json("tests/resources/models/signedExternalPurchaseTokenNotification.json");
     let signed_data_verifier = get_signed_data_verifier(Environment::LocalTesting, "com.example", Some(55555));
 
     match signed_data_verifier.verify_and_decode_notification(&signed_notification) {
@@ -180,7 +174,8 @@ fn test_external_purchase_token_notification_decoding() {
 
 #[test]
 fn test_external_purchase_token_sanbox_notification_decoding() {
-    let signed_notification = create_signed_data_from_json("tests/resources/models/signedExternalPurchaseTokenSandboxNotification.json");
+    let signed_notification =
+        create_signed_data_from_json("tests/resources/models/signedExternalPurchaseTokenSandboxNotification.json");
     let signed_data_verifier = get_signed_data_verifier(Environment::LocalTesting, "com.example", Some(55555));
 
     match signed_data_verifier.verify_and_decode_notification(&signed_notification) {
@@ -256,8 +251,8 @@ fn test_external_purchase_token_sanbox_notification_decoding() {
 
 #[test]
 fn test_transaction_info_decoding() {
-    let transaction_info_data = fs::read_to_string("tests/resources/mock_signed_data/transactionInfo")
-        .expect("Failed to read file");
+    let transaction_info_data =
+        fs::read_to_string("tests/resources/mock_signed_data/transactionInfo").expect("Failed to read file");
     let verifier = get_signed_data_verifier(Environment::Sandbox, "com.example", None);
     let notification = verifier
         .verify_and_decode_signed_transaction(&transaction_info_data)
@@ -801,7 +796,8 @@ fn test_decoded_payloads_notification_decoding() {
 
 #[test]
 fn test_consumption_request_notification_decoding() {
-    let signed_notification = create_signed_data_from_json("tests/resources/models/signedConsumptionRequestNotification.json");
+    let signed_notification =
+        create_signed_data_from_json("tests/resources/models/signedConsumptionRequestNotification.json");
 
     let signed_data_verifier = get_default_signed_data_verifier();
 
@@ -859,7 +855,8 @@ fn test_consumption_request_notification_decoding() {
 
 #[test]
 fn test_summary_notification_decoding() {
-    let signed_summary_notification = create_signed_data_from_json("tests/resources/models/signedSummaryNotification.json");
+    let signed_summary_notification =
+        create_signed_data_from_json("tests/resources/models/signedSummaryNotification.json");
 
     let signed_data_verifier = get_default_signed_data_verifier();
 
@@ -947,8 +944,8 @@ fn test_summary_notification_decoding() {
 #[test]
 fn test_xcode_signed_app_transaction() {
     let verifier = get_signed_data_verifier(Environment::Xcode, XCODE_BUNDLE_ID, None);
-    let encoded_app_transaction = fs::read_to_string("tests/resources/xcode/xcode-signed-app-transaction")
-        .expect("Failed to read file");
+    let encoded_app_transaction =
+        fs::read_to_string("tests/resources/xcode/xcode-signed-app-transaction").expect("Failed to read file");
 
     if let Ok(app_transaction) = verifier.verify_and_decode_app_transaction(&encoded_app_transaction) {
         assert_eq!(
@@ -1004,8 +1001,8 @@ fn test_xcode_signed_app_transaction() {
 #[test]
 fn test_xcode_signed_transaction() {
     let verifier = get_signed_data_verifier(Environment::Xcode, XCODE_BUNDLE_ID, None);
-    let encoded_app_transaction = fs::read_to_string("tests/resources/xcode/xcode-signed-transaction")
-        .expect("Failed to read file");
+    let encoded_app_transaction =
+        fs::read_to_string("tests/resources/xcode/xcode-signed-transaction").expect("Failed to read file");
 
     if let Ok(transaction) = verifier.verify_and_decode_signed_transaction(&encoded_app_transaction) {
         assert_eq!(
@@ -1138,8 +1135,8 @@ fn test_xcode_signed_transaction() {
 #[test]
 fn test_xcode_signed_renewal_info() {
     let verifier = get_signed_data_verifier(Environment::Xcode, XCODE_BUNDLE_ID, None);
-    let encoded_renewal_info = fs::read_to_string("tests/resources/xcode/xcode-signed-renewal-info")
-        .expect("Failed to read file");
+    let encoded_renewal_info =
+        fs::read_to_string("tests/resources/xcode/xcode-signed-renewal-info").expect("Failed to read file");
 
     if let Ok(renewal_info) = verifier.verify_and_decode_renewal_info(&encoded_renewal_info) {
         assert_eq!(None, renewal_info.expiration_intent);
@@ -1210,8 +1207,8 @@ fn test_xcode_signed_renewal_info() {
 #[test]
 fn test_xcode_signed_app_transaction_with_production_environment() {
     let verifier = get_signed_data_verifier(Environment::Production, XCODE_BUNDLE_ID, None);
-    let encoded_app_transaction = fs::read_to_string("tests/resources/xcode/xcode-signed-app-transaction")
-        .expect("Failed to read file");
+    let encoded_app_transaction =
+        fs::read_to_string("tests/resources/xcode/xcode-signed-app-transaction").expect("Failed to read file");
 
     if let Err(_) = verifier.verify_and_decode_app_transaction(&encoded_app_transaction) {
         return;
@@ -1251,10 +1248,7 @@ fn test_realtime_request_decoding() {
                 request.request_identifier
             );
             assert_eq!(Environment::LocalTesting, request.environment);
-            assert_eq!(
-                1698148900,
-                request.signed_date.timestamp()
-            );
+            assert_eq!(1698148900, request.signed_date.timestamp());
         }
         Err(err) => panic!("Failed to verify and decode realtime request: {:?}", err),
     }
@@ -1262,7 +1256,8 @@ fn test_realtime_request_decoding() {
 
 #[test]
 fn test_transaction_with_revocation_decoding() {
-    let signed_transaction = create_signed_data_from_json("tests/resources/models/signedTransactionWithRevocation.json");
+    let signed_transaction =
+        create_signed_data_from_json("tests/resources/models/signedTransactionWithRevocation.json");
 
     let signed_data_verifier = get_default_signed_data_verifier();
 
@@ -1463,7 +1458,8 @@ fn test_transaction_with_revocation_decoding() {
 
 #[test]
 fn test_rescind_consent_notification_decoding() {
-    let signed_notification = create_signed_data_from_json("tests/resources/models/signedRescindConsentNotification.json");
+    let signed_notification =
+        create_signed_data_from_json("tests/resources/models/signedRescindConsentNotification.json");
 
     let signed_data_verifier = get_default_signed_data_verifier();
 
@@ -1488,25 +1484,37 @@ fn test_rescind_consent_notification_decoding() {
             );
             assert!(notification.data.is_none());
             assert!(notification.summary.is_none());
-            assert!(notification.external_purchase_token.is_none());
+            assert!(notification
+                .external_purchase_token
+                .is_none());
             assert!(notification.app_data.is_some());
 
             if let Some(app_data) = notification.app_data {
                 assert_eq!(
                     Environment::LocalTesting,
-                    app_data.environment.expect("Expect environment")
+                    app_data
+                        .environment
+                        .expect("Expect environment")
                 );
                 assert_eq!(
                     41234,
-                    app_data.app_apple_id.expect("Expect app_apple_id")
+                    app_data
+                        .app_apple_id
+                        .expect("Expect app_apple_id")
                 );
                 assert_eq!(
                     "com.example",
-                    app_data.bundle_id.as_deref().expect("Expect bundle_id")
+                    app_data
+                        .bundle_id
+                        .as_deref()
+                        .expect("Expect bundle_id")
                 );
                 assert_eq!(
                     "signed_app_transaction_info_value",
-                    app_data.signed_app_transaction_info.as_deref().expect("Expect signed_app_transaction_info")
+                    app_data
+                        .signed_app_transaction_info
+                        .as_deref()
+                        .expect("Expect signed_app_transaction_info")
                 );
             } else {
                 panic!("AppData field is expected to be present in the notification");
@@ -1525,11 +1533,30 @@ fn test_app_data() {
 
     let app_data: AppData = serde_json::from_str(&json).expect("Failed to decode AppData");
 
-    assert_eq!(987654321, app_data.app_apple_id.expect("Expect app_apple_id"));
-    assert_eq!("com.example", app_data.bundle_id.as_deref().expect("Expect bundle_id"));
-    assert_eq!(Environment::Sandbox, app_data.environment.expect("Expect environment"));
+    assert_eq!(
+        987654321,
+        app_data
+            .app_apple_id
+            .expect("Expect app_apple_id")
+    );
+    assert_eq!(
+        "com.example",
+        app_data
+            .bundle_id
+            .as_deref()
+            .expect("Expect bundle_id")
+    );
+    assert_eq!(
+        Environment::Sandbox,
+        app_data
+            .environment
+            .expect("Expect environment")
+    );
     assert_eq!(
         "signed-app-transaction-info",
-        app_data.signed_app_transaction_info.as_deref().expect("Expect signed_app_transaction_info")
+        app_data
+            .signed_app_transaction_info
+            .as_deref()
+            .expect("Expect signed_app_transaction_info")
     );
 }

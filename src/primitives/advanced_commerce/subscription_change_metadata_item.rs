@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::primitives::advanced_commerce::effective::Effective;
+use serde::{Deserialize, Serialize};
 
 /// The metadata to change for an item, specifically its SKU, description, and display name.
 ///
@@ -12,25 +12,25 @@ pub struct SubscriptionChangeMetadataItem {
     /// [SKU](https://developer.apple.com/documentation/advancedcommerceapi/sku)
     #[serde(skip_serializing_if = "Option::is_none", rename = "SKU")]
     pub sku: Option<String>,
-    
+
     /// The original SKU of the item.
     ///
     /// [currentSKU](https://developer.apple.com/documentation/advancedcommerceapi/sku)
     #[serde(rename = "currentSKU")]
     pub current_sku: String,
-    
+
     /// The new description for the item.
     ///
     /// [Description](https://developer.apple.com/documentation/advancedcommerceapi/description)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    
+
     /// The new display name for the item.
     ///
     /// [Display Name](https://developer.apple.com/documentation/advancedcommerceapi/displayname)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
-    
+
     /// The string that determines when the metadata change goes into effect.
     ///
     /// [Effective](https://developer.apple.com/documentation/advancedcommerceapi/effective)
@@ -38,10 +38,7 @@ pub struct SubscriptionChangeMetadataItem {
 }
 
 impl SubscriptionChangeMetadataItem {
-    pub fn new(
-        current_sku: String,
-        effective: Effective,
-    ) -> Self {
+    pub fn new(current_sku: String, effective: Effective) -> Self {
         Self {
             sku: None,
             current_sku,
@@ -50,17 +47,17 @@ impl SubscriptionChangeMetadataItem {
             effective,
         }
     }
-    
+
     pub fn with_sku(mut self, sku: String) -> Self {
         self.sku = Some(sku);
         self
     }
-    
+
     pub fn with_description(mut self, description: String) -> Self {
         self.description = Some(description);
         self
     }
-    
+
     pub fn with_display_name(mut self, display_name: String) -> Self {
         self.display_name = Some(display_name);
         self

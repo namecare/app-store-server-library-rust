@@ -1,7 +1,5 @@
 pub mod api_error_code;
 
-use http::Method;
-use uuid::Uuid;
 use crate::api_client::api::retention_messaging_api::api_error_code::ApiErrorCode;
 use crate::api_client::api_client::ApiClient;
 use crate::api_client::error::ApiServiceError;
@@ -13,6 +11,8 @@ use crate::primitives::retention_messaging::performance_test_request::Performanc
 use crate::primitives::retention_messaging::performance_test_response::PerformanceTestResponse;
 use crate::primitives::retention_messaging::performance_test_result_response::PerformanceTestResultResponse;
 use crate::primitives::retention_messaging::upload_message_request_body::UploadMessageRequestBody;
+use http::Method;
+use uuid::Uuid;
 
 pub struct RetentionMessagingApi;
 pub type RetentionMessagingApiClient<T> = ApiClient<T, RetentionMessagingApi, ApiErrorCode>;
@@ -31,19 +31,11 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
     /// # Errors
     ///
     /// Returns an `APIError` if the request could not be processed.
-    pub async fn upload_image(
-        &self,
-        image_identifier: Uuid,
-        image: Vec<u8>,
-    ) -> Result<(), ApiError> {
+    pub async fn upload_image(&self, image_identifier: Uuid, image: Vec<u8>) -> Result<(), ApiError> {
         let path = format!("/inApps/v1/messaging/image/{}", image_identifier);
-        let req = self.build_request_with_custom_content(
-            &path,
-            Method::PUT,
-            image,
-            "image/png",
-        )?;
-        self.make_request_without_response_body(req).await
+        let req = self.build_request_with_custom_content(&path, Method::PUT, image, "image/png")?;
+        self.make_request_without_response_body(req)
+            .await
     }
 
     /// Delete a previously uploaded image.
@@ -57,17 +49,11 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
     /// # Errors
     ///
     /// Returns an `APIError` if the request could not be processed.
-    pub async fn delete_image(
-        &self,
-        image_identifier: Uuid,
-    ) -> Result<(), ApiError> {
+    pub async fn delete_image(&self, image_identifier: Uuid) -> Result<(), ApiError> {
         let path = format!("/inApps/v1/messaging/image/{}", image_identifier);
-        let req = self.build_request::<()>(
-            &path,
-            Method::DELETE,
-            None,
-        )?;
-        self.make_request_without_response_body(req).await
+        let req = self.build_request::<()>(&path, Method::DELETE, None)?;
+        self.make_request_without_response_body(req)
+            .await
     }
 
     /// Get the image identifier and state for all uploaded images.
@@ -82,12 +68,9 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
     ///
     /// Returns an `APIError` if the request could not be processed.
     pub async fn image_list(&self) -> Result<GetImageListResponse, ApiError> {
-        let req = self.build_request::<()>(
-            "/inApps/v1/messaging/image/list",
-            Method::GET,
-            None,
-        )?;
-        self.make_request_with_response_body(req).await
+        let req = self.build_request::<()>("/inApps/v1/messaging/image/list", Method::GET, None)?;
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Upload a message to use for retention messaging.
@@ -108,12 +91,9 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
         upload_message_request_body: &UploadMessageRequestBody,
     ) -> Result<(), ApiError> {
         let path = format!("/inApps/v1/messaging/message/{}", message_identifier);
-        let req = self.build_request(
-            &path,
-            Method::PUT,
-            Some(upload_message_request_body),
-        )?;
-        self.make_request_without_response_body(req).await
+        let req = self.build_request(&path, Method::PUT, Some(upload_message_request_body))?;
+        self.make_request_without_response_body(req)
+            .await
     }
 
     /// Delete a previously uploaded message.
@@ -127,17 +107,11 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
     /// # Errors
     ///
     /// Returns an `APIError` if the request could not be processed.
-    pub async fn delete_message(
-        &self,
-        message_identifier: Uuid,
-    ) -> Result<(), ApiError> {
+    pub async fn delete_message(&self, message_identifier: Uuid) -> Result<(), ApiError> {
         let path = format!("/inApps/v1/messaging/message/{}", message_identifier);
-        let req = self.build_request::<()>(
-            &path,
-            Method::DELETE,
-            None,
-        )?;
-        self.make_request_without_response_body(req).await
+        let req = self.build_request::<()>(&path, Method::DELETE, None)?;
+        self.make_request_without_response_body(req)
+            .await
     }
 
     /// Get the message identifier and state of all uploaded messages.
@@ -152,12 +126,9 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
     ///
     /// Returns an `APIError` if the request could not be processed.
     pub async fn message_list(&self) -> Result<GetMessageListResponse, ApiError> {
-        let req = self.build_request::<()>(
-            "/inApps/v1/messaging/message/list",
-            Method::GET,
-            None,
-        )?;
-        self.make_request_with_response_body(req).await
+        let req = self.build_request::<()>("/inApps/v1/messaging/message/list", Method::GET, None)?;
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Configure a default message for a specific product in a specific locale.
@@ -179,17 +150,10 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
         locale: &str,
         default_configuration_request: &DefaultConfigurationRequest,
     ) -> Result<(), ApiError> {
-        let path = format!(
-            "/inApps/v1/messaging/default/{}/{}",
-            product_id,
-            locale
-        );
-        let req = self.build_request(
-            &path,
-            Method::PUT,
-            Some(default_configuration_request),
-        )?;
-        self.make_request_without_response_body(req).await
+        let path = format!("/inApps/v1/messaging/default/{}/{}", product_id, locale);
+        let req = self.build_request(&path, Method::PUT, Some(default_configuration_request))?;
+        self.make_request_without_response_body(req)
+            .await
     }
 
     /// Get the default message configuration for a specific product in a specific locale.
@@ -213,17 +177,10 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
         product_id: &str,
         locale: &str,
     ) -> Result<DefaultConfigurationRequest, ApiError> {
-        let path = format!(
-            "/inApps/v1/messaging/default/{}/{}",
-            product_id,
-            locale
-        );
-        let req = self.build_request::<()>(
-            &path,
-            Method::GET,
-            None,
-        )?;
-        self.make_request_with_response_body(req).await
+        let path = format!("/inApps/v1/messaging/default/{}/{}", product_id, locale);
+        let req = self.build_request::<()>(&path, Method::GET, None)?;
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Delete the default message configuration for a specific product in a specific locale.
@@ -238,22 +195,11 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
     /// # Errors
     ///
     /// Returns an `APIError` if the request could not be processed.
-    pub async fn delete_default_configuration(
-        &self,
-        product_id: &str,
-        locale: &str,
-    ) -> Result<(), ApiError> {
-        let path = format!(
-            "/inApps/v1/messaging/default/{}/{}",
-            product_id,
-            locale
-        );
-        let req = self.build_request::<()>(
-            &path,
-            Method::DELETE,
-            None,
-        )?;
-        self.make_request_without_response_body(req).await
+    pub async fn delete_default_configuration(&self, product_id: &str, locale: &str) -> Result<(), ApiError> {
+        let path = format!("/inApps/v1/messaging/default/{}/{}", product_id, locale);
+        let req = self.build_request::<()>(&path, Method::DELETE, None)?;
+        self.make_request_without_response_body(req)
+            .await
     }
 
     /// Initiate a performance test for retention messaging notifications.
@@ -282,7 +228,8 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
             Method::POST,
             Some(performance_test_request),
         )?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Get the results of a performance test.
@@ -300,16 +247,10 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
     /// # Errors
     ///
     /// Returns an `APIError` if the request could not be processed.
-    pub async fn performance_test_result(
-        &self,
-        request_id: Uuid,
-    ) -> Result<PerformanceTestResultResponse, ApiError> {
+    pub async fn performance_test_result(&self, request_id: Uuid) -> Result<PerformanceTestResultResponse, ApiError> {
         let path = format!("/inApps/v1/messaging/performanceTest/result/{}", request_id);
-        let req = self.build_request::<()>(
-            &path,
-            Method::GET,
-            None,
-        )?;
-        self.make_request_with_response_body(req).await
+        let req = self.build_request::<()>(&path, Method::GET, None)?;
+        self.make_request_with_response_body(req)
+            .await
     }
 }

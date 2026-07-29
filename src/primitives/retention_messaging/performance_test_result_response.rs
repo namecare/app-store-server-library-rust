@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
 use crate::primitives::retention_messaging::failures::Failures;
 use crate::primitives::retention_messaging::performance_test_config::PerformanceTestConfig;
 use crate::primitives::retention_messaging::performance_test_response_times::PerformanceTestResponseTimes;
 use crate::primitives::retention_messaging::performance_test_status::PerformanceTestStatus;
+use serde::{Deserialize, Serialize};
 
 /// The response from the Get Performance Test Results API call.
 ///

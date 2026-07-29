@@ -12,9 +12,7 @@ use crate::chain_verifier::ChainVerifier;
 
 pub type ChainVerifierFactory = fn() -> Box<dyn ChainVerifier>;
 
-use crate::promotional_offer_signature_creator::{
-    PromotionalOfferSigner, PromotionalOfferSignatureCreatorError,
-};
+use crate::promotional_offer_signature_creator::{PromotionalOfferSignatureCreatorError, PromotionalOfferSigner};
 
 pub type PromotionalOfferSignerFactory =
     fn(&str) -> Result<Box<dyn PromotionalOfferSigner>, PromotionalOfferSignatureCreatorError>;

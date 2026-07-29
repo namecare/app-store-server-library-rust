@@ -36,12 +36,7 @@ pub struct SubscriptionCreateItem {
 }
 
 impl SubscriptionCreateItem {
-    pub fn new(
-        sku: String,
-        description: String,
-        display_name: String,
-        price: i64,
-    ) -> Self {
+    pub fn new(sku: String, description: String, display_name: String, price: i64) -> Self {
         Self {
             sku,
             description,

@@ -1,9 +1,15 @@
 mod common;
-use common::transport_mock::{MockTransport, RequestVerifier};
+use app_store_server_library::api_client::api::app_store_server_api::api_error_code::ApiErrorCode;
+use app_store_server_library::api_client::api::app_store_server_api::{
+    AppStoreServerApiClient, GetTransactionHistoryVersion,
+};
+use app_store_server_library::api_client::error::ConfigurationError;
 use app_store_server_library::primitives::account_tenure::AccountTenure;
 use app_store_server_library::primitives::consumption_request::ConsumptionRequest;
+use app_store_server_library::primitives::consumption_request_v1::ConsumptionRequestV1;
 use app_store_server_library::primitives::consumption_status::ConsumptionStatus;
 use app_store_server_library::primitives::delivery_status::DeliveryStatus;
+use app_store_server_library::primitives::delivery_status_v1::DeliveryStatusV1;
 use app_store_server_library::primitives::environment::Environment;
 use app_store_server_library::primitives::extend_reason_code::ExtendReasonCode;
 use app_store_server_library::primitives::extend_renewal_date_request::ExtendRenewalDateRequest;
@@ -19,6 +25,7 @@ use app_store_server_library::primitives::order_lookup_status::OrderLookupStatus
 use app_store_server_library::primitives::platform::Platform;
 use app_store_server_library::primitives::play_time::PlayTime;
 use app_store_server_library::primitives::refund_preference::RefundPreference;
+use app_store_server_library::primitives::refund_preference_v1::RefundPreferenceV1;
 use app_store_server_library::primitives::send_attempt_item::SendAttemptItem;
 use app_store_server_library::primitives::send_attempt_result::SendAttemptResult;
 use app_store_server_library::primitives::status::Status;
@@ -32,17 +39,12 @@ use app_store_server_library::primitives::user_status::UserStatus;
 use base64::prelude::BASE64_STANDARD_NO_PAD;
 use base64::Engine;
 use chrono::DateTime;
+use common::transport_mock::{MockTransport, RequestVerifier};
 use http::{Method, StatusCode};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 use uuid::Uuid;
-use app_store_server_library::api_client::api::app_store_server_api::api_error_code::ApiErrorCode;
-use app_store_server_library::api_client::api::app_store_server_api::{AppStoreServerApiClient, GetTransactionHistoryVersion};
-use app_store_server_library::api_client::error::ConfigurationError;
-use app_store_server_library::primitives::consumption_request_v1::ConsumptionRequestV1;
-use app_store_server_library::primitives::delivery_status_v1::DeliveryStatusV1;
-use app_store_server_library::primitives::refund_preference_v1::RefundPreferenceV1;
 
 #[tokio::test]
 async fn test_extend_renewal_date_for_all_active_subscribers() {
@@ -679,7 +681,10 @@ async fn test_app_transaction_info_invalid_transaction_id() {
     assert_eq!(400, err.http_status_code);
     assert_eq!(Some(ApiErrorCode::InvalidTransactionId), err.api_error);
     assert_eq!(Some(4000006), err.error_code);
-    assert_eq!(Some("Invalid transaction id.".to_string()), err.error_message);
+    assert_eq!(
+        Some("Invalid transaction id.".to_string()),
+        err.error_message
+    );
 }
 
 #[tokio::test]
@@ -699,7 +704,10 @@ async fn test_app_transaction_info_transaction_id_not_found() {
     assert_eq!(404, err.http_status_code);
     assert_eq!(Some(ApiErrorCode::TransactionIdNotFound), err.api_error);
     assert_eq!(Some(4040010), err.error_code);
-    assert_eq!(Some("Transaction id not found.".to_string()), err.error_message);
+    assert_eq!(
+        Some("Transaction id not found.".to_string()),
+        err.error_message
+    );
 }
 
 #[tokio::test]
@@ -717,9 +725,15 @@ async fn test_app_transaction_info_app_transaction_does_not_exist() {
     assert!(result.is_err());
     let err = result.unwrap_err();
     assert_eq!(404, err.http_status_code);
-    assert_eq!(Some(ApiErrorCode::AppTransactionDoesNotExist), err.api_error);
+    assert_eq!(
+        Some(ApiErrorCode::AppTransactionDoesNotExist),
+        err.api_error
+    );
     assert_eq!(Some(4040019), err.error_code);
-    assert_eq!(Some("No AppTransaction exists for the customer.".to_string()), err.error_message);
+    assert_eq!(
+        Some("No AppTransaction exists for the customer.".to_string()),
+        err.error_message
+    );
 }
 
 #[tokio::test]
@@ -1005,8 +1019,12 @@ async fn test_send_consumption_information_with_minimal_fields() {
                     .as_str()
                     .unwrap()
             );
-            assert!(decoded_json.get("consumptionPercentage").is_none());
-            assert!(decoded_json.get("refundPreference").is_none());
+            assert!(decoded_json
+                .get("consumptionPercentage")
+                .is_none());
+            assert!(decoded_json
+                .get("refundPreference")
+                .is_none());
         })),
     );
 
@@ -1405,7 +1423,9 @@ async fn test_send_consumption_data_with_null_app_account_token() {
         app_account_token: None,
         account_tenure: AccountTenure::ThirtyDaysToNinetyDays.into(),
         play_time: PlayTime::OneDayToFourDays.into(),
-        lifetime_dollars_refunded: LifetimeDollarsRefunded::OneThousandDollarsToOneThousandNineHundredNinetyNineDollarsAndNinetyNineCents.into(),
+        lifetime_dollars_refunded:
+            LifetimeDollarsRefunded::OneThousandDollarsToOneThousandNineHundredNinetyNineDollarsAndNinetyNineCents
+                .into(),
         lifetime_dollars_purchased: LifetimeDollarsPurchased::TwoThousandDollarsOrGreater.into(),
         user_status: UserStatus::LimitedAccess.into(),
         refund_preference: None.into(),
@@ -1465,11 +1485,7 @@ fn test_xcode_environment_is_rejected() {
     // This test ensures we don't accidentally allow it in the future
     // Note: In Rust, we handle this at compile time with the Environment enum,
     // but we can test that LocalTesting environment (which maps to Xcode in some contexts) works
-    let mock_transport = MockTransport::new(
-        String::new(),
-        StatusCode::OK,
-        None
-    );
+    let mock_transport = MockTransport::new(String::new(), StatusCode::OK, None);
 
     let result = AppStoreServerApiClient::new(
         vec![],
@@ -1491,11 +1507,7 @@ fn test_xcode_environment_is_rejected() {
 
 #[test]
 fn test_sandbox_environment_is_accepted() {
-    let mock_transport = MockTransport::new(
-        String::new(),
-        StatusCode::OK,
-        None
-    );
+    let mock_transport = MockTransport::new(String::new(), StatusCode::OK, None);
 
     let result = AppStoreServerApiClient::new(
         vec![],
@@ -1511,11 +1523,7 @@ fn test_sandbox_environment_is_accepted() {
 
 #[test]
 fn test_production_environment_is_accepted() {
-    let mock_transport = MockTransport::new(
-        String::new(),
-        StatusCode::OK,
-        None
-    );
+    let mock_transport = MockTransport::new(String::new(), StatusCode::OK, None);
 
     let result = AppStoreServerApiClient::new(
         vec![],

@@ -3,7 +3,7 @@
 mod common;
 
 use app_store_server_library::chain_verifier::ChainVerificationFailureReason::{
-    CertificateExpired, InvalidCertificate
+    CertificateExpired, InvalidCertificate,
 };
 use app_store_server_library::chain_verifier::{ChainVerifier, ChainVerifierError};
 use app_store_server_library::crypto::CryptoProvider;
@@ -135,7 +135,12 @@ fn test_malformed_root_cert() -> Result<(), ChainVerifierError> {
         .unwrap();
 
     let verifier = create_verifier();
-    let public_key = verifier.verify(&leaf, &intermediate, &[malformed_root], Some(EFFECTIVE_DATE));
+    let public_key = verifier.verify(
+        &leaf,
+        &intermediate,
+        &[malformed_root],
+        Some(EFFECTIVE_DATE),
+    );
     assert_eq!(
         public_key.expect_err("Expect error"),
         ChainVerifierError::VerificationFailure(InvalidCertificate)

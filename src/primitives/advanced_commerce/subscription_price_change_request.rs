@@ -33,11 +33,7 @@ pub struct SubscriptionPriceChangeRequest {
 }
 
 impl SubscriptionPriceChangeRequest {
-    pub fn new(
-        currency: String,
-        items: Vec<SubscriptionPriceChangeItem>,
-        request_reference_id: Uuid,
-    ) -> Self {
+    pub fn new(currency: String, items: Vec<SubscriptionPriceChangeItem>, request_reference_id: Uuid) -> Self {
         Self {
             currency: Some(currency),
             items: items,

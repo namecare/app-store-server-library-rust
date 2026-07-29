@@ -47,7 +47,11 @@ impl std::fmt::Display for ValidationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ValidationError::AltTextTooLong => {
-                write!(f, "Alt text exceeds maximum length of {} characters", MAXIMUM_ALT_TEXT_LENGTH)
+                write!(
+                    f,
+                    "Alt text exceeds maximum length of {} characters",
+                    MAXIMUM_ALT_TEXT_LENGTH
+                )
             }
         }
     }

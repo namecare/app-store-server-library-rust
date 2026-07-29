@@ -1,5 +1,5 @@
-use serde::{Deserialize, Deserializer, Serializer};
 use serde::de::Unexpected;
+use serde::{Deserialize, Deserializer, Serializer};
 use uuid::Uuid;
 
 /// Custom deserializer for optional UUID that treats empty strings as None.
@@ -11,17 +11,15 @@ where
     match s {
         None => Ok(None),
         Some(ref s) if s.is_empty() => Ok(None),
-        Some(s) => s.parse::<Uuid>()
+        Some(s) => s
+            .parse::<Uuid>()
             .map(Some)
             .map_err(|_e| serde::de::Error::invalid_type(Unexpected::Str(&s), &"Valid Uuid")),
     }
 }
 
 /// Custom serializer for optional UUID that serializes None as an empty string.
-pub fn ser_optional_uuid_as_string<S>(
-    value: &Option<Uuid>,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
+pub fn ser_optional_uuid_as_string<S>(value: &Option<Uuid>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {

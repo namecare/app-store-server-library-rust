@@ -53,10 +53,18 @@ impl std::fmt::Display for ValidationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ValidationError::HeaderTooLong => {
-                write!(f, "Header exceeds maximum length of {} characters", MAXIMUM_HEADER_LENGTH)
+                write!(
+                    f,
+                    "Header exceeds maximum length of {} characters",
+                    MAXIMUM_HEADER_LENGTH
+                )
             }
             ValidationError::BodyTooLong => {
-                write!(f, "Body exceeds maximum length of {} characters", MAXIMUM_BODY_LENGTH)
+                write!(
+                    f,
+                    "Body exceeds maximum length of {} characters",
+                    MAXIMUM_BODY_LENGTH
+                )
             }
         }
     }

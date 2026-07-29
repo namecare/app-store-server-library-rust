@@ -1,8 +1,8 @@
+use crate::api_client::transport::TransportError;
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt;
 use std::fmt::Debug;
-use serde::{Deserialize, Deserializer, Serialize};
-use serde::de::DeserializeOwned;
-use crate::api_client::transport::TransportError;
 
 #[derive(Debug, Clone, Serialize, Hash)]
 pub struct ErrorPayload<E: APIServiceErrorCode> {
@@ -38,12 +38,10 @@ where
 
         let api_error_code = {
             match raw_code {
-                Some(code) => {
-                    serde_json::to_value(code)
-                        .and_then(|v| serde_json::from_value::<E>(v))
-                        .unwrap_or_else(|_| E::unknown())
-                },
-                None => E::unknown()
+                Some(code) => serde_json::to_value(code)
+                    .and_then(|v| serde_json::from_value::<E>(v))
+                    .unwrap_or_else(|_| E::unknown()),
+                None => E::unknown(),
             }
         };
 

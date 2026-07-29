@@ -1,5 +1,5 @@
-use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::api_client::error::APIServiceErrorCode;
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
 /// Enum representing different API errors with associated status codes.
 #[derive(Debug, Copy, Clone, Deserialize_repr, Serialize_repr, PartialEq, Hash)]

@@ -7,7 +7,6 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct AdvancedCommerceInfo {
-
     /// The identifier of the message to display to the customer, along with the offer or switch-plan recommendation provided in advancedCommerceData.
     ///
     /// [messageIdentifier](https://developer.apple.com/documentation/retentionmessaging/messageidentifier)

@@ -4,15 +4,9 @@ use p256::ecdsa::signature::Signer;
 use p256::ecdsa::{DerSignature, SigningKey};
 use p256::pkcs8::DecodePrivateKey;
 
-use crate::chain_verifier::{
-    ChainVerifier, ChainVerifierError, ChainVerificationFailureReason,
-};
-use crate::crypto::{
-    CryptoProvider, ChainVerifierFactory, PromotionalOfferSignerFactory,
-};
-use crate::promotional_offer_signature_creator::{
-    PromotionalOfferSigner, PromotionalOfferSignatureCreatorError,
-};
+use crate::chain_verifier::{ChainVerificationFailureReason, ChainVerifier, ChainVerifierError};
+use crate::crypto::{ChainVerifierFactory, CryptoProvider, PromotionalOfferSignerFactory};
+use crate::promotional_offer_signature_creator::{PromotionalOfferSignatureCreatorError, PromotionalOfferSigner};
 
 struct RustCryptoPromotionalOfferSigner {
     key: SigningKey,
@@ -32,17 +26,17 @@ fn new_promotional_offer_signer(
     let (_, der) = pem_rfc7468::decode(private_key_pem.as_bytes(), &mut buf)
         .map_err(|e| PromotionalOfferSignatureCreatorError::KeyError(e.to_string()))?;
 
-    let key = SigningKey::from_pkcs8_der(der)
-        .map_err(|e| PromotionalOfferSignatureCreatorError::KeyError(e.to_string()))?;
+    let key =
+        SigningKey::from_pkcs8_der(der).map_err(|e| PromotionalOfferSignatureCreatorError::KeyError(e.to_string()))?;
 
     Ok(Box::new(RustCryptoPromotionalOfferSigner { key }))
 }
 
 use const_oid::ObjectIdentifier;
-use der::{Decode, Encode};
 use der::referenced::OwnedToRef;
-use x509_cert::Certificate;
+use der::{Decode, Encode};
 use x509_cert::time::Time;
+use x509_cert::Certificate;
 
 // Apple-specific OIDs
 const APPLE_LEAF_OID: &str = "1.2.840.113635.100.6.11.1";
@@ -75,8 +69,8 @@ impl ChainVerifier for RustCryptoChainVerifier {
             .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
 
         // Check Apple-specific leaf OID
-        let leaf_oid = ObjectIdentifier::new(APPLE_LEAF_OID)
-            .map_err(|e| ChainVerifierError::InternalError(e.to_string()))?;
+        let leaf_oid =
+            ObjectIdentifier::new(APPLE_LEAF_OID).map_err(|e| ChainVerifierError::InternalError(e.to_string()))?;
         if !has_extension(&leaf, &leaf_oid) {
             return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
         }
@@ -107,13 +101,12 @@ impl ChainVerifier for RustCryptoChainVerifier {
         let root = root.ok_or(ChainVerifierError::VerificationFailure(InvalidCertificate))?;
 
         // Verify leaf signature against intermediate
-        verify_signature(&leaf, &intermediate)
-            .map_err(|e| ChainVerifierError::InternalError(e))?;
+        verify_signature(&leaf, &intermediate).map_err(|e| ChainVerifierError::InternalError(e))?;
 
         // Check validity dates if effective_date provided
         if let Some(date) = effective_date {
-            let timestamp = i64::try_from(date)
-                .map_err(|_| ChainVerifierError::VerificationFailure(InvalidEffectiveDate))?;
+            let timestamp =
+                i64::try_from(date).map_err(|_| ChainVerifierError::VerificationFailure(InvalidEffectiveDate))?;
 
             if !is_valid_at(&leaf, timestamp)
                 || !is_valid_at(&intermediate, timestamp)
@@ -133,20 +126,27 @@ fn parse_certificate(der_bytes: &[u8]) -> Result<Certificate, String> {
 }
 
 fn has_extension(cert: &Certificate, oid: &ObjectIdentifier) -> bool {
-    cert.tbs_certificate()
-        .extensions()
+    cert.tbs_certificate
+        .extensions
         .as_ref()
-        .map(|exts| exts.iter().any(|ext| ext.extn_id == *oid))
+        .map(|exts| {
+            exts.iter()
+                .any(|ext| ext.extn_id == *oid)
+        })
         .unwrap_or(false)
 }
 
 fn public_key_bytes(cert: &Certificate) -> Vec<u8> {
-    let spki = &cert.tbs_certificate().subject_public_key_info();
-    spki.owned_to_ref().to_der().unwrap_or_default()
+    let spki = &cert
+        .tbs_certificate
+        .subject_public_key_info;
+    spki.owned_to_ref()
+        .to_der()
+        .unwrap_or_default()
 }
 
 fn is_valid_at(cert: &Certificate, timestamp: i64) -> bool {
-    let validity = &cert.tbs_certificate().validity();
+    let validity = &cert.tbs_certificate.validity;
 
     let not_before_ok = match &validity.not_before {
         Time::UtcTime(t) => timestamp >= t.to_unix_duration().as_secs() as i64,
@@ -162,31 +162,42 @@ fn is_valid_at(cert: &Certificate, timestamp: i64) -> bool {
 }
 
 fn verify_signature(cert: &Certificate, issuer: &Certificate) -> Result<(), String> {
-    let issuer_spki = (&issuer.tbs_certificate().subject_public_key_info()).owned_to_ref();
+    let issuer_spki = (&issuer
+        .tbs_certificate
+        .subject_public_key_info)
+        .owned_to_ref();
 
     let tbs_bytes = cert
-        .tbs_certificate()
+        .tbs_certificate
         .to_der()
         .map_err(|e| e.to_string())?;
 
-    let signature_bytes = cert.signature().raw_bytes();
-    let sig_alg_oid = cert.signature_algorithm().oid.to_string();
+    let signature_bytes = cert.signature.raw_bytes();
+    let sig_alg_oid = cert.signature_algorithm.oid.to_string();
 
     match sig_alg_oid.as_str() {
         OID_RSA_SHA256 => {
-            let spki_der = issuer_spki.to_der().map_err(|e| e.to_string())?;
+            let spki_der = issuer_spki
+                .to_der()
+                .map_err(|e| e.to_string())?;
             verify_rsa_sha256(&tbs_bytes, signature_bytes, &spki_der)
         }
         OID_RSA_SHA384 => {
-            let spki_der = issuer_spki.to_der().map_err(|e| e.to_string())?;
+            let spki_der = issuer_spki
+                .to_der()
+                .map_err(|e| e.to_string())?;
             verify_rsa_sha384(&tbs_bytes, signature_bytes, &spki_der)
         }
         OID_ECDSA_SHA256 => {
-            let key_bytes = issuer_spki.subject_public_key.raw_bytes();
+            let key_bytes = issuer_spki
+                .subject_public_key
+                .raw_bytes();
             verify_ecdsa_p256(&tbs_bytes, signature_bytes, key_bytes)
         }
         OID_ECDSA_SHA384 => {
-            let key_bytes = issuer_spki.subject_public_key.raw_bytes();
+            let key_bytes = issuer_spki
+                .subject_public_key
+                .raw_bytes();
             match key_bytes.len() {
                 65 => verify_ecdsa_p256_sha384(&tbs_bytes, signature_bytes, key_bytes),
                 97 => verify_ecdsa_p384(&tbs_bytes, signature_bytes, key_bytes),
@@ -208,7 +219,9 @@ fn verify_rsa_sha256(message: &[u8], signature: &[u8], spki_der: &[u8]) -> Resul
     let verifying_key = VerifyingKey::<Sha256>::new(public_key);
     let sig = Signature::try_from(signature).map_err(|e| e.to_string())?;
 
-    verifying_key.verify(message, &sig).map_err(|e| e.to_string())
+    verifying_key
+        .verify(message, &sig)
+        .map_err(|e| e.to_string())
 }
 
 fn verify_rsa_sha384(message: &[u8], signature: &[u8], spki_der: &[u8]) -> Result<(), String> {
@@ -222,39 +235,46 @@ fn verify_rsa_sha384(message: &[u8], signature: &[u8], spki_der: &[u8]) -> Resul
     let verifying_key = VerifyingKey::<Sha384>::new(public_key);
     let sig = Signature::try_from(signature).map_err(|e| e.to_string())?;
 
-    verifying_key.verify(message, &sig).map_err(|e| e.to_string())
+    verifying_key
+        .verify(message, &sig)
+        .map_err(|e| e.to_string())
 }
 
 fn verify_ecdsa_p256(message: &[u8], signature: &[u8], public_key: &[u8]) -> Result<(), String> {
-    use p256::ecdsa::{DerSignature, VerifyingKey};
+    use p256::ecdsa::VerifyingKey;
     use signature::Verifier;
 
     let verifying_key = VerifyingKey::from_sec1_bytes(public_key).map_err(|e| e.to_string())?;
-    let sig = DerSignature::from_bytes(signature).map_err(|e| e.to_string())?;
+    let sig = p256::ecdsa::Signature::from_der(signature).map_err(|e| e.to_string())?;
 
-    verifying_key.verify(message, &sig).map_err(|e| e.to_string())
+    verifying_key
+        .verify(message, &sig)
+        .map_err(|e| e.to_string())
 }
 
 fn verify_ecdsa_p384(message: &[u8], signature: &[u8], public_key: &[u8]) -> Result<(), String> {
-    use p384::ecdsa::{DerSignature, VerifyingKey};
+    use p384::ecdsa::VerifyingKey;
     use signature::Verifier;
 
     let verifying_key = VerifyingKey::from_sec1_bytes(public_key).map_err(|e| e.to_string())?;
-    let sig = DerSignature::from_bytes(signature).map_err(|e| e.to_string())?;
-
-    verifying_key.verify(message, &sig).map_err(|e| e.to_string())
+    let sig = p384::ecdsa::Signature::from_der(signature).map_err(|e| e.to_string())?;
+    verifying_key
+        .verify(message, &sig)
+        .map_err(|e| e.to_string())
 }
 
 fn verify_ecdsa_p256_sha384(message: &[u8], signature: &[u8], public_key: &[u8]) -> Result<(), String> {
-    use p256::ecdsa::{DerSignature, VerifyingKey};
-    use sha2::{Sha384, Digest};
+    use p256::ecdsa::VerifyingKey;
+    use sha2::{Digest, Sha384};
     use signature::hazmat::PrehashVerifier;
 
     let verifying_key = VerifyingKey::from_sec1_bytes(public_key).map_err(|e| e.to_string())?;
-    let sig = DerSignature::from_bytes(signature).map_err(|e| e.to_string())?;
+    let sig = p256::ecdsa::Signature::from_der(signature).map_err(|e| e.to_string())?;
     let prehash = Sha384::digest(message);
 
-    verifying_key.verify_prehash(&prehash, &sig).map_err(|e| e.to_string())
+    verifying_key
+        .verify_prehash(&prehash, &sig)
+        .map_err(|e| e.to_string())
 }
 
 fn new_chain_verifier() -> Box<dyn ChainVerifier> {
@@ -265,6 +285,8 @@ fn new_chain_verifier() -> Box<dyn ChainVerifier> {
 mod ocsp_support {
     use super::*;
     use const_oid::db::rfc5280::ID_AD_OCSP;
+    use der::Encode;
+    use std::io::Read;
     use x509_ocsp::builder::OcspRequestBuilder;
     use x509_ocsp::Version;
 
@@ -284,41 +306,28 @@ mod ocsp_support {
     }
 
     /// Checks the OCSP revocation status of a certificate
-    pub fn check_ocsp_status(
-        leaf: &Certificate,
-        issuer: &Certificate,
-    ) -> Result<(), ChainVerifierError> {
+    pub fn check_ocsp_status(leaf: &Certificate, issuer: &Certificate) -> Result<(), ChainVerifierError> {
         match check_ocsp_status_internal(leaf, issuer) {
             Ok(()) => Ok(()),
-            Err(OcspError::NetworkError(_)) | Err(OcspError::HttpError(_)) | Err(OcspError::FetchFailed) => {
-                Err(ChainVerifierError::VerificationFailure(
-                    ChainVerificationFailureReason::RetryableVerificationFailure,
-                ))
-            }
-            Err(OcspError::CertificateRevoked) => {
-                Err(ChainVerifierError::VerificationFailure(
-                    ChainVerificationFailureReason::CertificateRevoked,
-                ))
-            }
-            Err(OcspError::ValidationError) => {
-                Err(ChainVerifierError::VerificationFailure(
-                    ChainVerificationFailureReason::InvalidCertificate,
-                ))
-            }
+            Err(OcspError::NetworkError(_)) | Err(OcspError::HttpError(_)) | Err(OcspError::FetchFailed) => Err(
+                ChainVerifierError::VerificationFailure(ChainVerificationFailureReason::RetryableVerificationFailure),
+            ),
+            Err(OcspError::CertificateRevoked) => Err(ChainVerifierError::VerificationFailure(
+                ChainVerificationFailureReason::CertificateRevoked,
+            )),
+            Err(OcspError::ValidationError) => Err(ChainVerifierError::VerificationFailure(
+                ChainVerificationFailureReason::InvalidCertificate,
+            )),
         }
     }
 
-    fn check_ocsp_status_internal(
-        leaf: &Certificate,
-        issuer: &Certificate,
-    ) -> Result<(), OcspError> {
+    fn check_ocsp_status_internal(leaf: &Certificate, issuer: &Certificate) -> Result<(), OcspError> {
         use sha1::Sha1;
         use x509_ocsp::{BasicOcspResponse, CertStatus, OcspResponse, Request};
 
         let ocsp_url = extract_ocsp_url(leaf).map_err(|_| OcspError::ValidationError)?;
 
-        let request = Request::from_cert::<Sha1>(issuer, leaf)
-            .map_err(|_| OcspError::ValidationError)?;
+        let request = Request::from_cert::<Sha1>(issuer, leaf).map_err(|_| OcspError::ValidationError)?;
 
         let ocsp_request = OcspRequestBuilder::new(Version::V1)
             .with_request(request)
@@ -349,9 +358,8 @@ mod ocsp_support {
             .bytes()
             .map_err(|_| OcspError::FetchFailed)?;
 
-
-        let ocsp_response = OcspResponse::from_der(&response_bytes)
-            .map_err(|_| OcspError::ValidationError)?;
+        let ocsp_response =
+            OcspResponse::from_der(response_bytes.to_vec().as_slice()).map_err(|_| OcspError::ValidationError)?;
 
         use x509_ocsp::OcspResponseStatus;
         match ocsp_response.response_status {
@@ -368,10 +376,13 @@ mod ocsp_support {
             return Err(OcspError::ValidationError);
         }
 
-        let basic_response = BasicOcspResponse::from_der(response_bytes.response.as_bytes())
-            .map_err(|_| OcspError::ValidationError)?;
+        let basic_response =
+            BasicOcspResponse::from_der(response_bytes.response.as_bytes()).map_err(|_| OcspError::ValidationError)?;
 
-        for single_response in &basic_response.tbs_response_data.responses {
+        for single_response in &basic_response
+            .tbs_response_data
+            .responses
+        {
             match &single_response.cert_status {
                 CertStatus::Good(_) => return Ok(()),
                 CertStatus::Revoked(_) => return Err(OcspError::CertificateRevoked),
@@ -386,7 +397,7 @@ mod ocsp_support {
         // AIA extension OID: 1.3.6.1.5.5.7.1.1
         let aia_oid = ObjectIdentifier::new_unwrap("1.3.6.1.5.5.7.1.1");
 
-        let Some(extensions) = cert.tbs_certificate().extensions() else {
+        let Some(extensions) = &cert.tbs_certificate.extensions else {
             return Err(ChainVerifierError::VerificationFailure(
                 ChainVerificationFailureReason::InvalidCertificate,
             ));
@@ -406,21 +417,21 @@ mod ocsp_support {
     }
 
     fn parse_aia_for_ocsp(aia_bytes: &[u8]) -> Result<String, ChainVerifierError> {
-        use crate::asn1::asn1_basics::{read_sequence, read_oid, read_tlv};
+        use crate::asn1::asn1_basics::{read_oid, read_sequence, read_tlv};
 
-        let (mut offset, length) = read_sequence(aia_bytes, 0)
-            .map_err(|e| ChainVerifierError::InternalError(e.to_string()))?;
+        let (mut offset, length) =
+            read_sequence(aia_bytes, 0).map_err(|e| ChainVerifierError::InternalError(e.to_string()))?;
 
         let end_offset = offset + length;
 
         while offset < end_offset {
-            let (desc_offset, desc_length) = read_sequence(aia_bytes, offset)
-                .map_err(|e| ChainVerifierError::InternalError(e.to_string()))?;
+            let (desc_offset, desc_length) =
+                read_sequence(aia_bytes, offset).map_err(|e| ChainVerifierError::InternalError(e.to_string()))?;
 
             let desc_end = desc_offset + desc_length;
 
-            let (oid_offset, oid_length) = read_oid(aia_bytes, desc_offset)
-                .map_err(|e| ChainVerifierError::InternalError(e.to_string()))?;
+            let (oid_offset, oid_length) =
+                read_oid(aia_bytes, desc_offset).map_err(|e| ChainVerifierError::InternalError(e.to_string()))?;
 
             let oid_bytes = &aia_bytes[oid_offset..oid_offset + oid_length];
             let expected_ocsp_oid = ID_AD_OCSP.as_bytes();
@@ -433,10 +444,9 @@ mod ocsp_support {
                 // Tag [6] for uniformResourceIdentifier is 0x86
                 if tag == 0x86 {
                     let uri_bytes = &aia_bytes[uri_offset..uri_offset + uri_length];
-                    let uri = std::str::from_utf8(uri_bytes)
-                        .map_err(|_| ChainVerifierError::VerificationFailure(
-                            ChainVerificationFailureReason::InvalidCertificate,
-                        ))?;
+                    let uri = std::str::from_utf8(uri_bytes).map_err(|_| {
+                        ChainVerifierError::VerificationFailure(ChainVerificationFailureReason::InvalidCertificate)
+                    })?;
                     return Ok(uri.to_string());
                 }
             }

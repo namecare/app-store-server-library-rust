@@ -1,22 +1,22 @@
 pub mod api_error_code;
 
-use http::Method;
 use crate::api_client::api::advanced_commerce_api::api_error_code::ApiErrorCode;
 use crate::api_client::api_client::ApiClient;
 use crate::api_client::error::ApiServiceError;
 use crate::api_client::transport::Transport;
-use crate::primitives::advanced_commerce::subscription_cancel_request::SubscriptionCancelRequest;
-use crate::primitives::advanced_commerce::subscription_cancel_response::SubscriptionCancelResponse;
-use crate::primitives::advanced_commerce::subscription_revoke_request::SubscriptionRevokeRequest;
-use crate::primitives::advanced_commerce::subscription_revoke_response::SubscriptionRevokeResponse;
 use crate::primitives::advanced_commerce::request_refund_request::RequestRefundRequest;
 use crate::primitives::advanced_commerce::request_refund_response::RequestRefundResponse;
+use crate::primitives::advanced_commerce::subscription_cancel_request::SubscriptionCancelRequest;
+use crate::primitives::advanced_commerce::subscription_cancel_response::SubscriptionCancelResponse;
 use crate::primitives::advanced_commerce::subscription_change_metadata_request::SubscriptionChangeMetadataRequest;
 use crate::primitives::advanced_commerce::subscription_change_metadata_response::SubscriptionChangeMetadataResponse;
 use crate::primitives::advanced_commerce::subscription_migrate_request::SubscriptionMigrateRequest;
 use crate::primitives::advanced_commerce::subscription_migrate_response::SubscriptionMigrateResponse;
 use crate::primitives::advanced_commerce::subscription_price_change_request::SubscriptionPriceChangeRequest;
 use crate::primitives::advanced_commerce::subscription_price_change_response::SubscriptionPriceChangeResponse;
+use crate::primitives::advanced_commerce::subscription_revoke_request::SubscriptionRevokeRequest;
+use crate::primitives::advanced_commerce::subscription_revoke_response::SubscriptionRevokeResponse;
+use http::Method;
 
 pub struct AdvancedCommerceApi;
 pub type AdvancedCommerceApiClient<T> = ApiClient<T, AdvancedCommerceApi, ApiErrorCode>;
@@ -44,13 +44,17 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
         transaction_id: &str,
         subscription_cancel_request: &SubscriptionCancelRequest,
     ) -> Result<SubscriptionCancelResponse, ApiError> {
-        let path = format!("/advancedCommerce/v1/subscription/cancel/{}", transaction_id);
+        let path = format!(
+            "/advancedCommerce/v1/subscription/cancel/{}",
+            transaction_id
+        );
         let req = self.build_request(
             path.as_str(),
             Method::POST,
             Some(subscription_cancel_request),
         )?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Update the SKU, display name, and description associated with a subscription,
@@ -77,13 +81,17 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
         transaction_id: &str,
         subscription_change_metadata_request: &SubscriptionChangeMetadataRequest,
     ) -> Result<SubscriptionChangeMetadataResponse, ApiError> {
-        let path = format!("/advancedCommerce/v1/subscription/changeMetadata/{}", transaction_id);
+        let path = format!(
+            "/advancedCommerce/v1/subscription/changeMetadata/{}",
+            transaction_id
+        );
         let req = self.build_request(
             path.as_str(),
             Method::POST,
             Some(subscription_change_metadata_request),
         )?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Increase or decrease the price of an auto-renewable subscription, a bundle,
@@ -110,13 +118,17 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
         transaction_id: &str,
         subscription_price_change_request: &SubscriptionPriceChangeRequest,
     ) -> Result<SubscriptionPriceChangeResponse, ApiError> {
-        let path = format!("/advancedCommerce/v1/subscription/changePrice/{}", transaction_id);
+        let path = format!(
+            "/advancedCommerce/v1/subscription/changePrice/{}",
+            transaction_id
+        );
         let req = self.build_request(
             path.as_str(),
             Method::POST,
             Some(subscription_price_change_request),
         )?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Migrate a subscription that a customer purchased through In-App Purchase
@@ -143,13 +155,17 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
         transaction_id: &str,
         subscription_migrate_request: &SubscriptionMigrateRequest,
     ) -> Result<SubscriptionMigrateResponse, ApiError> {
-        let path = format!("/advancedCommerce/v1/subscription/migrate/{}", transaction_id);
+        let path = format!(
+            "/advancedCommerce/v1/subscription/migrate/{}",
+            transaction_id
+        );
         let req = self.build_request(
             path.as_str(),
             Method::POST,
             Some(subscription_migrate_request),
         )?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Request a refund for a one-time charge or subscription transaction.
@@ -173,13 +189,13 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
         transaction_id: &str,
         request_refund_request: &RequestRefundRequest,
     ) -> Result<RequestRefundResponse, ApiError> {
-        let path = format!("/advancedCommerce/v1/transaction/requestRefund/{}", transaction_id);
-        let req = self.build_request(
-            path.as_str(),
-            Method::POST,
-            Some(request_refund_request),
-        )?;
-        self.make_request_with_response_body(req).await
+        let path = format!(
+            "/advancedCommerce/v1/transaction/requestRefund/{}",
+            transaction_id
+        );
+        let req = self.build_request(path.as_str(), Method::POST, Some(request_refund_request))?;
+        self.make_request_with_response_body(req)
+            .await
     }
 
     /// Immediately cancel a customer's subscription and all the items that are included in the subscription,
@@ -206,12 +222,16 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
         transaction_id: &str,
         subscription_revoke_request: &SubscriptionRevokeRequest,
     ) -> Result<SubscriptionRevokeResponse, ApiError> {
-        let path = format!("/advancedCommerce/v1/subscription/revoke/{}", transaction_id);
+        let path = format!(
+            "/advancedCommerce/v1/subscription/revoke/{}",
+            transaction_id
+        );
         let req = self.build_request(
             path.as_str(),
             Method::POST,
             Some(subscription_revoke_request),
         )?;
-        self.make_request_with_response_body(req).await
+        self.make_request_with_response_body(req)
+            .await
     }
 }

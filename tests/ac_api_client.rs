@@ -1,17 +1,17 @@
 mod common;
-use common::transport_mock::{MockTransport, RequestVerifier};
 use app_store_server_library::api_client::api::advanced_commerce_api::AdvancedCommerceApiClient;
 use app_store_server_library::api_client::error::ConfigurationError;
-use app_store_server_library::primitives::environment::Environment;
-use app_store_server_library::primitives::advanced_commerce::subscription_cancel_request::SubscriptionCancelRequest;
-use app_store_server_library::primitives::advanced_commerce::subscription_revoke_request::SubscriptionRevokeRequest;
-use app_store_server_library::primitives::advanced_commerce::request_refund_request::RequestRefundRequest;
-use app_store_server_library::primitives::advanced_commerce::subscription_change_metadata_request::SubscriptionChangeMetadataRequest;
-use app_store_server_library::primitives::advanced_commerce::subscription_price_change_request::SubscriptionPriceChangeRequest;
-use app_store_server_library::primitives::advanced_commerce::subscription_migrate_request::SubscriptionMigrateRequest;
-use app_store_server_library::primitives::advanced_commerce::request_info::RequestInfo;
 use app_store_server_library::primitives::advanced_commerce::refund_reason::RefundReason;
 use app_store_server_library::primitives::advanced_commerce::refund_type::RefundType;
+use app_store_server_library::primitives::advanced_commerce::request_info::RequestInfo;
+use app_store_server_library::primitives::advanced_commerce::request_refund_request::RequestRefundRequest;
+use app_store_server_library::primitives::advanced_commerce::subscription_cancel_request::SubscriptionCancelRequest;
+use app_store_server_library::primitives::advanced_commerce::subscription_change_metadata_request::SubscriptionChangeMetadataRequest;
+use app_store_server_library::primitives::advanced_commerce::subscription_migrate_request::SubscriptionMigrateRequest;
+use app_store_server_library::primitives::advanced_commerce::subscription_price_change_request::SubscriptionPriceChangeRequest;
+use app_store_server_library::primitives::advanced_commerce::subscription_revoke_request::SubscriptionRevokeRequest;
+use app_store_server_library::primitives::environment::Environment;
+use common::transport_mock::{MockTransport, RequestVerifier};
 use http::{Method, StatusCode};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -35,15 +35,16 @@ async fn test_cancel_subscription() {
         })),
     );
 
-    let request = SubscriptionCancelRequest::new(Uuid::new_v4())
-        .with_storefront("test_storefront".to_string());
+    let request = SubscriptionCancelRequest::new(Uuid::new_v4()).with_storefront("test_storefront".to_string());
 
     let response = client
         .cancel_subscription("test_transaction_id", &request)
         .await
         .unwrap();
 
-    assert!(!response.signed_transaction_info.is_empty());
+    assert!(!response
+        .signed_transaction_info
+        .is_empty());
     assert!(!response.signed_renewal_info.is_empty());
 }
 
@@ -78,7 +79,9 @@ async fn test_revoke_subscription() {
         .await
         .unwrap();
 
-    assert!(!response.signed_transaction_info.is_empty());
+    assert!(!response
+        .signed_transaction_info
+        .is_empty());
     assert!(!response.signed_renewal_info.is_empty());
 }
 
@@ -113,7 +116,9 @@ async fn test_request_transaction_refund() {
         .await
         .unwrap();
 
-    assert!(!response.signed_transaction_info.is_empty());
+    assert!(!response
+        .signed_transaction_info
+        .is_empty());
 }
 
 #[tokio::test]
@@ -134,15 +139,16 @@ async fn test_change_subscription_metadata() {
         })),
     );
 
-    let request = SubscriptionChangeMetadataRequest::new(Uuid::new_v4())
-        .with_items(vec![]);
+    let request = SubscriptionChangeMetadataRequest::new(Uuid::new_v4()).with_items(vec![]);
 
     let response = client
         .change_subscription_metadata("test_transaction_id", &request)
         .await
         .unwrap();
 
-    assert!(!response.signed_transaction_info.is_empty());
+    assert!(!response
+        .signed_transaction_info
+        .is_empty());
     assert!(!response.signed_renewal_info.is_empty());
 }
 
@@ -164,18 +170,16 @@ async fn test_change_subscription_price() {
         })),
     );
 
-    let request = SubscriptionPriceChangeRequest::new(
-        "test_storefront".to_string(),
-        vec![],
-        Uuid::new_v4(),
-    );
+    let request = SubscriptionPriceChangeRequest::new("test_storefront".to_string(), vec![], Uuid::new_v4());
 
     let response = client
         .change_subscription_price("test_transaction_id", &request)
         .await
         .unwrap();
 
-    assert!(!response.signed_transaction_info.is_empty());
+    assert!(!response
+        .signed_transaction_info
+        .is_empty());
     assert!(!response.signed_renewal_info.is_empty());
 }
 
@@ -209,17 +213,15 @@ async fn test_migrate_subscription() {
         .await
         .unwrap();
 
-    assert!(!response.signed_transaction_info.is_empty());
+    assert!(!response
+        .signed_transaction_info
+        .is_empty());
     assert!(!response.signed_renewal_info.is_empty());
 }
 
 #[test]
 fn test_xcode_environment_is_not_supported() {
-    let mock_transport = MockTransport::new(
-        String::new(),
-        StatusCode::OK,
-        None
-    );
+    let mock_transport = MockTransport::new(String::new(), StatusCode::OK, None);
 
     let result = AdvancedCommerceApiClient::new(
         vec![],
@@ -241,11 +243,7 @@ fn test_xcode_environment_is_not_supported() {
 
 #[test]
 fn test_sandbox_environment_is_accepted() {
-    let mock_transport = MockTransport::new(
-        String::new(),
-        StatusCode::OK,
-        None
-    );
+    let mock_transport = MockTransport::new(String::new(), StatusCode::OK, None);
 
     let result = AdvancedCommerceApiClient::new(
         vec![],
@@ -261,11 +259,7 @@ fn test_sandbox_environment_is_accepted() {
 
 #[test]
 fn test_production_environment_is_accepted() {
-    let mock_transport = MockTransport::new(
-        String::new(),
-        StatusCode::OK,
-        None
-    );
+    let mock_transport = MockTransport::new(String::new(), StatusCode::OK, None);
 
     let result = AdvancedCommerceApiClient::new(
         vec![],
