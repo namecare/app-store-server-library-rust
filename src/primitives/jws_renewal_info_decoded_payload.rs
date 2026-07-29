@@ -1,4 +1,3 @@
-use crate::primitives::advanced_commerce_price_increase_info::AdvancedCommercePriceIncreaseInfo;
 use crate::primitives::advanced_commerce_renewal_info::AdvancedCommerceRenewalInfo;
 use crate::primitives::auto_renew_status::AutoRenewStatus;
 use crate::primitives::environment::Environment;
@@ -133,9 +132,4 @@ pub struct JWSRenewalInfoDecodedPayload {
     ///
     /// [advancedCommerceRenewalInfo](https://developer.apple.com/documentation/appstoreserverapi/advancedcommercerenewalinfo)
     pub advanced_commerce_info: Option<AdvancedCommerceRenewalInfo>,
-
-    /// Information about the Advanced Commerce price increase for the subscription.
-    ///
-    /// [advancedCommercePriceIncreaseInfo](https://developer.apple.com/documentation/appstoreserverapi/advancedcommercepriceincrease)
-    pub advanced_commerce_price_increase_info: Option<AdvancedCommercePriceIncreaseInfo>,
 }

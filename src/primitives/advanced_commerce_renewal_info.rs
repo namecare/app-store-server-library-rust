@@ -7,20 +7,20 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct AdvancedCommerceRenewalInfo {
     /// advancedCommerceConsistencyToken
-    pub consistency_token: String,
+    pub consistency_token: Option<String>,
 
     /// advancedCommerceDescriptors
-    pub descriptors: Descriptors,
+    pub descriptors: Option<Descriptors>,
 
     /// advancedCommerceRenewalItems
-    pub items: Vec<AdvancedCommerceRenewalItem>,
+    pub items: Option<Vec<AdvancedCommerceRenewalItem>>,
 
     /// advancedCommercePeriod
-    pub period: Period,
+    pub period: Option<Period>,
 
     /// advancedCommerceRequestReferenceId
-    pub request_reference_id: String,
+    pub request_reference_id: Option<String>,
 
     /// advancedCommerceTaxCode
-    pub tax_code: String,
+    pub tax_code: Option<String>,
 }

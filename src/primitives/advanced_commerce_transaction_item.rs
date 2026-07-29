@@ -12,30 +12,30 @@ pub struct AdvancedCommerceTransactionItem {
     ///
     /// [SKU](https://developer.apple.com/documentation/advancedcommerceapi/sku)
     #[serde(rename = "SKU")]
-    pub sku: String,
+    pub sku: Option<String>,
 
     /// The new description for the item.
     ///
     /// [Description](https://developer.apple.com/documentation/advancedcommerceapi/description)
-    pub description: String,
+    pub description: Option<String>,
 
     /// The display name for the item.
     ///
     /// [Display Name](https://developer.apple.com/documentation/advancedcommerceapi/displayname)
-    pub display_name: String,
+    pub display_name: Option<String>,
 
     /// An offer for the item.
     ///
     /// [Offer](https://developer.apple.com/documentation/advancedcommerceapi/offer)
-    pub offer: Offer,
+    pub offer: Option<Offer>,
 
     /// The price in milliunits.
     ///
     /// [Price](https://developer.apple.com/documentation/advancedcommerceapi/price)
-    pub price: i64,
+    pub price: Option<i64>,
 
-    pub refunds: Vec<Refund>,
+    pub refunds: Option<Vec<Refund>>,
 
-    #[serde_as(as = "TimestampMilliSeconds<String, Flexible>")]
-    pub revocation_date: DateTime<Utc>,
+    #[serde_as(as = "Option<TimestampMilliSeconds<String, Flexible>>")]
+    pub revocation_date: Option<DateTime<Utc>>,
 }

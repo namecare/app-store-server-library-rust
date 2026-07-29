@@ -1,17 +1,23 @@
 use crate::primitives::advanced_commerce::offer::Offer;
+use crate::primitives::advanced_commerce_price_increase_info::AdvancedCommercePriceIncreaseInfo;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
 pub struct AdvancedCommerceRenewalItem {
     #[serde(rename = "SKU")]
-    pub sku: String,
+    pub sku: Option<String>,
 
-    pub description: String,
+    pub description: Option<String>,
 
-    pub display_name: String,
+    pub display_name: Option<String>,
 
-    pub offer: Offer,
+    pub offer: Option<Offer>,
 
-    pub price: i64,
+    pub price: Option<i64>,
+
+    /// Information about a price increase for the item.
+    ///
+    /// [advancedCommercePriceIncreaseInfo](https://developer.apple.com/documentation/appstoreserverapi/advancedcommercepriceincreaseinfo)
+    pub price_increase_info: Option<AdvancedCommercePriceIncreaseInfo>,
 }
