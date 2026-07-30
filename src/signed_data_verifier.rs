@@ -3,12 +3,12 @@ use base64::{DecodeError, Engine};
 
 use crate::chain_verifier::{ChainVerificationFailureReason, ChainVerifier, ChainVerifierError};
 use crate::crypto::CryptoProvider;
-use crate::primitives::app_transaction::AppTransaction;
-use crate::primitives::environment::Environment;
-use crate::primitives::jws_renewal_info_decoded_payload::JWSRenewalInfoDecodedPayload;
-use crate::primitives::jws_transaction_decoded_payload::JWSTransactionDecodedPayload;
-use crate::primitives::response_body_v2_decoded_payload::ResponseBodyV2DecodedPayload;
-use crate::primitives::retention_messaging::decoded_realtime_request_body::DecodedRealtimeRequestBody;
+use crate::models::app_transaction::AppTransaction;
+use crate::models::app_store_environment::Environment;
+use crate::models::jws_renewal_info_decoded_payload::JWSRenewalInfoDecodedPayload;
+use crate::models::jws_transaction_decoded_payload::JWSTransactionDecodedPayload;
+use crate::models::response_body_v2_decoded_payload::ResponseBodyV2DecodedPayload;
+use crate::models::decoded_realtime_request_body::DecodedRealtimeRequestBody;
 use crate::utils::{base64_url_to_base64, StringExt};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use serde::de::DeserializeOwned;

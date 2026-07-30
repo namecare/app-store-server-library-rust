@@ -11,7 +11,7 @@ Specify `app-store-server-library` in your project's `Cargo.toml` file, under th
 
 ```toml
 [dependencies]
-app-store-server-library = { version = "4.3.0", features = ["receipt-utility", "api-client", "ocsp"] }
+app-store-server-library = { version = "6.0.0", features = ["receipt-utility", "api-client", "ocsp"] }
 ```
 
 ### Feature Flags
@@ -26,8 +26,8 @@ Check [crates.io](https://crates.io/crates/app-store-server-library) for the lat
 
 | API | Version |
 |-----|---------|
-| App Store Server API | 1.19 |
-| Retention Messaging API | 1.3 |
+| App Store Server API | 1.21 |
+| Retention Messaging API | 1.5 |
 | Advanced Commerce API | 1.2 |
 
 ## Obtaining an In-App Purchase key from App Store Connect
@@ -129,7 +129,7 @@ To enable OCSP verification:
 
 ```toml
 [dependencies]
-app-store-server-library = { version = "4.3.0", features = ["ocsp"] }
+app-store-server-library = { version = "6.0.0", features = ["ocsp"] }
 ```
 
 OCSP verification is performed automatically when verifying signed data.

@@ -5,7 +5,7 @@
 // be built directly via `serde_json::from_str` on the fixture JSON, and that it
 // exposed a `signed_payload` field to assert on directly. Neither holds:
 //
-//   * `ResponseBodyV2` (src/primitives/response_body_v2.rs) is just
+//   * `ResponseBodyV2` (src/models/response_body_v2.rs) is just
 //     `{ signed_payload: Option<String> }` — a JWS wrapper, not the notification
 //     body. The actual notification fields (notificationType, subtype, data,
 //     summary, etc.) live on `ResponseBodyV2DecodedPayload`, which is produced by
@@ -21,10 +21,10 @@
 // test signing key, then run it through `SignedDataVerifier::verify_and_decode_notification`,
 // asserting on the resulting `ResponseBodyV2DecodedPayload`.
 
-use app_store_server_library::primitives::environment::Environment;
-use app_store_server_library::primitives::notification_type_v2::NotificationTypeV2;
-use app_store_server_library::primitives::status::Status;
-use app_store_server_library::primitives::subtype::Subtype;
+use app_store_server_library::models::app_store_environment::Environment;
+use app_store_server_library::models::notification_type_v2::NotificationTypeV2;
+use app_store_server_library::models::status::Status;
+use app_store_server_library::models::subtype::Subtype;
 use app_store_server_library::signed_data_verifier::SignedDataVerifier;
 use app_store_server_library::utils::StringExt;
 use jsonwebtoken::Algorithm;

@@ -1,7 +1,7 @@
 pub mod chain_verifier;
 pub mod crypto;
 pub mod jws_signature_creator;
-pub mod primitives;
+pub mod models;
 pub mod promotional_offer_signature_creator;
 pub mod signed_data_verifier;
 pub mod utils;

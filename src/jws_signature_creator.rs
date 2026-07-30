@@ -1,4 +1,4 @@
-use crate::primitives::advanced_commerce::in_app_request::AdvancedCommerceInAppRequest;
+use crate::models::advanced_commerce_in_app_request::AdvancedCommerceInAppRequest;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
 use chrono::Utc;

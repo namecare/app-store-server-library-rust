@@ -4,15 +4,15 @@ use crate::api_client::api::retention_messaging_api::api_error_code::ApiErrorCod
 use crate::api_client::api_client::ApiClient;
 use crate::api_client::error::ApiServiceError;
 use crate::api_client::transport::Transport;
-use crate::primitives::retention_messaging::default_configuration_request::DefaultConfigurationRequest;
-use crate::primitives::retention_messaging::get_image_list_response::GetImageListResponse;
-use crate::primitives::retention_messaging::get_message_list_response::GetMessageListResponse;
-use crate::primitives::retention_messaging::performance_test_request::PerformanceTestRequest;
-use crate::primitives::retention_messaging::performance_test_response::PerformanceTestResponse;
-use crate::primitives::retention_messaging::performance_test_result_response::PerformanceTestResultResponse;
-use crate::primitives::retention_messaging::realtime_url_request::RealtimeUrlRequest;
-use crate::primitives::retention_messaging::realtime_url_response::RealtimeUrlResponse;
-use crate::primitives::retention_messaging::upload_message_request_body::UploadMessageRequestBody;
+use crate::models::default_configuration_request::DefaultConfigurationRequest;
+use crate::models::get_image_list_response::GetImageListResponse;
+use crate::models::get_message_list_response::GetMessageListResponse;
+use crate::models::performance_test_request::PerformanceTestRequest;
+use crate::models::performance_test_response::PerformanceTestResponse;
+use crate::models::performance_test_result_response::PerformanceTestResultResponse;
+use crate::models::realtime_url_request::RealtimeUrlRequest;
+use crate::models::realtime_url_response::RealtimeUrlResponse;
+use crate::models::upload_message_request_body::UploadMessageRequestBody;
 use http::Method;
 use uuid::Uuid;
 

@@ -1,6 +1,6 @@
 use crate::api_client::error::{APIServiceErrorCode, ApiServiceError, ConfigurationError, ErrorPayload};
 use crate::api_client::transport::Transport;
-use crate::primitives::environment::Environment;
+use crate::models::app_store_environment::Environment;
 
 use chrono::Utc;
 use http::Method;

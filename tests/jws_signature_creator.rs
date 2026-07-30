@@ -2,7 +2,7 @@ use app_store_server_library::jws_signature_creator::{
     AdvancedCommerceInAppSignatureCreator, IntroductoryOfferEligibilitySignatureCreator,
     PromotionalOfferV2SignatureCreator,
 };
-use app_store_server_library::primitives::advanced_commerce::in_app_request::AdvancedCommerceInAppRequest;
+use app_store_server_library::models::advanced_commerce_in_app_request::AdvancedCommerceInAppRequest;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use serde::Serialize;

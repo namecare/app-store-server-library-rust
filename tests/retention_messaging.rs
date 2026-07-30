@@ -1,16 +1,16 @@
-use app_store_server_library::primitives::billing_plan_type::BillingPlanType;
-use app_store_server_library::primitives::retention_messaging::alternate_product::AlternateProduct;
-use app_store_server_library::primitives::retention_messaging::bullet_point::{
+use app_store_server_library::models::billing_plan_type::BillingPlanType;
+use app_store_server_library::models::alternate_product::AlternateProduct;
+use app_store_server_library::models::bullet_point::{
     BulletPoint, BulletPointValidationError,
 };
-use app_store_server_library::primitives::retention_messaging::get_image_list_response::GetImageListResponse;
-use app_store_server_library::primitives::retention_messaging::header_position::HeaderPosition;
-use app_store_server_library::primitives::retention_messaging::image_size::ImageSize;
-use app_store_server_library::primitives::retention_messaging::performance_test_response::PerformanceTestResponse;
-use app_store_server_library::primitives::retention_messaging::performance_test_result_response::PerformanceTestResultResponse;
-use app_store_server_library::primitives::retention_messaging::performance_test_status::PerformanceTestStatus;
-use app_store_server_library::primitives::retention_messaging::realtime_url_request::RealtimeUrlRequest;
-use app_store_server_library::primitives::retention_messaging::realtime_url_response::RealtimeUrlResponse;
+use app_store_server_library::models::get_image_list_response::GetImageListResponse;
+use app_store_server_library::models::header_position::HeaderPosition;
+use app_store_server_library::models::image_size::ImageSize;
+use app_store_server_library::models::performance_test_response::PerformanceTestResponse;
+use app_store_server_library::models::performance_test_result_response::PerformanceTestResultResponse;
+use app_store_server_library::models::performance_test_status::PerformanceTestStatus;
+use app_store_server_library::models::realtime_url_request::RealtimeUrlRequest;
+use app_store_server_library::models::realtime_url_response::RealtimeUrlResponse;
 use uuid::Uuid;
 
 fn fixture(name: &str) -> String {

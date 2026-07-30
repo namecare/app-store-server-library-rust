@@ -1,8 +1,8 @@
-use app_store_server_library::primitives::billing_plan_type::BillingPlanType;
-use app_store_server_library::primitives::jws_renewal_info_decoded_payload::JWSRenewalInfoDecodedPayload;
-use app_store_server_library::primitives::jws_transaction_decoded_payload::JWSTransactionDecodedPayload;
-use app_store_server_library::primitives::renewal_billing_plan_type::RenewalBillingPlanType;
-use app_store_server_library::primitives::transaction_commitment_info::TransactionCommitmentInfo;
+use app_store_server_library::models::billing_plan_type::BillingPlanType;
+use app_store_server_library::models::jws_renewal_info_decoded_payload::JWSRenewalInfoDecodedPayload;
+use app_store_server_library::models::jws_transaction_decoded_payload::JWSTransactionDecodedPayload;
+use app_store_server_library::models::renewal_billing_plan_type::RenewalBillingPlanType;
+use app_store_server_library::models::transaction_commitment_info::TransactionCommitmentInfo;
 use std::fs;
 
 #[test]

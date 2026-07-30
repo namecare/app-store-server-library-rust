@@ -1,8 +1,8 @@
-use app_store_server_library::primitives::retention_messaging::alternate_product::AlternateProduct;
-use app_store_server_library::primitives::retention_messaging::message::Message;
-use app_store_server_library::primitives::retention_messaging::promotional_offer::PromotionalOffer;
-use app_store_server_library::primitives::retention_messaging::promotional_offer_signature_v1::PromotionalOfferSignatureV1;
-use app_store_server_library::primitives::retention_messaging::realtime_response_body::RealtimeResponseBody;
+use app_store_server_library::models::alternate_product::AlternateProduct;
+use app_store_server_library::models::message::Message;
+use app_store_server_library::models::promotional_offer::PromotionalOffer;
+use app_store_server_library::models::promotional_offer_signature_v1::PromotionalOfferSignatureV1;
+use app_store_server_library::models::realtime_response_body::RealtimeResponseBody;
 use uuid::Uuid;
 
 #[test]
