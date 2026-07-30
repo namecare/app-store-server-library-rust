@@ -70,7 +70,7 @@ async fn test_revoke_subscription() {
     let request = SubscriptionRevokeRequest::new(
         Uuid::new_v4(),
         RefundReason::UnsatisfiedWithPurchase,
-        "LOW_ENGAGEMENT".to_string(),
+        true,
         RefundType::Full,
     );
 

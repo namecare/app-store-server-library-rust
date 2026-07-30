@@ -506,6 +506,23 @@ impl<T: Transport> AppStoreServerApiClient<T> {
             .await
     }
 
+    /// Indicate that the app delivered the consumable in-app purchase to the customer.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/finish-transaction)
+    ///
+    /// # Arguments
+    ///
+    /// * `transaction_id` - The transaction identifier of the consumable in-app purchase.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn finish_transaction(&self, transaction_id: &str) -> Result<(), ApiError> {
+        let path = format!("/inApps/v1/transactions/{}/finish", transaction_id);
+        let req = self.build_request::<()>(&path, Method::POST, None)?;
+        self.make_request_without_response_body(req).await
+    }
+
     /// Send consumption information about a consumable in-app purchase to the App Store after your server receives a consumption request notification.
     ///
     /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/send-consumption-information-v1)

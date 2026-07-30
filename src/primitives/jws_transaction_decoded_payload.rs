@@ -1,4 +1,5 @@
 use crate::primitives::advanced_commerce_transaction_info::AdvancedCommerceTransactionInfo;
+use crate::primitives::billing_plan_type::BillingPlanType;
 use crate::primitives::environment::Environment;
 use crate::primitives::in_app_ownership_type::InAppOwnershipType;
 use crate::primitives::offer_discount_type::OfferDiscountType;
@@ -6,6 +7,7 @@ use crate::primitives::offer_type::OfferType;
 use crate::primitives::product_type::ProductType;
 use crate::primitives::revocation_reason::RevocationReason;
 use crate::primitives::revocation_type::RevocationType;
+use crate::primitives::transaction_commitment_info::TransactionCommitmentInfo;
 use crate::primitives::transaction_reason::TransactionReason;
 use chrono::{DateTime, Utc};
 use serde_with::formats::Flexible;
@@ -184,4 +186,14 @@ pub struct JWSTransactionDecodedPayload {
     ///
     /// [advancedCommerceTransactionInfo](https://developer.apple.com/documentation/appstoreserverapi/advancedcommercetransactioninfo)
     pub advanced_commerce_info: Option<AdvancedCommerceTransactionInfo>,
+
+    /// The billing plan type for monthly subscriptions with a 12-month commitment.
+    ///
+    /// [billingPlanType](https://developer.apple.com/documentation/appstoreserverapi/billingplantype)
+    pub billing_plan_type: Option<BillingPlanType>,
+
+    /// Commitment information for subscriptions with a 12-month commitment.
+    ///
+    /// [commitmentInfo](https://developer.apple.com/documentation/appstoreserverapi/transactioncommitmentinfo)
+    pub commitment_info: Option<TransactionCommitmentInfo>,
 }

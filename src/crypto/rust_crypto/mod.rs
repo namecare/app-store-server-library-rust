@@ -286,7 +286,6 @@ mod ocsp_support {
     use super::*;
     use const_oid::db::rfc5280::ID_AD_OCSP;
     use der::Encode;
-    use std::io::Read;
     use x509_ocsp::builder::OcspRequestBuilder;
     use x509_ocsp::Version;
 

@@ -78,6 +78,7 @@ fn test_realtime_response_body_with_alternate_product() {
     let alternate_product = AlternateProduct {
         message_identifier: Some(message_id),
         product_id: Some(product_id.clone()),
+        billing_plan_type: None,
     };
     let response_body = RealtimeResponseBody {
         message: None,

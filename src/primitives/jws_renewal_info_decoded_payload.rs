@@ -5,6 +5,8 @@ use crate::primitives::expiration_intent::ExpirationIntent;
 use crate::primitives::offer_discount_type::OfferDiscountType;
 use crate::primitives::offer_type::OfferType;
 use crate::primitives::price_increase_status::PriceIncreaseStatus;
+use crate::primitives::renewal_billing_plan_type::RenewalBillingPlanType;
+use crate::primitives::renewal_commitment_info::RenewalCommitmentInfo;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::formats::Flexible;
@@ -132,4 +134,14 @@ pub struct JWSRenewalInfoDecodedPayload {
     ///
     /// [advancedCommerceRenewalInfo](https://developer.apple.com/documentation/appstoreserverapi/advancedcommercerenewalinfo)
     pub advanced_commerce_info: Option<AdvancedCommerceRenewalInfo>,
+
+    /// The renewal billing plan type for monthly subscriptions with a 12-month commitment.
+    ///
+    /// [renewalBillingPlanType](https://developer.apple.com/documentation/appstoreserverapi/renewalbillingplantype)
+    pub renewal_billing_plan_type: Option<RenewalBillingPlanType>,
+
+    /// Renewal commitment information for subscriptions with a 12-month commitment.
+    ///
+    /// [commitmentInfo](https://developer.apple.com/documentation/appstoreserverapi/renewalcommitmentinfo)
+    pub commitment_info: Option<RenewalCommitmentInfo>,
 }
