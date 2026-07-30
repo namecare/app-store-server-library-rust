@@ -1,5 +1,6 @@
 use crate::primitives::advanced_commerce::effective::Effective;
 use crate::primitives::advanced_commerce::offer::Offer;
+use crate::primitives::advanced_commerce::reason::Reason;
 use serde::{Deserialize, Serialize};
 
 /// The data your app provides to change an item of an auto-renewable subscription.
@@ -41,10 +42,9 @@ pub struct SubscriptionModifyChangeItem {
     pub price: i64,
 
     /// The reason for the change.
-    /// Possible Values: UPGRADE, DOWNGRADE, APPLY_OFFER
     ///
     /// [Reason](https://developer.apple.com/documentation/advancedcommerceapi/reason)
-    pub reason: String,
+    pub reason: Reason,
 
     /// An offer for the item.
     ///
@@ -67,7 +67,7 @@ impl SubscriptionModifyChangeItem {
         display_name: String,
         effective: Effective,
         price: i64,
-        reason: String,
+        reason: Reason,
     ) -> Self {
         Self {
             sku,

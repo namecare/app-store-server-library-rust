@@ -13,9 +13,11 @@ use serde::{Deserialize, Serialize};
 pub struct SubscriptionReactivateInAppRequest {
     /// The operation type for this request.
     /// Value: REACTIVATE_SUBSCRIPTION
+    #[serde(default = "default_operation")]
     pub operation: InAppRequestOperation,
 
     /// The version of this request.
+    #[serde(default = "default_version")]
     pub version: InAppRequestVersion,
 
     /// The details of the reactivation items.
@@ -42,3 +44,14 @@ pub struct SubscriptionReactivateInAppRequest {
 }
 
 impl AdvancedCommerceInAppRequest for SubscriptionReactivateInAppRequest {}
+
+/// Apple fixes this request's operation; it is emitted on encode and defaulted on decode,
+/// matching the Swift library where `operation` is a computed constant that is never decoded.
+fn default_operation() -> InAppRequestOperation {
+    InAppRequestOperation::ReactivateSubscription
+}
+
+/// Apple fixes this request's version; see [`default_operation`].
+fn default_version() -> InAppRequestVersion {
+    InAppRequestVersion::V1
+}

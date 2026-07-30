@@ -15,6 +15,10 @@ pub enum ApiErrorCode {
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/freetrialoffermustuseperiodcountofoneerror)
     FreeTrialOfferMustUsePeriodCountOfOneError = 4000223,
 
+    /// Migration isn't allowed because a price increase was already communicated to the customer.
+    /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/migrationnotallowedwhenpriceincreasecommunicatederror)
+    MigrationNotAllowedWhenPriceIncreaseCommunicatedError = 4030027,
+
     /// The transaction was already refunded.
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/alreadyrefunded)
     AlreadyRefunded = 4030021,

@@ -23,7 +23,7 @@ pub struct SubscriptionRevokeRequest {
     /// The refund risking preference.
     ///
     /// [refundRiskingPreference](https://developer.apple.com/documentation/advancedcommerceapi/refundriskingpreference)
-    pub refund_risking_preference: String,
+    pub refund_risking_preference: bool,
 
     /// The type of refund.
     /// Possible Values: FULL, PRORATED
@@ -42,7 +42,7 @@ impl SubscriptionRevokeRequest {
     pub fn new(
         request_reference_id: Uuid,
         refund_reason: RefundReason,
-        refund_risking_preference: String,
+        refund_risking_preference: bool,
         refund_type: RefundType,
     ) -> Self {
         Self {

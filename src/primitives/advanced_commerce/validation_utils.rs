@@ -14,6 +14,7 @@ pub enum ValidationError {
     DescriptionTooLong(usize),
     DisplayNameTooLong(usize),
     SkuTooLong(usize),
+    InvalidPeriodCount(i32),
 }
 
 impl fmt::Display for ValidationError {
@@ -67,6 +68,13 @@ impl fmt::Display for ValidationError {
                     len, MAXIMUM_SKU_LENGTH
                 )
             }
+            ValidationError::InvalidPeriodCount(period_count) => {
+                write!(
+                    f,
+                    "Period count must be between 1 and {} inclusive, got {}",
+                    MAXIMUM_PERIOD_COUNT, period_count
+                )
+            }
         }
     }
 }
@@ -80,6 +88,8 @@ pub const MAXIMUM_REQUEST_REFERENCE_ID_LENGTH: usize = 36;
 pub const MAXIMUM_DESCRIPTION_LENGTH: usize = 45;
 pub const MAXIMUM_DISPLAY_NAME_LENGTH: usize = 30;
 const MAXIMUM_SKU_LENGTH: usize = 128;
+/// The maximum number of billing periods a commitment may span.
+pub const MAXIMUM_PERIOD_COUNT: i32 = 12;
 
 /// Validates currency code according to ISO 4217 standard.
 ///
@@ -225,6 +235,21 @@ pub fn validate_sku(sku: &str) -> Result<String, ValidationError> {
     Ok(sku.to_string())
 }
 
+/// Validates a period count, which must be between 1 and 12 inclusive.
+///
+/// # Arguments
+/// * `period_count` - The period count to validate
+///
+/// # Returns
+/// * `Ok(i32)` - The validated period count
+/// * `Err(ValidationError)` - If validation fails
+pub fn validate_period_count(period_count: i32) -> Result<i32, ValidationError> {
+    if period_count < 1 || period_count > MAXIMUM_PERIOD_COUNT {
+        return Err(ValidationError::InvalidPeriodCount(period_count));
+    }
+    Ok(period_count)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -326,5 +351,28 @@ mod tests {
     fn test_validate_uuid() {
         let uuid = Uuid::new_v4();
         assert_eq!(validate_uuid(&uuid).unwrap(), uuid);
+    }
+
+    #[test]
+    fn test_validate_period_count_accepts_boundaries() {
+        assert_eq!(validate_period_count(1).unwrap(), 1);
+        assert_eq!(validate_period_count(MAXIMUM_PERIOD_COUNT).unwrap(), MAXIMUM_PERIOD_COUNT);
+        assert_eq!(validate_period_count(6).unwrap(), 6);
+    }
+
+    #[test]
+    fn test_validate_period_count_rejects_out_of_range() {
+        assert!(matches!(
+            validate_period_count(0),
+            Err(ValidationError::InvalidPeriodCount(0))
+        ));
+        assert!(matches!(
+            validate_period_count(13),
+            Err(ValidationError::InvalidPeriodCount(13))
+        ));
+        assert!(matches!(
+            validate_period_count(-1),
+            Err(ValidationError::InvalidPeriodCount(-1))
+        ));
     }
 }

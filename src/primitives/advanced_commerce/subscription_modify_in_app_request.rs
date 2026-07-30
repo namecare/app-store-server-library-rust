@@ -16,9 +16,11 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct SubscriptionModifyInAppRequest {
     /// The operation type for this request.
+    #[serde(default = "default_operation")]
     pub operation: InAppRequestOperation,
 
     /// The version of this request.
+    #[serde(default = "default_version")]
     pub version: InAppRequestVersion,
 
     /// The currency of the price of the product.
@@ -86,3 +88,14 @@ pub struct SubscriptionModifyInAppRequest {
 }
 
 impl AdvancedCommerceInAppRequest for SubscriptionModifyInAppRequest {}
+
+/// Apple fixes this request's operation; it is emitted on encode and defaulted on decode,
+/// matching the Swift library where `operation` is a computed constant that is never decoded.
+fn default_operation() -> InAppRequestOperation {
+    InAppRequestOperation::ModifySubscription
+}
+
+/// Apple fixes this request's version; see [`default_operation`].
+fn default_version() -> InAppRequestVersion {
+    InAppRequestVersion::V1
+}
