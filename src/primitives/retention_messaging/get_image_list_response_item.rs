@@ -1,3 +1,4 @@
+use crate::primitives::retention_messaging::image_size::ImageSize;
 use crate::primitives::retention_messaging::image_state::ImageState;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -18,4 +19,10 @@ pub struct GetImageListResponseItem {
     /// [imageState](https://developer.apple.com/documentation/retentionmessaging/imagestate)
     #[serde(rename = "imageState")]
     pub image_state: Option<ImageState>,
+
+    /// The size of the image.
+    ///
+    /// [imageSize](https://developer.apple.com/documentation/retentionmessaging/imagesize)
+    #[serde(rename = "imageSize")]
+    pub image_size: Option<ImageSize>,
 }

@@ -2,6 +2,7 @@ mod common;
 use app_store_server_library::api_client::api::retention_messaging_api::RetentionMessagingApiClient;
 use app_store_server_library::primitives::environment::Environment;
 use app_store_server_library::primitives::retention_messaging::default_configuration_request::DefaultConfigurationRequest;
+use app_store_server_library::primitives::retention_messaging::image_size::ImageSize;
 use app_store_server_library::primitives::retention_messaging::image_state::ImageState;
 use app_store_server_library::primitives::retention_messaging::message_state::MessageState;
 use app_store_server_library::primitives::retention_messaging::upload_message_image::UploadMessageImage;
@@ -110,6 +111,14 @@ async fn test_image_list() {
             .unwrap()[0]
             .image_state
     );
+    assert_eq!(
+        Some(ImageSize::FullSize),
+        response
+            .image_identifiers
+            .as_ref()
+            .unwrap()[0]
+            .image_size
+    );
 }
 
 #[tokio::test]
@@ -130,7 +139,14 @@ async fn test_upload_message() {
     );
 
     let upload_message_request_body =
-        UploadMessageRequestBody::new("Header text".to_string(), "Body text".to_string(), None).unwrap();
+        UploadMessageRequestBody::new(
+            "Header text".to_string(),
+            "Body text".to_string(),
+            None,
+            None,
+            None,
+        )
+        .unwrap();
     let result = client
         .upload_message(
             Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap(),
@@ -177,6 +193,8 @@ async fn test_upload_message_with_image() {
         "Header text".to_string(),
         "Body text".to_string(),
         Some(image),
+        None,
+        None,
     )
     .unwrap();
     let result = client

@@ -1,3 +1,5 @@
+use crate::primitives::retention_messaging::bullet_point::BulletPoint;
+use crate::primitives::retention_messaging::header_position::HeaderPosition;
 use crate::primitives::retention_messaging::upload_message_image::UploadMessageImage;
 use serde::{Deserialize, Serialize};
 
@@ -23,6 +25,18 @@ pub struct UploadMessageRequestBody {
     ///
     /// [UploadMessageImage](https://developer.apple.com/documentation/retentionmessaging/uploadmessageimage)
     pub image: Option<UploadMessageImage>,
+
+    /// The bulleted list to display as part of the retention message.
+    ///
+    /// [bulletPoints](https://developer.apple.com/documentation/retentionmessaging/bulletpoints)
+    #[serde(rename = "bulletPoints")]
+    pub bullet_points: Option<Vec<BulletPoint>>,
+
+    /// The position of the header relative to the body and image.
+    ///
+    /// [headerPosition](https://developer.apple.com/documentation/retentionmessaging/headerposition)
+    #[serde(rename = "headerPosition")]
+    pub header_position: Option<HeaderPosition>,
 }
 
 impl UploadMessageRequestBody {
@@ -32,14 +46,26 @@ impl UploadMessageRequestBody {
     ///
     /// Returns `ValidationError::HeaderTooLong` if header exceeds 66 characters.
     /// Returns `ValidationError::BodyTooLong` if body exceeds 144 characters.
-    pub fn new(header: String, body: String, image: Option<UploadMessageImage>) -> Result<Self, ValidationError> {
+    pub fn new(
+        header: String,
+        body: String,
+        image: Option<UploadMessageImage>,
+        bullet_points: Option<Vec<BulletPoint>>,
+        header_position: Option<HeaderPosition>,
+    ) -> Result<Self, ValidationError> {
         if header.len() > MAXIMUM_HEADER_LENGTH {
             return Err(ValidationError::HeaderTooLong);
         }
         if body.len() > MAXIMUM_BODY_LENGTH {
             return Err(ValidationError::BodyTooLong);
         }
-        Ok(Self { header, body, image })
+        Ok(Self {
+            header,
+            body,
+            image,
+            bullet_points,
+            header_position,
+        })
     }
 }
 

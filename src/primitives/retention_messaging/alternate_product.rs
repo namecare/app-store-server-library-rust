@@ -1,3 +1,4 @@
+use crate::primitives::billing_plan_type::BillingPlanType;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -17,4 +18,10 @@ pub struct AlternateProduct {
     /// [productId](https://developer.apple.com/documentation/retentionmessaging/productid)
     #[serde(rename = "productId")]
     pub product_id: Option<String>,
+
+    /// The billing plan type of the subscription the retention message suggests.
+    ///
+    /// [billingPlanType](https://developer.apple.com/documentation/retentionmessaging/billingplantype)
+    #[serde(rename = "billingPlanType")]
+    pub billing_plan_type: Option<BillingPlanType>,
 }

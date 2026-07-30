@@ -10,6 +10,8 @@ use crate::primitives::retention_messaging::get_message_list_response::GetMessag
 use crate::primitives::retention_messaging::performance_test_request::PerformanceTestRequest;
 use crate::primitives::retention_messaging::performance_test_response::PerformanceTestResponse;
 use crate::primitives::retention_messaging::performance_test_result_response::PerformanceTestResultResponse;
+use crate::primitives::retention_messaging::realtime_url_request::RealtimeUrlRequest;
+use crate::primitives::retention_messaging::realtime_url_response::RealtimeUrlResponse;
 use crate::primitives::retention_messaging::upload_message_request_body::UploadMessageRequestBody;
 use http::Method;
 use uuid::Uuid;
@@ -251,6 +253,53 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
         let path = format!("/inApps/v1/messaging/performanceTest/result/{}", request_id);
         let req = self.build_request::<()>(&path, Method::GET, None)?;
         self.make_request_with_response_body(req)
+            .await
+    }
+
+    /// Configure the URL of your Get Retention Message endpoint.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/configure-realtime-url)
+    ///
+    /// # Arguments
+    ///
+    /// * `realtime_url_request` - The request body that includes your endpoint's URL.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn configure_realtime_url(&self, realtime_url_request: &RealtimeUrlRequest) -> Result<(), ApiError> {
+        let req = self.build_request(
+            "/inApps/v1/messaging/realtime/url",
+            Method::PUT,
+            Some(realtime_url_request),
+        )?;
+        self.make_request_without_response_body(req)
+            .await
+    }
+
+    /// Get the URL of your Get Retention Message endpoint.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/get-realtime-url)
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn realtime_url(&self) -> Result<RealtimeUrlResponse, ApiError> {
+        let req = self.build_request::<()>("/inApps/v1/messaging/realtime/url", Method::GET, None)?;
+        self.make_request_with_response_body(req)
+            .await
+    }
+
+    /// Delete the URL of your Get Retention Message endpoint.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/delete-realtime-url)
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn delete_realtime_url(&self) -> Result<(), ApiError> {
+        let req = self.build_request::<()>("/inApps/v1/messaging/realtime/url", Method::DELETE, None)?;
+        self.make_request_without_response_body(req)
             .await
     }
 }

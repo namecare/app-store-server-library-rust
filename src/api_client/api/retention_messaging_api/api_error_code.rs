@@ -92,6 +92,66 @@ pub enum ApiErrorCode {
     /// [GeneralInternalError](https://developer.apple.com/documentation/retentionmessaging/generalinternalerror)
     GeneralInternalError = 5000000,
 
+    /// An error that indicates the performance test request is invalid.
+    ///
+    /// [InvalidPerformanceTestRequestError](https://developer.apple.com/documentation/retentionmessaging/invalidperformancetestrequesterror)
+    InvalidPerformanceTestRequest = 4000211,
+
+    /// An error that indicates the request identifier is invalid.
+    ///
+    /// [InvalidRequestIdError](https://developer.apple.com/documentation/retentionmessaging/invalidrequestiderror)
+    InvalidRequestId = 4000212,
+
+    /// An error that indicates a performance test run already exists.
+    ///
+    /// [ExistingPerformanceTestRunError](https://developer.apple.com/documentation/retentionmessaging/existingperformancetestrunerror)
+    ExistingPerformanceTestRun = 4000213,
+
+    /// An error that indicates the realtime URL request is invalid.
+    ///
+    /// [BadRequestRealtimeUrlError](https://developer.apple.com/documentation/retentionmessaging/badrequestrealtimeurlerror)
+    BadRequestRealtimeUrl = 4000215,
+
+    /// An error that indicates the image size is invalid.
+    ///
+    /// [BadRequestImageSizeError](https://developer.apple.com/documentation/retentionmessaging/badrequestimagesizeerror)
+    BadRequestImageSize = 4000216,
+
+    /// An error that indicates too many bullet points are in the request.
+    ///
+    /// [BadRequestTooManyBulletPointsError](https://developer.apple.com/documentation/retentionmessaging/badrequesttoomanybulletpointserror)
+    BadRequestTooManyBulletPoints = 4000218,
+
+    /// An error that indicates a bullet point's text is too long.
+    ///
+    /// [BadRequestBulletPointTextTooLongError](https://developer.apple.com/documentation/retentionmessaging/badrequestbulletpointtexttoolongerror)
+    BadRequestBulletPointTextTooLong = 4000219,
+
+    /// An error that indicates a header positioned above requires an image.
+    ///
+    /// [BadRequestAboveImageRequiresAnImageError](https://developer.apple.com/documentation/retentionmessaging/badrequestaboveimagerequiresanimageerror)
+    BadRequestAboveImageRequiresAnImage = 4000224,
+
+    /// An error that indicates there's no passing performance test for the message.
+    ///
+    /// [ForbiddenNoPassingTestError](https://developer.apple.com/documentation/retentionmessaging/forbiddennopassingtesterror)
+    ForbiddenNoPassingTest = 4030026,
+
+    /// An error that indicates the system can't find the performance test run.
+    ///
+    /// [PerformanceTestRunNotFoundError](https://developer.apple.com/documentation/retentionmessaging/performancetestrunnotfounderror)
+    PerformanceTestRunNotFound = 4040018,
+
+    /// An error that indicates the system can't find a default message.
+    ///
+    /// [DefaultMessageNotFoundError](https://developer.apple.com/documentation/retentionmessaging/defaultmessagenotfounderror)
+    DefaultMessageNotFound = 4040020,
+
+    /// An error that indicates the system can't find the realtime URL.
+    ///
+    /// [RealtimeUrlNotFoundError](https://developer.apple.com/documentation/retentionmessaging/realtimeurlnotfounderror)
+    RealtimeUrlNotFound = 4040021,
+
     /// An unknown error
     Unknown = -1,
 }
