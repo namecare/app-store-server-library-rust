@@ -1,7 +1,8 @@
+#![allow(deprecated)]
+
 mod common;
-use app_store_server_library::app_store_server_api_client::api_error_code::ApiErrorCode;
 use app_store_server_library::app_store_server_api_client::{
-    AppStoreServerApiClient, GetTransactionHistoryVersion,
+    ApiErrorCode, AppStoreServerApiClient, GetTransactionHistoryVersion,
 };
 use app_store_server_library::api_client::error::ConfigurationError;
 use app_store_server_library::models::account_tenure::AccountTenure;
@@ -507,7 +508,7 @@ async fn test_get_transaction_history_v1() {
     };
 
     let response = client
-        .get_transaction_history("1234", Some("revision_input"), request)
+        .get_transaction_history_v1("1234", Some("revision_input"), request)
         .await
         .unwrap();
 
@@ -596,7 +597,7 @@ async fn test_get_transaction_history_v2() {
     };
 
     let response = client
-        .get_transaction_history_with_version(
+        .get_transaction_history(
             "1234",
             Some("revision_input"),
             &request,
@@ -684,13 +685,10 @@ async fn test_app_transaction_info_invalid_transaction_id() {
 
     assert!(result.is_err());
     let err = result.unwrap_err();
-    assert_eq!(400, err.http_status_code);
-    assert_eq!(Some(ApiErrorCode::InvalidTransactionId), err.api_error);
-    assert_eq!(Some(4000006), err.error_code);
-    assert_eq!(
-        Some("Invalid transaction id.".to_string()),
-        err.error_message
-    );
+    assert_eq!(400, err.status());
+    assert_eq!(ApiErrorCode::InvalidTransactionId, err.api_error());
+    assert_eq!(Some(4000006), err.raw_code());
+    assert_eq!(Some("Invalid transaction id."), err.message());
 }
 
 #[tokio::test]
@@ -707,13 +705,10 @@ async fn test_app_transaction_info_transaction_id_not_found() {
 
     assert!(result.is_err());
     let err = result.unwrap_err();
-    assert_eq!(404, err.http_status_code);
-    assert_eq!(Some(ApiErrorCode::TransactionIdNotFound), err.api_error);
-    assert_eq!(Some(4040010), err.error_code);
-    assert_eq!(
-        Some("Transaction id not found.".to_string()),
-        err.error_message
-    );
+    assert_eq!(404, err.status());
+    assert_eq!(ApiErrorCode::TransactionIdNotFound, err.api_error());
+    assert_eq!(Some(4040010), err.raw_code());
+    assert_eq!(Some("Transaction id not found."), err.message());
 }
 
 #[tokio::test]
@@ -730,16 +725,10 @@ async fn test_app_transaction_info_app_transaction_does_not_exist() {
 
     assert!(result.is_err());
     let err = result.unwrap_err();
-    assert_eq!(404, err.http_status_code);
-    assert_eq!(
-        Some(ApiErrorCode::AppTransactionDoesNotExist),
-        err.api_error
-    );
-    assert_eq!(Some(4040019), err.error_code);
-    assert_eq!(
-        Some("No AppTransaction exists for the customer.".to_string()),
-        err.error_message
-    );
+    assert_eq!(404, err.status());
+    assert_eq!(ApiErrorCode::AppTransactionDoesNotExist, err.api_error());
+    assert_eq!(Some(4040019), err.raw_code());
+    assert_eq!(Some("No AppTransaction exists for the customer."), err.message());
 }
 
 #[tokio::test]
@@ -1098,15 +1087,15 @@ async fn test_invalid_app_account_token_uuid_error() {
             assert!(false, "Unexpected response type");
         }
         Err(error) => {
-            assert_eq!(400, error.http_status_code);
+            assert_eq!(400, error.status());
             assert_eq!(
                 ApiErrorCode::InvalidAppAccountTokenUUID,
-                error.api_error.unwrap()
+                error.api_error()
             );
-            assert_eq!(Some(4000183), error.error_code);
+            assert_eq!(Some(4000183), error.raw_code());
             assert_eq!(
                 "Invalid request. The app account token field must be a valid UUID.",
-                error.error_message.unwrap()
+                error.message().unwrap()
             );
         }
     }
@@ -1131,15 +1120,15 @@ async fn test_family_transaction_not_supported_error() {
             assert!(false, "Unexpected response type");
         }
         Err(error) => {
-            assert_eq!(400, error.http_status_code);
+            assert_eq!(400, error.status());
             assert_eq!(
                 ApiErrorCode::FamilyTransactionNotSupported,
-                error.api_error.unwrap()
+                error.api_error()
             );
-            assert_eq!(Some(4000185), error.error_code);
+            assert_eq!(Some(4000185), error.raw_code());
             assert_eq!(
                 "Invalid request. Family Sharing transactions aren't supported by this endpoint.",
-                error.error_message.unwrap()
+                error.message().unwrap()
             );
         }
     }
@@ -1164,15 +1153,15 @@ async fn test_transaction_id_not_original_transaction_id_error() {
             assert!(false, "Unexpected response type");
         }
         Err(error) => {
-            assert_eq!(400, error.http_status_code);
+            assert_eq!(400, error.status());
             assert_eq!(
                 ApiErrorCode::TransactionIdNotOriginalTransactionId,
-                error.api_error.unwrap()
+                error.api_error()
             );
-            assert_eq!(Some(4000187), error.error_code);
+            assert_eq!(Some(4000187), error.raw_code());
             assert_eq!(
                 "Invalid request. The transaction ID provided is not an original transaction ID.",
-                error.error_message.unwrap()
+                error.message().unwrap()
             );
         }
     }
@@ -1238,10 +1227,10 @@ async fn test_api_error() {
             assert!(false, "Unexpected response type");
         }
         Err(error) => {
-            assert_eq!(500, error.http_status_code);
-            assert_eq!(ApiErrorCode::GeneralInternal, error.api_error.unwrap());
-            assert_eq!(5000000, error.error_code.unwrap());
-            assert_eq!("An unknown error occurred.", error.error_message.unwrap());
+            assert_eq!(500, error.status());
+            assert_eq!(ApiErrorCode::GeneralInternal, error.api_error());
+            assert_eq!(5000000, error.raw_code().unwrap());
+            assert_eq!("An unknown error occurred.", error.message().unwrap());
         }
     }
 }
@@ -1262,10 +1251,10 @@ async fn test_api_too_many_requests() {
             assert!(false, "Unexpected response type");
         }
         Err(error) => {
-            assert_eq!(429, error.http_status_code);
-            assert_eq!(ApiErrorCode::RateLimitExceeded, error.api_error.unwrap());
-            assert_eq!(Some(4290000), error.error_code);
-            assert_eq!("Rate limit exceeded.", error.error_message.unwrap());
+            assert_eq!(429, error.status());
+            assert_eq!(ApiErrorCode::RateLimitExceeded, error.api_error());
+            assert_eq!(Some(4290000), error.raw_code());
+            assert_eq!("Rate limit exceeded.", error.message().unwrap());
         }
     }
 }
@@ -1286,9 +1275,9 @@ async fn test_api_unknown_error() {
             assert!(false, "Unexpected response type");
         }
         Err(error) => {
-            assert_eq!(400, error.http_status_code);
-            assert_eq!(Some(ApiErrorCode::Unknown), error.api_error);
-            assert_eq!("Testing error.", error.error_message.unwrap());
+            assert_eq!(400, error.status());
+            assert_eq!(ApiErrorCode::Unknown, error.api_error());
+            assert_eq!("Testing error.", error.message().unwrap());
         }
     }
 }
@@ -1313,18 +1302,18 @@ async fn test_decoding_with_malformed_json() {
     };
 
     let result = client
-        .get_transaction_history("1234", Some("revision_input"), request)
+        .get_transaction_history_v1("1234", Some("revision_input"), request)
         .await;
     match result {
         Ok(_) => {
             assert!(false, "Unexpected response type");
         }
         Err(error) => {
-            assert_eq!(500, error.http_status_code);
-            assert_eq!(None, error.api_error);
+            assert_eq!(500, error.status());
+            assert_eq!(ApiErrorCode::Unknown, error.api_error());
             assert_eq!(
                 "Failed to deserialize response JSON",
-                error.error_message.unwrap()
+                error.message().unwrap()
             );
         }
     }

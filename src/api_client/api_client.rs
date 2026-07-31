@@ -1,4 +1,4 @@
-use crate::api_client::error::{APIServiceErrorCode, ApiServiceError, ConfigurationError, ErrorPayload};
+use crate::api_client::error::{ApiClientError, ConfigurationError};
 use crate::api_client::transport::Transport;
 use crate::models::app_store_environment::Environment;
 
@@ -6,25 +6,18 @@ use chrono::Utc;
 use http::Method;
 use http::{Request, Response};
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use std::marker::PhantomData;
 
-pub struct ApiClient<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> {
+pub struct ApiClient<T: Transport> {
     base_url: String,
     signing_key: Vec<u8>,
     key_id: String,
     issuer_id: String,
     bundle_id: String,
     transport: T,
-    _api: PhantomData<API>,
-    _api_error: PhantomData<E>,
 }
 
-unsafe impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> Send for ApiClient<T, API, E> {}
-unsafe impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> Sync for ApiClient<T, API, E> {}
-
-impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, API, E> {
+impl<T: Transport> ApiClient<T> {
     /// Creates a new App Store Server API client.
     ///
     /// # Arguments
@@ -63,8 +56,6 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
             issuer_id: issuer_id.to_string(),
             bundle_id: bundle_id.to_string(),
             transport,
-            _api: PhantomData,
-            _api_error: PhantomData,
         })
     }
 
@@ -95,14 +86,10 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
         path: &str,
         method: Method,
         body: Option<&B>,
-    ) -> Result<Request<Vec<u8>>, ApiServiceError<E>> {
+    ) -> Result<Request<Vec<u8>>, ApiClientError> {
         let (body_bytes, content_type) = if let Some(body_data) = body {
-            let serialized = serde_json::to_vec(body_data).map_err(|_| ApiServiceError {
-                http_status_code: 400,
-                api_error: None,
-                error_code: None,
-                error_message: Some("Failed to serialize request body".to_string()),
-            })?;
+            let serialized = serde_json::to_vec(body_data)
+                .map_err(|_| ApiClientError::new(400, None, Some("Failed to serialize request body".to_string())))?;
             (serialized, Some("application/json"))
         } else {
             (Vec::new(), None)
@@ -117,7 +104,7 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
         method: Method,
         body: Vec<u8>,
         content_type: &str,
-    ) -> Result<Request<Vec<u8>>, ApiServiceError<E>> {
+    ) -> Result<Request<Vec<u8>>, ApiClientError> {
         self.build_request_base(path, method, body, Some(content_type))
     }
 
@@ -127,7 +114,7 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
         method: Method,
         body: Vec<u8>,
         content_type: Option<&str>,
-    ) -> Result<Request<Vec<u8>>, ApiServiceError<E>> {
+    ) -> Result<Request<Vec<u8>>, ApiClientError> {
         let url = format!("{}{}", self.base_url, path);
 
         let mut request_builder = Request::builder()
@@ -141,67 +128,58 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
             request_builder = request_builder.header("Content-Type", ct);
         }
 
-        request_builder
-            .body(body)
-            .map_err(|e| e.into())
+        request_builder.body(body).map_err(|e| e.into())
     }
 
     pub(crate) async fn make_request_with_response_body<Res>(
         &self,
         request: Request<Vec<u8>>,
-    ) -> Result<Res, ApiServiceError<E>>
+    ) -> Result<Res, ApiClientError>
     where
         Res: for<'de> Deserialize<'de>,
     {
         let response = self.make_request(request).await?;
         let body = response.into_body();
-        let json_result = serde_json::from_slice::<Res>(&body).map_err(|_| ApiServiceError {
-            http_status_code: 500,
-            api_error: None,
-            error_code: None,
-            error_message: Some("Failed to deserialize response JSON".to_string()),
-        })?;
+        let json_result = serde_json::from_slice::<Res>(&body)
+            .map_err(|_| ApiClientError::new(500, None, Some("Failed to deserialize response JSON".to_string())))?;
         Ok(json_result)
     }
 
     pub(crate) async fn make_request_without_response_body(
         &self,
         request: Request<Vec<u8>>,
-    ) -> Result<(), ApiServiceError<E>> {
+    ) -> Result<(), ApiClientError> {
         let _ = self.make_request(request).await?;
         Ok(())
     }
 
-    pub(crate) async fn make_request(
-        &self,
-        request: Request<Vec<u8>>,
-    ) -> Result<Response<Vec<u8>>, ApiServiceError<E>> {
+    pub(crate) async fn make_request(&self, request: Request<Vec<u8>>) -> Result<Response<Vec<u8>>, ApiClientError> {
         let response = self.transport.send(request).await?;
 
         let status_code = response.status().as_u16();
 
-        if status_code >= 200 && status_code < 300 {
+        if (200..300).contains(&status_code) {
             Ok(response)
         } else {
             Err(self.extract_error(&response))
         }
     }
 
-    pub(crate) fn extract_error(&self, response: &Response<Vec<u8>>) -> ApiServiceError<E> {
+    pub(crate) fn extract_error(&self, response: &Response<Vec<u8>>) -> ApiClientError {
         let status_code = response.status().as_u16();
 
-        serde_json::from_slice::<ErrorPayload<E>>(response.body())
-            .map(|payload| ApiServiceError {
-                http_status_code: status_code,
-                api_error: Some(payload.error_code),
-                error_code: payload.raw_error_code,
-                error_message: payload.error_message,
-            })
-            .unwrap_or_else(|_| ApiServiceError {
-                http_status_code: status_code,
-                api_error: None,
-                error_code: None,
-                error_message: Some("Failed to deserialize error JSON".to_string()),
+        #[derive(Deserialize)]
+        struct ErrorPayload {
+            #[serde(rename = "errorCode")]
+            error_code: Option<i64>,
+            #[serde(rename = "errorMessage")]
+            error_message: Option<String>,
+        }
+
+        serde_json::from_slice::<ErrorPayload>(response.body())
+            .map(|payload| ApiClientError::new(status_code, payload.error_code, payload.error_message))
+            .unwrap_or_else(|_| {
+                ApiClientError::new(status_code, None, Some("Failed to deserialize error JSON".to_string()))
             })
     }
 }

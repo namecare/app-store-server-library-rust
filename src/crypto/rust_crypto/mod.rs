@@ -291,6 +291,7 @@ mod ocsp_support {
 
     /// Internal error type for OCSP validation
     #[derive(Debug)]
+    #[allow(dead_code)]
     pub enum OcspError {
         /// Network-related error (connection failure, timeout, etc.)
         NetworkError(String),
@@ -416,7 +417,7 @@ mod ocsp_support {
     }
 
     fn parse_aia_for_ocsp(aia_bytes: &[u8]) -> Result<String, ChainVerifierError> {
-        use crate::asn1::asn1_basics::{read_oid, read_sequence, read_tlv};
+        use crate::crypto::asn1::asn1_basics::{read_oid, read_sequence, read_tlv};
 
         let (mut offset, length) =
             read_sequence(aia_bytes, 0).map_err(|e| ChainVerifierError::InternalError(e.to_string()))?;

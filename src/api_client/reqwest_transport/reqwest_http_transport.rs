@@ -26,6 +26,12 @@ impl ReqwestHttpTransport {
     }
 }
 
+impl Default for ReqwestHttpTransport {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Transport for ReqwestHttpTransport {
     async fn send(&self, req: http::Request<Vec<u8>>) -> Result<http::Response<Vec<u8>>, TransportError> {
         let (parts, body_bytes) = req.into_parts();

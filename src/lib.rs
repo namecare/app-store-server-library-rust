@@ -6,8 +6,6 @@ pub mod promotional_offer_signature_creator;
 pub mod signed_data_verifier;
 pub mod utils;
 
-#[cfg(any(feature = "receipt-utility", feature = "ocsp"))]
-mod asn1;
 #[cfg(feature = "receipt-utility")]
 pub mod receipt_utility;
 

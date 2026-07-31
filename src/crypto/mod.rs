@@ -7,6 +7,8 @@ pub mod rust_crypto;
 
 #[cfg(feature = "aws_lc")]
 pub mod aws_lc;
+#[cfg(any(feature = "receipt-utility", feature = "ocsp"))]
+pub mod asn1;
 
 use crate::chain_verifier::ChainVerifier;
 
