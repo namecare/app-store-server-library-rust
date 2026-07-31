@@ -83,7 +83,7 @@ async fn test_image_list() {
         })),
     );
 
-    let result = client.image_list().await;
+    let result = client.get_image_list().await;
 
     assert!(result.is_ok());
     let response = result.unwrap();
@@ -242,7 +242,7 @@ async fn test_message_list() {
         })),
     );
 
-    let result = client.message_list().await;
+    let result = client.get_message_list().await;
 
     assert!(result.is_ok());
     let response = result.unwrap();
@@ -297,7 +297,7 @@ async fn test_set_default_configuration() {
         message_identifier: Some(Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap()),
     };
     let result = client
-        .set_default_configuration(
+        .configure_default_message(
             "com.example.product",
             "en-US",
             &default_configuration_request,
@@ -305,6 +305,34 @@ async fn test_set_default_configuration() {
         .await;
 
     assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_get_default_message_returns_default_configuration_response() {
+    let client = retention_messaging_api_client(
+        serde_json::json!({
+            "messageIdentifier": "8118cbc9-83b8-46c7-a879-2247714d92f8"
+        })
+        .to_string(),
+        StatusCode::OK,
+        Some(Box::new(|req, _body| {
+            assert_eq!(&Method::GET, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/messaging/default/com.example.product/en-US",
+                req.uri().to_string()
+            );
+        })),
+    );
+
+    let result = client
+        .get_default_message("com.example.product", "en-US")
+        .await;
+
+    let response = result.expect("expected successful response");
+    assert_eq!(
+        response.message_identifier,
+        uuid::Uuid::parse_str("8118cbc9-83b8-46c7-a879-2247714d92f8").unwrap()
+    );
 }
 
 #[tokio::test]
@@ -322,7 +350,7 @@ async fn test_delete_default_configuration() {
     );
 
     let result = client
-        .delete_default_configuration("com.example.product", "en-US")
+        .delete_default_message("com.example.product", "en-US")
         .await;
 
     assert!(result.is_ok());

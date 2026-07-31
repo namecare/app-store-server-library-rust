@@ -1,6 +1,6 @@
 mod common;
-use app_store_server_library::api_client::api::app_store_server_api::api_error_code::ApiErrorCode;
-use app_store_server_library::api_client::api::app_store_server_api::{
+use app_store_server_library::app_store_server_api_client::api_error_code::ApiErrorCode;
+use app_store_server_library::app_store_server_api_client::{
     AppStoreServerApiClient, GetTransactionHistoryVersion,
 };
 use app_store_server_library::api_client::error::ConfigurationError;
@@ -653,7 +653,7 @@ async fn test_app_transaction_info() {
     );
 
     let response = client
-        .app_transaction_info("1234")
+        .get_app_transaction_info("1234")
         .await
         .unwrap();
     assert_eq!(
@@ -673,7 +673,7 @@ async fn test_app_transaction_info_invalid_transaction_id() {
     );
 
     let result = client
-        .app_transaction_info("invalid_id")
+        .get_app_transaction_info("invalid_id")
         .await;
 
     assert!(result.is_err());
@@ -696,7 +696,7 @@ async fn test_app_transaction_info_transaction_id_not_found() {
     );
 
     let result = client
-        .app_transaction_info("not_found_id")
+        .get_app_transaction_info("not_found_id")
         .await;
 
     assert!(result.is_err());
@@ -719,7 +719,7 @@ async fn test_app_transaction_info_app_transaction_does_not_exist() {
     );
 
     let result = client
-        .app_transaction_info("no_app_transaction")
+        .get_app_transaction_info("no_app_transaction")
         .await;
 
     assert!(result.is_err());

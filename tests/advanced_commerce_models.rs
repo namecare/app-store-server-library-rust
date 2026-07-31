@@ -55,7 +55,7 @@ use app_store_server_library::models::helper_validation_utils::{
     validate_description, validate_display_name, validate_period_count, validate_sku,
     ValidationError,
 };
-use app_store_server_library::models::advanced_commerce_price_increase_info::AdvancedCommercePriceIncreaseInfoStatus;
+use app_store_server_library::models::advanced_commerce_price_increase_info_status::AdvancedCommercePriceIncreaseInfoStatus;
 use uuid::Uuid;
 
 fn fixture(name: &str) -> String {
