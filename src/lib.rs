@@ -13,3 +13,5 @@ pub mod receipt_utility;
 
 #[cfg(feature = "api-client")]
 pub mod api_client;
+#[cfg(feature = "api-client")]
+pub mod app_store_server_api_client;

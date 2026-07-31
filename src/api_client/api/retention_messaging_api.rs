@@ -5,6 +5,7 @@ use crate::api_client::api_client::ApiClient;
 use crate::api_client::error::ApiServiceError;
 use crate::api_client::transport::Transport;
 use crate::models::default_configuration_request::DefaultConfigurationRequest;
+use crate::models::default_configuration_response::DefaultConfigurationResponse;
 use crate::models::get_image_list_response::GetImageListResponse;
 use crate::models::get_message_list_response::GetMessageListResponse;
 use crate::models::performance_test_request::PerformanceTestRequest;
@@ -69,7 +70,7 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
     /// # Errors
     ///
     /// Returns an `APIError` if the request could not be processed.
-    pub async fn image_list(&self) -> Result<GetImageListResponse, ApiError> {
+    pub async fn get_image_list(&self) -> Result<GetImageListResponse, ApiError> {
         let req = self.build_request::<()>("/inApps/v1/messaging/image/list", Method::GET, None)?;
         self.make_request_with_response_body(req)
             .await
@@ -127,7 +128,7 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
     /// # Errors
     ///
     /// Returns an `APIError` if the request could not be processed.
-    pub async fn message_list(&self) -> Result<GetMessageListResponse, ApiError> {
+    pub async fn get_message_list(&self) -> Result<GetMessageListResponse, ApiError> {
         let req = self.build_request::<()>("/inApps/v1/messaging/message/list", Method::GET, None)?;
         self.make_request_with_response_body(req)
             .await
@@ -146,7 +147,7 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
     /// # Errors
     ///
     /// Returns an `APIError` if the request could not be processed.
-    pub async fn set_default_configuration(
+    pub async fn configure_default_message(
         &self,
         product_id: &str,
         locale: &str,
@@ -174,11 +175,11 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
     /// # Errors
     ///
     /// Returns an `APIError` if the request could not be processed.
-    pub async fn default_configuration(
+    pub async fn get_default_message(
         &self,
         product_id: &str,
         locale: &str,
-    ) -> Result<DefaultConfigurationRequest, ApiError> {
+    ) -> Result<DefaultConfigurationResponse, ApiError> {
         let path = format!("/inApps/v1/messaging/default/{}/{}", product_id, locale);
         let req = self.build_request::<()>(&path, Method::GET, None)?;
         self.make_request_with_response_body(req)
@@ -197,7 +198,7 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
     /// # Errors
     ///
     /// Returns an `APIError` if the request could not be processed.
-    pub async fn delete_default_configuration(&self, product_id: &str, locale: &str) -> Result<(), ApiError> {
+    pub async fn delete_default_message(&self, product_id: &str, locale: &str) -> Result<(), ApiError> {
         let path = format!("/inApps/v1/messaging/default/{}/{}", product_id, locale);
         let req = self.build_request::<()>(&path, Method::DELETE, None)?;
         self.make_request_without_response_body(req)
@@ -249,7 +250,7 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
     /// # Errors
     ///
     /// Returns an `APIError` if the request could not be processed.
-    pub async fn performance_test_result(&self, request_id: Uuid) -> Result<PerformanceTestResultResponse, ApiError> {
+    pub async fn get_performance_test_results(&self, request_id: Uuid) -> Result<PerformanceTestResultResponse, ApiError> {
         let path = format!("/inApps/v1/messaging/performanceTest/result/{}", request_id);
         let req = self.build_request::<()>(&path, Method::GET, None)?;
         self.make_request_with_response_body(req)
@@ -284,7 +285,7 @@ impl<T: Transport> RetentionMessagingApiClient<T> {
     /// # Errors
     ///
     /// Returns an `APIError` if the request could not be processed.
-    pub async fn realtime_url(&self) -> Result<RealtimeUrlResponse, ApiError> {
+    pub async fn get_realtime_url(&self) -> Result<RealtimeUrlResponse, ApiError> {
         let req = self.build_request::<()>("/inApps/v1/messaging/realtime/url", Method::GET, None)?;
         self.make_request_with_response_body(req)
             .await

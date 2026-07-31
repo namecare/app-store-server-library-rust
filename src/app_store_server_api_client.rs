@@ -1,6 +1,6 @@
 pub mod api_error_code;
 
-use crate::api_client::api::app_store_server_api::api_error_code::ApiErrorCode;
+use crate::app_store_server_api_client::api_error_code::ApiErrorCode;
 use crate::api_client::api_client::ApiClient;
 use crate::api_client::error::ApiServiceError;
 use crate::api_client::transport::Transport;
@@ -436,7 +436,7 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     /// # Errors
     ///
     /// Returns an `APIError` if the request could not be processed.
-    pub async fn app_transaction_info(&self, transaction_id: &str) -> Result<AppTransactionInfoResponse, ApiError> {
+    pub async fn get_app_transaction_info(&self, transaction_id: &str) -> Result<AppTransactionInfoResponse, ApiError> {
         let path = format!("/inApps/v1/transactions/appTransactions/{}", transaction_id);
         let req = self.build_request::<()>(path.as_str(), Method::GET, None)?;
         self.make_request_with_response_body(req)

@@ -1,20 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// The status of the Advanced Commerce price increase.
-///
-/// [advancedCommercePriceIncreaseInfoStatus](https://developer.apple.com/documentation/appstoreserverapi/advancedcommercepriceincreasestatus)
-#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
-pub enum AdvancedCommercePriceIncreaseInfoStatus {
-    /// The price increase is scheduled.
-    #[serde(rename = "SCHEDULED")]
-    Scheduled,
-    /// The price increase is pending.
-    #[serde(rename = "PENDING")]
-    Pending,
-    /// The price increase has been accepted.
-    #[serde(rename = "ACCEPTED")]
-    Accepted,
-}
+use crate::models::advanced_commerce_price_increase_info_status::AdvancedCommercePriceIncreaseInfoStatus;
 
 /// Information about the Advanced Commerce price increase.
 ///
@@ -34,6 +20,6 @@ pub struct AdvancedCommercePriceIncreaseInfo {
 
     /// The status of the price increase.
     ///
-    /// [status](https://developer.apple.com/documentation/appstoreserverapi/advancedcommercepriceincreasestatus)
+    /// [status](https://developer.apple.com/documentation/appstoreservernotifications/advancedcommercepriceincreaseinfostatus)
     pub status: Option<AdvancedCommercePriceIncreaseInfoStatus>,
 }

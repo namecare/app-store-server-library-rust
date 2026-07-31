@@ -68,7 +68,7 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
         })
     }
 
-    pub(super) fn generate_token(&self) -> String {
+    pub(crate) fn generate_token(&self) -> String {
         let future_time = Utc::now() + chrono::Duration::minutes(5);
         let key_id = (&self.key_id).to_string();
 
@@ -90,7 +90,7 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
         .unwrap()
     }
 
-    pub(super) fn build_request<B: serde::Serialize>(
+    pub(crate) fn build_request<B: serde::Serialize>(
         &self,
         path: &str,
         method: Method,
@@ -111,7 +111,7 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
         self.build_request_base(path, method, body_bytes, content_type)
     }
 
-    pub(super) fn build_request_with_custom_content(
+    pub(crate) fn build_request_with_custom_content(
         &self,
         path: &str,
         method: Method,
@@ -146,7 +146,7 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
             .map_err(|e| e.into())
     }
 
-    pub(super) async fn make_request_with_response_body<Res>(
+    pub(crate) async fn make_request_with_response_body<Res>(
         &self,
         request: Request<Vec<u8>>,
     ) -> Result<Res, ApiServiceError<E>>
@@ -164,7 +164,7 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
         Ok(json_result)
     }
 
-    pub(super) async fn make_request_without_response_body(
+    pub(crate) async fn make_request_without_response_body(
         &self,
         request: Request<Vec<u8>>,
     ) -> Result<(), ApiServiceError<E>> {
@@ -172,7 +172,7 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
         Ok(())
     }
 
-    pub(super) async fn make_request(
+    pub(crate) async fn make_request(
         &self,
         request: Request<Vec<u8>>,
     ) -> Result<Response<Vec<u8>>, ApiServiceError<E>> {
@@ -187,7 +187,7 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
         }
     }
 
-    pub(super) fn extract_error(&self, response: &Response<Vec<u8>>) -> ApiServiceError<E> {
+    pub(crate) fn extract_error(&self, response: &Response<Vec<u8>>) -> ApiServiceError<E> {
         let status_code = response.status().as_u16();
 
         serde_json::from_slice::<ErrorPayload<E>>(response.body())
