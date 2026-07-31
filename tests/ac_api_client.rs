@@ -1,5 +1,5 @@
 mod common;
-use app_store_server_library::api_client::api::advanced_commerce_api::AdvancedCommerceApiClient;
+use app_store_server_library::advanced_commerce_api_client::AdvancedCommerceApiClient;
 use app_store_server_library::api_client::error::ConfigurationError;
 use app_store_server_library::models::advanced_commerce_refund_reason::RefundReason;
 use app_store_server_library::models::advanced_commerce_refund_type::RefundType;

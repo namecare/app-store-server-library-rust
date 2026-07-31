@@ -172,6 +172,31 @@ pub enum ApiErrorCode {
     /// [AppTransactionIdNotSupportedError](https://developer.apple.com/documentation/appstoreserverapi/apptransactionidnotsupportederror)
     AppTransactionIdNotSupportedError = 4000048,
 
+    /// An error that indicates the image that's uploading is invalid.
+    ///
+    /// [InvalidImageError](https://developer.apple.com/documentation/retentionmessaging/invalidimageerror)
+    InvalidImage = 4000161,
+
+    /// An error that indicates the header text is too long.
+    ///
+    /// [HeaderTooLongError](https://developer.apple.com/documentation/retentionmessaging/headertoolongerror)
+    HeaderTooLong = 4000162,
+
+    /// An error that indicates the body text is too long.
+    ///
+    /// [BodyTooLongError](https://developer.apple.com/documentation/retentionmessaging/bodytoolongerror)
+    BodyTooLong = 4000163,
+
+    /// An error that indicates the locale is invalid.
+    ///
+    /// [InvalidLocaleError](https://developer.apple.com/documentation/retentionmessaging/invalidlocaleerror)
+    InvalidLocale = 4000164,
+
+    /// An error that indicates the alternative text for an image is too long.
+    ///
+    /// [AltTextTooLongError](https://developer.apple.com/documentation/retentionmessaging/alttexttoolongerror)
+    AltTextTooLong = 4000175,
+
     /// An error that indicates the app account token value is not a valid UUID.
     ///
     /// [InvalidAppAccountTokenUUID](https://developer.apple.com/documentation/appstoreserverapi/invalidappaccounttokenuuiderror)
@@ -187,6 +212,46 @@ pub enum ApiErrorCode {
     /// [TransactionIdNotOriginalTransactionId](https://developer.apple.com/documentation/appstoreserverapi/transactionidnotoriginaltransactioniderror)
     TransactionIdNotOriginalTransactionId = 4000187,
 
+    /// An error the API returns that indicates the performance test request is invalid.
+    ///
+    /// [InvalidPerformanceTestRequestError](https://developer.apple.com/documentation/retentionmessaging/invalidperformancetestrequesterror)
+    InvalidPerformanceTestRequest = 4000211,
+
+    /// An error that indicates the request ID is invalid.
+    ///
+    /// [InvalidRequestIdError](https://developer.apple.com/documentation/retentionmessaging/invalidrequestiderror)
+    InvalidRequestId = 4000212,
+
+    /// An error that indicates an error with an existing test.
+    ///
+    /// [ExistingPerformanceTestRunError](https://developer.apple.com/documentation/retentionmessaging/existingperformancetestrunerror)
+    ExistingPerformanceTestRun = 4000213,
+
+    /// An error that indicates the URL is invalid.
+    ///
+    /// [BadRequestRealtimeUrlError](https://developer.apple.com/documentation/retentionmessaging/badrequestrealtimeurlerror)
+    BadRequestRealtimeUrl = 4000215,
+
+    /// An error that indicates the image size provided is invalid.
+    ///
+    /// [BadRequestImageSizeError](https://developer.apple.com/documentation/retentionmessaging/badrequestimagesizeerror)
+    BadRequestImageSize = 4000216,
+
+    /// An error that indicates there are too many bullet points.
+    ///
+    /// [BadRequestTooManyBulletPointsError](https://developer.apple.com/documentation/retentionmessaging/badrequesttoomanybulletpointserror)
+    BadRequestTooManyBulletPoints = 4000218,
+
+    /// An error that indicates the text for a bullet point is too long.
+    ///
+    /// [BadRequestBulletPointTextTooLongError](https://developer.apple.com/documentation/retentionmessaging/badrequestbulletpointtexttoolongerror)
+    BadRequestBulletPointTextTooLong = 4000219,
+
+    /// An error that indicates that no image object is included, but the request indicates that the header should be placed above the image.
+    ///
+    /// [BadRequestAboveImageRequiresAnImageError](https://developer.apple.com/documentation/retentionmessaging/badrequestaboveimagerequiresanimageerror)
+    BadRequestAboveImageRequiresAnImage = 4000224,
+
     /// An error that indicates the subscription doesn't qualify for a renewal-date extension due to its subscription state.
     /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/subscriptionextensionineligibleerror)
     SubscriptionExtensionIneligible = 4030004,
@@ -198,6 +263,36 @@ pub enum ApiErrorCode {
     /// An error that indicates a subscription isn't directly eligible for a renewal date extension because the user obtained it through Family Sharing.
     /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/familysharedsubscriptionextensionineligibleerror)
     FamilySharedSubscriptionExtensionIneligible = 4030007,
+
+    /// An error that indicates when you reach the maximum number of uploaded images.
+    ///
+    /// [MaximumNumberOfImagesReachedError](https://developer.apple.com/documentation/retentionmessaging/maximumnumberofimagesreachederror)
+    MaximumNumberOfImagesReached = 4030014,
+
+    /// An error that indicates when you reach the maximum number of uploaded messages.
+    ///
+    /// [MaximumNumberOfMessagesReachedError](https://developer.apple.com/documentation/retentionmessaging/maximumnumberofmessagesreachederror)
+    MaximumNumberOfMessagesReached = 4030016,
+
+    /// An error that indicates the message isn't in the approved state, so you can't configure it as a default message.
+    ///
+    /// [MessageNotApprovedError](https://developer.apple.com/documentation/retentionmessaging/messagenotapprovederror)
+    MessageNotApproved = 4030017,
+
+    /// An error that indicates the image isn't in the approved state, so you can't configure it as part of a default message.
+    ///
+    /// [ImageNotApprovedError](https://developer.apple.com/documentation/retentionmessaging/imagenotapprovederror)
+    ImageNotApproved = 4030018,
+
+    /// An error that indicates the image is currently in use as part of a message, so you can't delete it.
+    ///
+    /// [ImageInUseError](https://developer.apple.com/documentation/retentionmessaging/imageinuseerror)
+    ImageInUse = 4030019,
+
+    /// An error that indicates that passing a performance test is required before you can set a URL for the production environment.
+    ///
+    /// [ForbiddenNoPassingTestError](https://developer.apple.com/documentation/retentionmessaging/forbiddennopassingtesterror)
+    ForbiddenNoPassingTest = 4030026,
 
     /// An error that indicates the App Store account wasn’t found.
     /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/accountnotfounderror)
@@ -239,10 +334,45 @@ pub enum ApiErrorCode {
     /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/transactionidnotfounderror)
     TransactionIdNotFound = 4040010,
 
+    /// An error that indicates the system can't find the image identifier.
+    ///
+    /// [ImageNotFoundError](https://developer.apple.com/documentation/retentionmessaging/imagenotfounderror)
+    ImageNotFound = 4040014,
+
+    /// An error that indicates the system can't find the message identifier.
+    ///
+    /// [MessageNotFoundError](https://developer.apple.com/documentation/retentionmessaging/messagenotfounderror)
+    MessageNotFound = 4040015,
+
+    /// An error the API returns if the service can't find the specified test run.
+    ///
+    /// [PerformanceTestRunNotFoundError](https://developer.apple.com/documentation/retentionmessaging/performancetestrunnotfounderror)
+    PerformanceTestRunNotFound = 4040018,
+
     /// An error response that indicates an app transaction doesn't exist for the specified customer.
     ///
     /// [AppTransactionDoesNotExistError](https://developer.apple.com/documentation/appstoreserverapi/apptransactiondoesnotexisterror)
     AppTransactionDoesNotExist = 4040019,
+
+    /// An error that indicates a default message isn’t configured.
+    ///
+    /// [DefaultMessageNotFoundError](https://developer.apple.com/documentation/retentionmessaging/defaultmessagenotfounderror)
+    DefaultMessageNotFound = 4040020,
+
+    /// An error that indicates that the URL for your endpoint isn’t configured.
+    ///
+    /// [RealtimeUrlNotFoundError](https://developer.apple.com/documentation/retentionmessaging/realtimeurlnotfounderror)
+    RealtimeUrlNotFound = 4040021,
+
+    /// An error that indicates the image identifier already exists.
+    ///
+    /// [ImageAlreadyExistsError](https://developer.apple.com/documentation/retentionmessaging/imagealreadyexistserror)
+    ImageAlreadyExists = 4090000,
+
+    /// An error that indicates the message identifier already exists.
+    ///
+    /// [MessageAlreadyExistsError](https://developer.apple.com/documentation/retentionmessaging/messagealreadyexistserror)
+    MessageAlreadyExists = 4090001,
 
     /// An error that indicates that the request exceeded the rate limit.
     /// [Documentation](https://developer.apple.com/documentation/appstoreserverapi/ratelimitexceedederror)

@@ -72,18 +72,13 @@ receipt-utility = ["dep:regex"]
 ocsp = ["dep:x509-ocsp", "dep:reqwest", "reqwest/blocking", "dep:der", "dep:x509-cert", "dep:const-oid", "dep:sha1"]
 
 [[test]]
-name = "ass_api_client"
-path = "tests/ass_api_client.rs"
+name = "app_store_server_api_client"
+path = "tests/app_store_server_api_client.rs"
 required-features = ["api-client"]
 
 [[test]]
 name = "ac_api_client"
 path = "tests/ac_api_client.rs"
-required-features = ["api-client"]
-
-[[test]]
-name = "rm_api_client"
-path = "tests/rm_api_client.rs"
 required-features = ["api-client"]
 
 [[test]]

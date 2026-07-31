@@ -1,21 +1,30 @@
 pub mod api_error_code;
 
-use crate::app_store_server_api_client::api_error_code::ApiErrorCode;
 use crate::api_client::api_client::ApiClient;
 use crate::api_client::error::ApiServiceError;
 use crate::api_client::transport::Transport;
+use crate::app_store_server_api_client::api_error_code::ApiErrorCode;
 use crate::models::app_transaction_info_response::AppTransactionInfoResponse;
 use crate::models::check_test_notification_response::CheckTestNotificationResponse;
 use crate::models::consumption_request::ConsumptionRequest;
 use crate::models::consumption_request_v1::ConsumptionRequestV1;
+use crate::models::default_configuration_request::DefaultConfigurationRequest;
+use crate::models::default_configuration_response::DefaultConfigurationResponse;
 use crate::models::extend_renewal_date_request::ExtendRenewalDateRequest;
 use crate::models::extend_renewal_date_response::ExtendRenewalDateResponse;
+use crate::models::get_image_list_response::GetImageListResponse;
+use crate::models::get_message_list_response::GetMessageListResponse;
 use crate::models::history_response::HistoryResponse;
 use crate::models::mass_extend_renewal_date_request::MassExtendRenewalDateRequest;
 use crate::models::mass_extend_renewal_date_status_response::MassExtendRenewalDateStatusResponse;
 use crate::models::notification_history_request::NotificationHistoryRequest;
 use crate::models::notification_history_response::NotificationHistoryResponse;
 use crate::models::order_lookup_response::OrderLookupResponse;
+use crate::models::performance_test_request::PerformanceTestRequest;
+use crate::models::performance_test_response::PerformanceTestResponse;
+use crate::models::performance_test_result_response::PerformanceTestResultResponse;
+use crate::models::realtime_url_request::RealtimeUrlRequest;
+use crate::models::realtime_url_response::RealtimeUrlResponse;
 use crate::models::refund_history_response::RefundHistoryResponse;
 use crate::models::send_test_notification_response::SendTestNotificationResponse;
 use crate::models::status::Status;
@@ -23,9 +32,11 @@ use crate::models::status_response::StatusResponse;
 use crate::models::transaction_history_request::TransactionHistoryRequest;
 use crate::models::transaction_info_response::TransactionInfoResponse;
 use crate::models::update_app_account_token_request::UpdateAppAccountTokenRequest;
+use crate::models::upload_message_request_body::UploadMessageRequestBody;
 use http::Method;
 use serde_json::Value;
 use std::collections::HashMap;
+use uuid::Uuid;
 
 pub struct AppStoreServerApi;
 pub type AppStoreServerApiClient<T> = ApiClient<T, AppStoreServerApi, ApiErrorCode>;
@@ -579,6 +590,288 @@ impl<T: Transport> AppStoreServerApiClient<T> {
             Some(update_app_account_token_request),
         )?;
         self.make_request_without_response_body(req)
+            .await
+    }
+
+    /// Upload an image to use for retention messaging.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/upload-image)
+    ///
+    /// # Arguments
+    ///
+    /// * `image_identifier` - A UUID you provide to uniquely identify the image you upload.
+    /// * `image` - The PNG image data to upload.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn upload_image(&self, image_identifier: Uuid, image: Vec<u8>) -> Result<(), ApiError> {
+        let path = format!("/inApps/v1/messaging/image/{}", image_identifier);
+        let req = self.build_request_with_custom_content(&path, Method::PUT, image, "image/png")?;
+        self.make_request_without_response_body(req)
+            .await
+    }
+
+    /// Delete a previously uploaded image.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/delete-image)
+    ///
+    /// # Arguments
+    ///
+    /// * `image_identifier` - The identifier of the image to delete.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn delete_image(&self, image_identifier: Uuid) -> Result<(), ApiError> {
+        let path = format!("/inApps/v1/messaging/image/{}", image_identifier);
+        let req = self.build_request::<()>(&path, Method::DELETE, None)?;
+        self.make_request_without_response_body(req)
+            .await
+    }
+
+    /// Get the image identifier and state for all uploaded images.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/get-image-list)
+    ///
+    /// # Returns
+    ///
+    /// A response that contains status information for all images.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn get_image_list(&self) -> Result<GetImageListResponse, ApiError> {
+        let req = self.build_request::<()>("/inApps/v1/messaging/image/list", Method::GET, None)?;
+        self.make_request_with_response_body(req)
+            .await
+    }
+
+    /// Upload a message to use for retention messaging.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/upload-message)
+    ///
+    /// # Arguments
+    ///
+    /// * `message_identifier` - A UUID you provide to uniquely identify the message you upload.
+    /// * `upload_message_request_body` - The message text to upload.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn upload_message(
+        &self,
+        message_identifier: Uuid,
+        upload_message_request_body: &UploadMessageRequestBody,
+    ) -> Result<(), ApiError> {
+        let path = format!("/inApps/v1/messaging/message/{}", message_identifier);
+        let req = self.build_request(&path, Method::PUT, Some(upload_message_request_body))?;
+        self.make_request_without_response_body(req)
+            .await
+    }
+
+    /// Delete a previously uploaded message.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/delete-message)
+    ///
+    /// # Arguments
+    ///
+    /// * `message_identifier` - The identifier of the message to delete.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn delete_message(&self, message_identifier: Uuid) -> Result<(), ApiError> {
+        let path = format!("/inApps/v1/messaging/message/{}", message_identifier);
+        let req = self.build_request::<()>(&path, Method::DELETE, None)?;
+        self.make_request_without_response_body(req)
+            .await
+    }
+
+    /// Get the message identifier and state of all uploaded messages.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/get-message-list)
+    ///
+    /// # Returns
+    ///
+    /// A response that contains status information for all messages.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn get_message_list(&self) -> Result<GetMessageListResponse, ApiError> {
+        let req = self.build_request::<()>("/inApps/v1/messaging/message/list", Method::GET, None)?;
+        self.make_request_with_response_body(req)
+            .await
+    }
+
+    /// Configure a default message for a specific product in a specific locale.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/set-default-configuration)
+    ///
+    /// # Arguments
+    ///
+    /// * `product_id` - The product identifier for the default configuration.
+    /// * `locale` - The locale for the default configuration.
+    /// * `default_configuration_request` - The request body that includes the message identifier to configure as the default message.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn configure_default_message(
+        &self,
+        product_id: &str,
+        locale: &str,
+        default_configuration_request: &DefaultConfigurationRequest,
+    ) -> Result<(), ApiError> {
+        let path = format!("/inApps/v1/messaging/default/{}/{}", product_id, locale);
+        let req = self.build_request(&path, Method::PUT, Some(default_configuration_request))?;
+        self.make_request_without_response_body(req)
+            .await
+    }
+
+    /// Delete the default message configuration for a specific product in a specific locale.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/delete-default-configuration)
+    ///
+    /// # Arguments
+    ///
+    /// * `product_id` - The product identifier for the default configuration.
+    /// * `locale` - The locale for the default configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn delete_default_message(&self, product_id: &str, locale: &str) -> Result<(), ApiError> {
+        let path = format!("/inApps/v1/messaging/default/{}/{}", product_id, locale);
+        let req = self.build_request::<()>(&path, Method::DELETE, None)?;
+        self.make_request_without_response_body(req)
+            .await
+    }
+
+    /// Get the default message configuration for a specific product in a specific locale.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/get-default-configuration)
+    ///
+    /// # Arguments
+    ///
+    /// * `product_id` - The product identifier for the default configuration.
+    /// * `locale` - The locale for the default configuration.
+    ///
+    /// # Returns
+    ///
+    /// The default configuration for the specified product and locale.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn get_default_message(
+        &self,
+        product_id: &str,
+        locale: &str,
+    ) -> Result<DefaultConfigurationResponse, ApiError> {
+        let path = format!("/inApps/v1/messaging/default/{}/{}", product_id, locale);
+        let req = self.build_request::<()>(&path, Method::GET, None)?;
+        self.make_request_with_response_body(req)
+            .await
+    }
+
+    /// Configure the URL of your Get Retention Message endpoint.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/configure-realtime-url)
+    ///
+    /// # Arguments
+    ///
+    /// * `realtime_url_request` - The request body that includes your endpoint's URL.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn configure_realtime_url(&self, realtime_url_request: &RealtimeUrlRequest) -> Result<(), ApiError> {
+        let req = self.build_request(
+            "/inApps/v1/messaging/realtime/url",
+            Method::PUT,
+            Some(realtime_url_request),
+        )?;
+        self.make_request_without_response_body(req)
+            .await
+    }
+
+    /// Delete the URL of your Get Retention Message endpoint.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/delete-realtime-url)
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn delete_realtime_url(&self) -> Result<(), ApiError> {
+        let req = self.build_request::<()>("/inApps/v1/messaging/realtime/url", Method::DELETE, None)?;
+        self.make_request_without_response_body(req)
+            .await
+    }
+
+    /// Get the URL of your Get Retention Message endpoint.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/get-realtime-url)
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn get_realtime_url(&self) -> Result<RealtimeUrlResponse, ApiError> {
+        let req = self.build_request::<()>("/inApps/v1/messaging/realtime/url", Method::GET, None)?;
+        self.make_request_with_response_body(req)
+            .await
+    }
+
+    /// Initiate a performance test for retention messaging notifications.
+    ///
+    /// This endpoint only works in the sandbox environment.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/initiate-performance-test)
+    ///
+    /// # Arguments
+    ///
+    /// * `performance_test_request` - The request body containing the original transaction identifier.
+    ///
+    /// # Returns
+    ///
+    /// A response containing the performance test configuration and request identifier.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn initiate_performance_test(
+        &self,
+        performance_test_request: &PerformanceTestRequest,
+    ) -> Result<PerformanceTestResponse, ApiError> {
+        let req = self.build_request(
+            "/inApps/v1/messaging/performanceTest",
+            Method::POST,
+            Some(performance_test_request),
+        )?;
+        self.make_request_with_response_body(req)
+            .await
+    }
+
+    /// Get the results of a performance test.
+    ///
+    /// [Documentation](https://developer.apple.com/documentation/retentionmessaging/get-performance-test-results)
+    ///
+    /// # Arguments
+    ///
+    /// * `request_id` - The ID of the performance test to return.
+    ///
+    /// # Returns
+    ///
+    /// A response containing the performance test results.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `APIError` if the request could not be processed.
+    pub async fn get_performance_test_results(&self, request_id: Uuid) -> Result<PerformanceTestResultResponse, ApiError> {
+        let path = format!("/inApps/v1/messaging/performanceTest/result/{}", request_id);
+        let req = self.build_request::<()>(&path, Method::GET, None)?;
+        self.make_request_with_response_body(req)
             .await
     }
 }

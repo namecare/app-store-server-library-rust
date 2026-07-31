@@ -8,16 +8,20 @@ use app_store_server_library::models::account_tenure::AccountTenure;
 use app_store_server_library::models::consumption_request::ConsumptionRequest;
 use app_store_server_library::models::consumption_request_v1::ConsumptionRequestV1;
 use app_store_server_library::models::consumption_status::ConsumptionStatus;
+use app_store_server_library::models::default_configuration_request::DefaultConfigurationRequest;
 use app_store_server_library::models::delivery_status::DeliveryStatus;
 use app_store_server_library::models::delivery_status_v1::DeliveryStatusV1;
 use app_store_server_library::models::app_store_environment::Environment;
 use app_store_server_library::models::extend_reason_code::ExtendReasonCode;
 use app_store_server_library::models::extend_renewal_date_request::ExtendRenewalDateRequest;
+use app_store_server_library::models::image_size::ImageSize;
+use app_store_server_library::models::image_state::ImageState;
 use app_store_server_library::models::in_app_ownership_type::InAppOwnershipType;
 use app_store_server_library::models::last_transactions_item::LastTransactionsItem;
 use app_store_server_library::models::lifetime_dollars_purchased::LifetimeDollarsPurchased;
 use app_store_server_library::models::lifetime_dollars_refunded::LifetimeDollarsRefunded;
 use app_store_server_library::models::mass_extend_renewal_date_request::MassExtendRenewalDateRequest;
+use app_store_server_library::models::message_state::MessageState;
 use app_store_server_library::models::notification_history_request::NotificationHistoryRequest;
 use app_store_server_library::models::notification_history_response_item::NotificationHistoryResponseItem;
 use app_store_server_library::models::notification_type_v2::NotificationTypeV2;
@@ -31,6 +35,8 @@ use app_store_server_library::models::send_attempt_result::SendAttemptResult;
 use app_store_server_library::models::status::Status;
 use app_store_server_library::models::subscription_group_identifier_item::SubscriptionGroupIdentifierItem;
 use app_store_server_library::models::subtype::Subtype;
+use app_store_server_library::models::upload_message_image::UploadMessageImage;
+use app_store_server_library::models::upload_message_request_body::UploadMessageRequestBody;
 use app_store_server_library::models::transaction_history_request::{
     Order, ProductType, TransactionHistoryRequest,
 };
@@ -1533,6 +1539,348 @@ fn test_production_environment_is_accepted() {
         Environment::Production,
         mock_transport,
     );
+
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_upload_image() {
+    let client = app_store_server_api_client(
+        "".to_string(),
+        StatusCode::OK,
+        Some(Box::new(|req, body| {
+            assert_eq!(&Method::PUT, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/messaging/image/a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890",
+                req.uri().to_string()
+            );
+            assert_eq!(
+                "image/png",
+                req.headers()
+                    .get("Content-Type")
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+            );
+            assert!(body.len() > 0);
+            assert_eq!(&vec![1, 2, 3], body);
+        })),
+    );
+
+    let result = client
+        .upload_image(
+            Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap(),
+            vec![1, 2, 3],
+        )
+        .await;
+
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_delete_image() {
+    let client = app_store_server_api_client(
+        "".to_string(),
+        StatusCode::OK,
+        Some(Box::new(|req, _body| {
+            assert_eq!(&Method::DELETE, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/messaging/image/a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890",
+                req.uri().to_string()
+            );
+        })),
+    );
+
+    let result = client
+        .delete_image(Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap())
+        .await;
+
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_image_list() {
+    let client = app_store_server_api_client_with_body_from_file(
+        "tests/resources/models/getImageListResponse.json",
+        StatusCode::OK,
+        Some(Box::new(|req, _body| {
+            assert_eq!(&Method::GET, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/messaging/image/list",
+                req.uri().to_string()
+            );
+        })),
+    );
+
+    let result = client.get_image_list().await;
+
+    assert!(result.is_ok());
+    let response = result.unwrap();
+    assert_eq!(
+        1,
+        response
+            .image_identifiers
+            .as_ref()
+            .unwrap()
+            .len()
+    );
+    assert_eq!(
+        Some(Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap()),
+        response
+            .image_identifiers
+            .as_ref()
+            .unwrap()[0]
+            .image_identifier
+    );
+    assert_eq!(
+        Some(ImageState::Approved),
+        response
+            .image_identifiers
+            .as_ref()
+            .unwrap()[0]
+            .image_state
+    );
+    assert_eq!(
+        Some(ImageSize::FullSize),
+        response
+            .image_identifiers
+            .as_ref()
+            .unwrap()[0]
+            .image_size
+    );
+}
+
+#[tokio::test]
+async fn test_upload_message() {
+    let client = app_store_server_api_client(
+        "".to_string(),
+        StatusCode::OK,
+        Some(Box::new(|req, body| {
+            assert_eq!(&Method::PUT, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/messaging/message/a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890",
+                req.uri().to_string()
+            );
+            let decoded_json: HashMap<String, Value> = serde_json::from_slice(body).unwrap();
+            assert_eq!("Header text", decoded_json["header"].as_str().unwrap());
+            assert_eq!("Body text", decoded_json["body"].as_str().unwrap());
+        })),
+    );
+
+    let upload_message_request_body =
+        UploadMessageRequestBody::new(
+            "Header text".to_string(),
+            "Body text".to_string(),
+            None,
+            None,
+            None,
+        )
+        .unwrap();
+    let result = client
+        .upload_message(
+            Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap(),
+            &upload_message_request_body,
+        )
+        .await;
+
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_upload_message_with_image() {
+    let client = app_store_server_api_client(
+        "".to_string(),
+        StatusCode::OK,
+        Some(Box::new(|req, body| {
+            assert_eq!(&Method::PUT, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/messaging/message/a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890",
+                req.uri().to_string()
+            );
+            let decoded_json: HashMap<String, Value> = serde_json::from_slice(body).unwrap();
+            assert_eq!("Header text", decoded_json["header"].as_str().unwrap());
+            assert_eq!("Body text", decoded_json["body"].as_str().unwrap());
+            let image = decoded_json["image"]
+                .as_object()
+                .unwrap();
+            assert_eq!(
+                "b2c3d4e5-f6a7-8901-b2c3-d4e5f6a78901",
+                image["imageIdentifier"]
+                    .as_str()
+                    .unwrap()
+            );
+            assert_eq!("Alt text", image["altText"].as_str().unwrap());
+        })),
+    );
+
+    let image = UploadMessageImage::new(
+        Uuid::parse_str("b2c3d4e5-f6a7-8901-b2c3-d4e5f6a78901").unwrap(),
+        "Alt text".to_string(),
+    )
+    .unwrap();
+    let upload_message_request_body = UploadMessageRequestBody::new(
+        "Header text".to_string(),
+        "Body text".to_string(),
+        Some(image),
+        None,
+        None,
+    )
+    .unwrap();
+    let result = client
+        .upload_message(
+            Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap(),
+            &upload_message_request_body,
+        )
+        .await;
+
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_delete_message() {
+    let client = app_store_server_api_client(
+        "".to_string(),
+        StatusCode::OK,
+        Some(Box::new(|req, _body| {
+            assert_eq!(&Method::DELETE, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/messaging/message/a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890",
+                req.uri().to_string()
+            );
+        })),
+    );
+
+    let result = client
+        .delete_message(Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap())
+        .await;
+
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_message_list() {
+    let client = app_store_server_api_client_with_body_from_file(
+        "tests/resources/models/getMessageListResponse.json",
+        StatusCode::OK,
+        Some(Box::new(|req, _body| {
+            assert_eq!(&Method::GET, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/messaging/message/list",
+                req.uri().to_string()
+            );
+        })),
+    );
+
+    let result = client.get_message_list().await;
+
+    assert!(result.is_ok());
+    let response = result.unwrap();
+    assert_eq!(
+        1,
+        response
+            .message_identifiers
+            .as_ref()
+            .unwrap()
+            .len()
+    );
+    assert_eq!(
+        Some(Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap()),
+        response
+            .message_identifiers
+            .as_ref()
+            .unwrap()[0]
+            .message_identifier
+    );
+    assert_eq!(
+        Some(MessageState::Approved),
+        response
+            .message_identifiers
+            .as_ref()
+            .unwrap()[0]
+            .message_state
+    );
+}
+
+#[tokio::test]
+async fn test_set_default_configuration() {
+    let client = app_store_server_api_client(
+        "".to_string(),
+        StatusCode::OK,
+        Some(Box::new(|req, body| {
+            assert_eq!(&Method::PUT, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/messaging/default/com.example.product/en-US",
+                req.uri().to_string()
+            );
+            let decoded_json: HashMap<String, Value> = serde_json::from_slice(body).unwrap();
+            assert_eq!(
+                "a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890",
+                decoded_json["messageIdentifier"]
+                    .as_str()
+                    .unwrap()
+            );
+        })),
+    );
+
+    let default_configuration_request = DefaultConfigurationRequest {
+        message_identifier: Some(Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap()),
+    };
+    let result = client
+        .configure_default_message(
+            "com.example.product",
+            "en-US",
+            &default_configuration_request,
+        )
+        .await;
+
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_get_default_message_returns_default_configuration_response() {
+    let client = app_store_server_api_client(
+        serde_json::json!({
+            "messageIdentifier": "8118cbc9-83b8-46c7-a879-2247714d92f8"
+        })
+        .to_string(),
+        StatusCode::OK,
+        Some(Box::new(|req, _body| {
+            assert_eq!(&Method::GET, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/messaging/default/com.example.product/en-US",
+                req.uri().to_string()
+            );
+        })),
+    );
+
+    let result = client
+        .get_default_message("com.example.product", "en-US")
+        .await;
+
+    let response = result.expect("expected successful response");
+    assert_eq!(
+        response.message_identifier,
+        uuid::Uuid::parse_str("8118cbc9-83b8-46c7-a879-2247714d92f8").unwrap()
+    );
+}
+
+#[tokio::test]
+async fn test_delete_default_configuration() {
+    let client = app_store_server_api_client(
+        "".to_string(),
+        StatusCode::OK,
+        Some(Box::new(|req, _body| {
+            assert_eq!(&Method::DELETE, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/messaging/default/com.example.product/en-US",
+                req.uri().to_string()
+            );
+        })),
+    );
+
+    let result = client
+        .delete_default_message("com.example.product", "en-US")
+        .await;
 
     assert!(result.is_ok());
 }

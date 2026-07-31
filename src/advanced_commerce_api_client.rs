@@ -1,6 +1,6 @@
 pub mod api_error_code;
 
-use crate::api_client::api::advanced_commerce_api::api_error_code::ApiErrorCode;
+use crate::advanced_commerce_api_client::api_error_code::ApiErrorCode;
 use crate::api_client::api_client::ApiClient;
 use crate::api_client::error::ApiServiceError;
 use crate::api_client::transport::Transport;
