@@ -2,10 +2,10 @@ use serde::{Deserialize, Serialize};
 
 /// An item for migrating Advanced Commerce subscriptions.
 ///
-/// [SubscriptionMigrateItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionmigrateitem)
+/// [AdvancedCommerceSubscriptionMigrateItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionmigrateitem)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SubscriptionMigrateItem {
+pub struct AdvancedCommerceSubscriptionMigrateItem {
     /// The SKU identifier for the item.
     ///
     /// [SKU](https://developer.apple.com/documentation/advancedcommerceapi/sku)
@@ -23,7 +23,7 @@ pub struct SubscriptionMigrateItem {
     pub display_name: String,
 }
 
-impl SubscriptionMigrateItem {
+impl AdvancedCommerceSubscriptionMigrateItem {
     pub fn new(sku: String, description: String, display_name: String) -> Self {
         Self {
             sku,

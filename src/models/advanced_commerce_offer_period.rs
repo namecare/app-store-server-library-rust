@@ -2,9 +2,9 @@ use serde::{Deserialize, Serialize};
 
 /// The period of the offer.
 ///
-/// [Offer](https://developer.apple.com/documentation/advancedcommerceapi/offer)
+/// [AdvancedCommerceOffer](https://developer.apple.com/documentation/advancedcommerceapi/offer)
 #[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
-pub enum OfferPeriod {
+pub enum AdvancedCommerceOfferPeriod {
     #[serde(rename = "P3D")]
     P3d,
     #[serde(rename = "P1W")]
@@ -25,18 +25,18 @@ pub enum OfferPeriod {
     P1y,
 }
 
-impl OfferPeriod {
+impl AdvancedCommerceOfferPeriod {
     pub fn as_str(&self) -> &str {
         match self {
-            OfferPeriod::P3d => "P3D",
-            OfferPeriod::P1w => "P1W",
-            OfferPeriod::P2w => "P2W",
-            OfferPeriod::P1m => "P1M",
-            OfferPeriod::P2m => "P2M",
-            OfferPeriod::P3m => "P3M",
-            OfferPeriod::P6m => "P6M",
-            OfferPeriod::P9m => "P9M",
-            OfferPeriod::P1y => "P1Y",
+            AdvancedCommerceOfferPeriod::P3d => "P3D",
+            AdvancedCommerceOfferPeriod::P1w => "P1W",
+            AdvancedCommerceOfferPeriod::P2w => "P2W",
+            AdvancedCommerceOfferPeriod::P1m => "P1M",
+            AdvancedCommerceOfferPeriod::P2m => "P2M",
+            AdvancedCommerceOfferPeriod::P3m => "P3M",
+            AdvancedCommerceOfferPeriod::P6m => "P6M",
+            AdvancedCommerceOfferPeriod::P9m => "P9M",
+            AdvancedCommerceOfferPeriod::P1y => "P1Y",
         }
     }
 }

@@ -3,10 +3,10 @@ use uuid::Uuid;
 
 /// The metadata to include in Advanced Commerce server requests.
 ///
-/// [RequestInfo](https://developer.apple.com/documentation/advancedcommerceapi/requestinfo)
+/// [AdvancedCommerceRequestInfo](https://developer.apple.com/documentation/advancedcommerceapi/requestinfo)
 #[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
-pub struct RequestInfo {
+pub struct AdvancedCommerceRequestInfo {
     /// The app account token for the request.
     ///
     /// [App Account Token](https://developer.apple.com/documentation/advancedcommerceapi/appaccounttoken)
@@ -25,7 +25,7 @@ pub struct RequestInfo {
     pub request_reference_id: Uuid,
 }
 
-impl RequestInfo {
+impl AdvancedCommerceRequestInfo {
     pub fn new(request_reference_id: Uuid) -> Self {
         Self {
             app_account_token: None,

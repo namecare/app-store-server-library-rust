@@ -1,5 +1,5 @@
-use crate::models::advanced_commerce_offer::Offer;
-use crate::models::advanced_commerce_refund::Refund;
+use crate::models::advanced_commerce_offer::AdvancedCommerceOffer;
+use crate::models::advanced_commerce_refund::AdvancedCommerceRefund;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::formats::Flexible;
@@ -28,15 +28,15 @@ pub struct AdvancedCommerceTransactionItem {
 
     /// An offer for the item.
     ///
-    /// [Offer](https://developer.apple.com/documentation/advancedcommerceapi/offer)
-    pub offer: Option<Offer>,
+    /// [AdvancedCommerceOffer](https://developer.apple.com/documentation/advancedcommerceapi/offer)
+    pub offer: Option<AdvancedCommerceOffer>,
 
     /// The price in milliunits.
     ///
     /// [Price](https://developer.apple.com/documentation/advancedcommerceapi/price)
     pub price: Option<i64>,
 
-    pub refunds: Option<Vec<Refund>>,
+    pub refunds: Option<Vec<AdvancedCommerceRefund>>,
 
     #[serde_as(as = "Option<TimestampMilliSeconds<String, Flexible>>")]
     pub revocation_date: Option<DateTime<Utc>>,

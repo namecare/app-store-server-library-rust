@@ -6,6 +6,8 @@ use app_store_server_library::app_store_server_api_client::{
 };
 use app_store_server_library::api_client::error::ConfigurationError;
 use app_store_server_library::models::account_tenure::AccountTenure;
+use app_store_server_library::models::bullet_point::BulletPoint;
+use app_store_server_library::models::header_position::HeaderPosition;
 use app_store_server_library::models::consumption_request::ConsumptionRequest;
 use app_store_server_library::models::consumption_request_v1::ConsumptionRequestV1;
 use app_store_server_library::models::consumption_status::ConsumptionStatus;
@@ -27,8 +29,11 @@ use app_store_server_library::models::notification_history_request::Notification
 use app_store_server_library::models::notification_history_response_item::NotificationHistoryResponseItem;
 use app_store_server_library::models::notification_type_v2::NotificationTypeV2;
 use app_store_server_library::models::order_lookup_status::OrderLookupStatus;
+use app_store_server_library::models::performance_test_request::PerformanceTestRequest;
+use app_store_server_library::models::performance_test_status::PerformanceTestStatus;
 use app_store_server_library::models::platform::Platform;
 use app_store_server_library::models::play_time::PlayTime;
+use app_store_server_library::models::realtime_url_request::RealtimeUrlRequest;
 use app_store_server_library::models::refund_preference::RefundPreference;
 use app_store_server_library::models::refund_preference_v1::RefundPreferenceV1;
 use app_store_server_library::models::send_attempt_item::SendAttemptItem;
@@ -1045,13 +1050,13 @@ async fn test_set_app_account_token() {
         Some(Box::new(|req, body| {
             assert_eq!(&Method::PUT, req.method());
             assert_eq!(
-                "https://local-testing-base-url/inApps/v1/transactions/555555/appAccountToken",
+                "https://local-testing-base-url/inApps/v1/transactions/49571273/appAccountToken",
                 req.uri().to_string()
             );
 
             let decoded_json: HashMap<&str, Value> = serde_json::from_slice(body).unwrap();
             assert_eq!(
-                "550e8400-e29b-41d4-a716-446655440000",
+                "7389a31a-fb6d-4569-a2a6-db7d85d84813",
                 decoded_json["appAccountToken"]
                     .as_str()
                     .unwrap()
@@ -1059,11 +1064,11 @@ async fn test_set_app_account_token() {
         })),
     );
 
-    let token = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+    let token = Uuid::parse_str("7389a31a-fb6d-4569-a2a6-db7d85d84813").unwrap();
     let request = UpdateAppAccountTokenRequest::new(token);
 
     let _ = client
-        .set_app_account_token("555555", &request)
+        .set_app_account_token("49571273", &request)
         .await
         .unwrap();
 }
@@ -1076,10 +1081,10 @@ async fn test_invalid_app_account_token_uuid_error() {
         None,
     );
 
-    let token = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+    let token = Uuid::parse_str("7389a31a-fb6d-4569-a2a6-db7d85d84813").unwrap();
     let request = UpdateAppAccountTokenRequest::new(token);
     let result = client
-        .set_app_account_token("555555", &request)
+        .set_app_account_token("1234", &request)
         .await;
 
     match result {
@@ -1109,10 +1114,10 @@ async fn test_family_transaction_not_supported_error() {
         None,
     );
 
-    let token = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+    let token = Uuid::parse_str("7389a31a-fb6d-4569-a2a6-db7d85d84813").unwrap();
     let request = UpdateAppAccountTokenRequest::new(token);
     let result = client
-        .set_app_account_token("555555", &request)
+        .set_app_account_token("1234", &request)
         .await;
 
     match result {
@@ -1142,10 +1147,10 @@ async fn test_transaction_id_not_original_transaction_id_error() {
         None,
     );
 
-    let token = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+    let token = Uuid::parse_str("7389a31a-fb6d-4569-a2a6-db7d85d84813").unwrap();
     let request = UpdateAppAccountTokenRequest::new(token);
     let result = client
-        .set_app_account_token("555555", &request)
+        .set_app_account_token("1234", &request)
         .await;
 
     match result {
@@ -1872,6 +1877,239 @@ async fn test_delete_default_configuration() {
         .await;
 
     assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_finish_transaction() {
+    let client = app_store_server_api_client(
+        "".to_string(),
+        StatusCode::OK,
+        Some(Box::new(|req, body| {
+            assert_eq!(&Method::POST, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/transactions/1234/finish",
+                req.uri().to_string()
+            );
+            assert!(body.is_empty(), "POST request should have empty body");
+        })),
+    );
+
+    let result = client.finish_transaction("1234").await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_upload_message_with_bullet_points() {
+    let client = app_store_server_api_client(
+        "".to_string(),
+        StatusCode::OK,
+        Some(Box::new(|req, body| {
+            assert_eq!(&Method::PUT, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/messaging/message/a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890",
+                req.uri().to_string()
+            );
+            let decoded_json: HashMap<String, Value> = serde_json::from_slice(body).unwrap();
+            assert_eq!("Header text", decoded_json["header"].as_str().unwrap());
+            assert_eq!("Body text", decoded_json["body"].as_str().unwrap());
+            assert_eq!(
+                "ABOVE_IMAGE",
+                decoded_json["headerPosition"].as_str().unwrap()
+            );
+            let image = decoded_json["image"].as_object().unwrap();
+            assert_eq!(
+                "b2c3d4e5-f6a7-8901-b2c3-d4e5f6a78901",
+                image["imageIdentifier"].as_str().unwrap()
+            );
+            assert_eq!("Alt text", image["altText"].as_str().unwrap());
+            let bullet_points = decoded_json["bulletPoints"].as_array().unwrap();
+            assert_eq!(1, bullet_points.len());
+            assert_eq!("Bullet text", bullet_points[0]["text"].as_str().unwrap());
+            assert_eq!(
+                "c3d4e5f6-a7b8-9012-c3d4-e5f6a7b89012",
+                bullet_points[0]["imageIdentifier"].as_str().unwrap()
+            );
+            assert_eq!(
+                "Bullet alt text",
+                bullet_points[0]["altText"].as_str().unwrap()
+            );
+        })),
+    );
+
+    let image = UploadMessageImage::new(
+        Uuid::parse_str("b2c3d4e5-f6a7-8901-b2c3-d4e5f6a78901").unwrap(),
+        "Alt text".to_string(),
+    )
+    .unwrap();
+    let bullet_point = BulletPoint::new(
+        "Bullet text".to_string(),
+        Uuid::parse_str("c3d4e5f6-a7b8-9012-c3d4-e5f6a7b89012").unwrap(),
+        "Bullet alt text".to_string(),
+    )
+    .unwrap();
+    let upload_message_request_body = UploadMessageRequestBody::new(
+        "Header text".to_string(),
+        "Body text".to_string(),
+        Some(image),
+        Some(vec![bullet_point]),
+        Some(HeaderPosition::AboveImage),
+    )
+    .unwrap();
+    let result = client
+        .upload_message(
+            Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap(),
+            &upload_message_request_body,
+        )
+        .await;
+
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_configure_realtime_url() {
+    let client = app_store_server_api_client(
+        "".to_string(),
+        StatusCode::OK,
+        Some(Box::new(|req, body| {
+            assert_eq!(&Method::PUT, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/messaging/realtime/url",
+                req.uri().to_string()
+            );
+            let decoded_json: HashMap<String, Value> = serde_json::from_slice(body).unwrap();
+            assert_eq!(
+                "https://example.com/realtime",
+                decoded_json["realtimeURL"].as_str().unwrap()
+            );
+        })),
+    );
+
+    let realtime_url_request =
+        RealtimeUrlRequest::new("https://example.com/realtime".to_string()).unwrap();
+    let result = client
+        .configure_realtime_url(&realtime_url_request)
+        .await;
+
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_delete_realtime_url() {
+    let client = app_store_server_api_client(
+        "".to_string(),
+        StatusCode::OK,
+        Some(Box::new(|req, _body| {
+            assert_eq!(&Method::DELETE, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/messaging/realtime/url",
+                req.uri().to_string()
+            );
+        })),
+    );
+
+    let result = client.delete_realtime_url().await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn test_get_realtime_url() {
+    let client = app_store_server_api_client_with_body_from_file(
+        "tests/resources/models/getRealtimeUrlResponse.json",
+        StatusCode::OK,
+        Some(Box::new(|req, _body| {
+            assert_eq!(&Method::GET, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/messaging/realtime/url",
+                req.uri().to_string()
+            );
+        })),
+    );
+
+    let response = client.get_realtime_url().await.unwrap();
+    assert_eq!("https://example.com/realtime", response.realtime_url);
+}
+
+#[tokio::test]
+async fn test_initiate_performance_test() {
+    let client = app_store_server_api_client_with_body_from_file(
+        "tests/resources/models/performanceTestResponse.json",
+        StatusCode::OK,
+        Some(Box::new(|req, body| {
+            assert_eq!(&Method::POST, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/messaging/performanceTest",
+                req.uri().to_string()
+            );
+            let decoded_json: HashMap<String, Value> = serde_json::from_slice(body).unwrap();
+            assert_eq!(
+                "70000500092808",
+                decoded_json["originalTransactionId"].as_str().unwrap()
+            );
+        })),
+    );
+
+    let performance_test_request = PerformanceTestRequest {
+        original_transaction_id: "70000500092808".to_string(),
+    };
+    let response = client
+        .initiate_performance_test(&performance_test_request)
+        .await
+        .unwrap();
+
+    assert_eq!(10, response.config.max_concurrent_requests);
+    assert_eq!(100, response.config.total_requests);
+    assert_eq!(60000, response.config.total_duration);
+    assert_eq!(500, response.config.response_time_threshold);
+    assert_eq!(95, response.config.success_rate_threshold);
+    assert_eq!(
+        Uuid::parse_str("c4b87a1d-2e3f-4a5b-9c6d-7e8f9a0b1c2d").unwrap(),
+        response.request_id
+    );
+}
+
+#[tokio::test]
+async fn test_get_performance_test_results() {
+    let client = app_store_server_api_client_with_body_from_file(
+        "tests/resources/models/performanceTestResultResponse.json",
+        StatusCode::OK,
+        Some(Box::new(|req, _body| {
+            assert_eq!(&Method::GET, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/inApps/v1/messaging/performanceTest/result/c4b87a1d-2e3f-4a5b-9c6d-7e8f9a0b1c2d",
+                req.uri().to_string()
+            );
+        })),
+    );
+
+    let response = client
+        .get_performance_test_results(
+            Uuid::parse_str("c4b87a1d-2e3f-4a5b-9c6d-7e8f9a0b1c2d").unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(10, response.config.max_concurrent_requests);
+    assert_eq!(100, response.config.total_requests);
+    assert_eq!(60000, response.config.total_duration);
+    assert_eq!(500, response.config.response_time_threshold);
+    assert_eq!(95, response.config.success_rate_threshold);
+    assert_eq!("https://example.com/retention", response.target);
+    assert_eq!(PerformanceTestStatus::Pass, response.result);
+    assert_eq!(98, response.success_rate);
+    assert_eq!(0, response.num_pending);
+    assert_eq!(120, response.response_times.average);
+    assert_eq!(100, response.response_times.p50);
+    assert_eq!(200, response.response_times.p90);
+    assert_eq!(250, response.response_times.p95);
+    assert_eq!(400, response.response_times.p99);
+    assert_eq!(
+        Some(&1),
+        response.failures.get(&SendAttemptResult::TimedOut)
+    );
+    assert_eq!(
+        Some(&1),
+        response.failures.get(&SendAttemptResult::NoResponse)
+    );
 }
 
 fn app_store_server_api_client_with_body_from_file(

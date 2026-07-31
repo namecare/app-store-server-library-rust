@@ -3,10 +3,10 @@ use serde::{Deserialize, Serialize};
 
 /// An item for Advanced Commerce subscription price changes.
 ///
-/// [SubscriptionPriceChangeItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionpricechangeitem)
+/// [AdvancedCommerceSubscriptionPriceChangeItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionpricechangeitem)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SubscriptionPriceChangeItem {
+pub struct AdvancedCommerceSubscriptionPriceChangeItem {
     /// The SKU identifier for the item.
     ///
     /// [SKU](https://developer.apple.com/documentation/advancedcommerceapi/sku)
@@ -26,8 +26,8 @@ pub struct SubscriptionPriceChangeItem {
     pub price: i64,
 }
 
-impl SubscriptionPriceChangeItem {
-    /// Creates a new `SubscriptionPriceChangeItem`, validating the SKU and each dependent SKU.
+impl AdvancedCommerceSubscriptionPriceChangeItem {
+    /// Creates a new `AdvancedCommerceSubscriptionPriceChangeItem`, validating the SKU and each dependent SKU.
     pub fn new(
         sku: String,
         price: i64,

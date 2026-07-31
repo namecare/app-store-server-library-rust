@@ -2,10 +2,10 @@ use serde::{Deserialize, Serialize};
 
 /// The description and display name of the subscription to migrate to that you manage.
 ///
-/// [Descriptors](https://developer.apple.com/documentation/advancedcommerceapi/descriptors)
+/// [AdvancedCommerceDescriptors](https://developer.apple.com/documentation/advancedcommerceapi/descriptors)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Descriptors {
+pub struct AdvancedCommerceDescriptors {
     /// A string you provide that describes a SKU.
     ///
     /// [Description](https://developer.apple.com/documentation/appstoreserverapi/description)
@@ -17,7 +17,7 @@ pub struct Descriptors {
     pub display_name: String,
 }
 
-impl Descriptors {
+impl AdvancedCommerceDescriptors {
     pub fn new(description: String, display_name: String) -> Self {
         Self {
             description,

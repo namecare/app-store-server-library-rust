@@ -1,31 +1,31 @@
-use crate::models::advanced_commerce_request_info::RequestInfo;
-use crate::models::advanced_commerce_subscription_change_metadata_descriptors::SubscriptionChangeMetadataDescriptors;
-use crate::models::advanced_commerce_subscription_change_metadata_item::SubscriptionChangeMetadataItem;
+use crate::models::advanced_commerce_request_info::AdvancedCommerceRequestInfo;
+use crate::models::advanced_commerce_subscription_change_metadata_descriptors::AdvancedCommerceSubscriptionChangeMetadataDescriptors;
+use crate::models::advanced_commerce_subscription_change_metadata_item::AdvancedCommerceSubscriptionChangeMetadataItem;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// The request data your app provides to change the metadata of an auto-renewable subscription.
 ///
-/// [SubscriptionChangeMetadataRequest](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionchangemetadatarequest)
+/// [AdvancedCommerceSubscriptionChangeMetadataRequest](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionchangemetadatarequest)
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
-pub struct SubscriptionChangeMetadataRequest {
+pub struct AdvancedCommerceSubscriptionChangeMetadataRequest {
     /// The metadata to include in server requests.
     ///
     /// [requestInfo](https://developer.apple.com/documentation/advancedcommerceapi/requestinfo)
-    pub request_info: RequestInfo,
+    pub request_info: AdvancedCommerceRequestInfo,
 
     /// The data your app provides to change the descriptors of an auto-renewable subscription.
     ///
-    /// [SubscriptionChangeMetadataDescriptors](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionchangemetadatadescriptors)
+    /// [AdvancedCommerceSubscriptionChangeMetadataDescriptors](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionchangemetadatadescriptors)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub descriptors: Option<SubscriptionChangeMetadataDescriptors>,
+    pub descriptors: Option<AdvancedCommerceSubscriptionChangeMetadataDescriptors>,
 
     /// The list of items to change metadata for in the subscription.
     ///
-    /// [SubscriptionChangeMetadataItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionchangemetadatitem)
+    /// [AdvancedCommerceSubscriptionChangeMetadataItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionchangemetadatitem)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub items: Option<Vec<SubscriptionChangeMetadataItem>>,
+    pub items: Option<Vec<AdvancedCommerceSubscriptionChangeMetadataItem>>,
 
     /// The storefront for the transaction.
     ///
@@ -40,10 +40,10 @@ pub struct SubscriptionChangeMetadataRequest {
     pub tax_code: Option<String>,
 }
 
-impl SubscriptionChangeMetadataRequest {
+impl AdvancedCommerceSubscriptionChangeMetadataRequest {
     pub fn new(request_reference_id: Uuid) -> Self {
         Self {
-            request_info: RequestInfo::new(request_reference_id),
+            request_info: AdvancedCommerceRequestInfo::new(request_reference_id),
             descriptors: None,
             items: None,
             storefront: None,
@@ -51,22 +51,22 @@ impl SubscriptionChangeMetadataRequest {
         }
     }
 
-    pub fn with_request_info(mut self, request_info: RequestInfo) -> Self {
+    pub fn with_request_info(mut self, request_info: AdvancedCommerceRequestInfo) -> Self {
         self.request_info = request_info;
         self
     }
 
-    pub fn with_descriptors(mut self, descriptors: SubscriptionChangeMetadataDescriptors) -> Self {
+    pub fn with_descriptors(mut self, descriptors: AdvancedCommerceSubscriptionChangeMetadataDescriptors) -> Self {
         self.descriptors = Some(descriptors);
         self
     }
 
-    pub fn with_items(mut self, items: Vec<SubscriptionChangeMetadataItem>) -> Self {
+    pub fn with_items(mut self, items: Vec<AdvancedCommerceSubscriptionChangeMetadataItem>) -> Self {
         self.items = Some(items);
         self
     }
 
-    pub fn add_item(mut self, item: SubscriptionChangeMetadataItem) -> Self {
+    pub fn add_item(mut self, item: AdvancedCommerceSubscriptionChangeMetadataItem) -> Self {
         if self.items.is_none() {
             self.items = Some(Vec::new());
         }

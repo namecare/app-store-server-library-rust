@@ -2,11 +2,11 @@ use serde::{Deserialize, Serialize};
 
 /// An item for migrating Advanced Commerce subscription renewals.
 ///
-/// [SubscriptionMigrateRenewalItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionmigraterenewalitem)
+/// [AdvancedCommerceSubscriptionMigrateRenewalItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionmigraterenewalitem)
 #[serde_with::serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SubscriptionMigrateRenewalItem {
+pub struct AdvancedCommerceSubscriptionMigrateRenewalItem {
     /// The SKU identifier for the item.
     ///
     /// [SKU](https://developer.apple.com/documentation/advancedcommerceapi/sku)
@@ -24,7 +24,7 @@ pub struct SubscriptionMigrateRenewalItem {
     pub display_name: String,
 }
 
-impl SubscriptionMigrateRenewalItem {
+impl AdvancedCommerceSubscriptionMigrateRenewalItem {
     pub fn new(sku: String, description: String, display_name: String) -> Self {
         Self {
             sku,

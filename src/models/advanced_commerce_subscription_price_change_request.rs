@@ -1,14 +1,15 @@
-use crate::models::advanced_commerce_request_info::RequestInfo;
-use crate::models::advanced_commerce_subscription_price_change_item::SubscriptionPriceChangeItem;
+use crate::models::advanced_commerce_request_info::AdvancedCommerceRequestInfo;
+use crate::models::advanced_commerce_subscription_price_change_item::AdvancedCommerceSubscriptionPriceChangeItem;
+use crate::models::helper_validation_utils::{validate_items, ValidationError};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// The metadata your app provides to change the price of an auto-renewable subscription.
 ///
-/// [SubscriptionPriceChangeRequest](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionpricechangerequest)
+/// [AdvancedCommerceSubscriptionPriceChangeRequest](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionpricechangerequest)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SubscriptionPriceChangeRequest {
+pub struct AdvancedCommerceSubscriptionPriceChangeRequest {
     /// The currency of the price of the product.
     ///
     /// [currency](https://developer.apple.com/documentation/advancedcommerceapi/currency)
@@ -17,13 +18,13 @@ pub struct SubscriptionPriceChangeRequest {
 
     /// The details of the price change items.
     ///
-    /// [SubscriptionPriceChangeItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionpricechangeitem)
-    pub items: Vec<SubscriptionPriceChangeItem>,
+    /// [AdvancedCommerceSubscriptionPriceChangeItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionpricechangeitem)
+    pub items: Vec<AdvancedCommerceSubscriptionPriceChangeItem>,
 
     /// The metadata to include in server requests.
     ///
     /// [requestInfo](https://developer.apple.com/documentation/advancedcommerceapi/requestinfo)
-    pub request_info: RequestInfo,
+    pub request_info: AdvancedCommerceRequestInfo,
 
     /// The storefront for the transaction.
     ///
@@ -32,14 +33,18 @@ pub struct SubscriptionPriceChangeRequest {
     pub storefront: Option<String>,
 }
 
-impl SubscriptionPriceChangeRequest {
-    pub fn new(currency: String, items: Vec<SubscriptionPriceChangeItem>, request_reference_id: Uuid) -> Self {
-        Self {
+impl AdvancedCommerceSubscriptionPriceChangeRequest {
+    pub fn new(
+        currency: String,
+        items: Vec<AdvancedCommerceSubscriptionPriceChangeItem>,
+        request_reference_id: Uuid,
+    ) -> Result<Self, ValidationError> {
+        Ok(Self {
             currency: Some(currency),
-            items: items,
-            request_info: RequestInfo::new(request_reference_id),
+            items: validate_items(items)?,
+            request_info: AdvancedCommerceRequestInfo::new(request_reference_id),
             storefront: None,
-        }
+        })
     }
 
     pub fn with_storefront(mut self, storefront: String) -> Self {
@@ -47,7 +52,7 @@ impl SubscriptionPriceChangeRequest {
         self
     }
 
-    pub fn with_request_info(mut self, request_info: RequestInfo) -> Self {
+    pub fn with_request_info(mut self, request_info: AdvancedCommerceRequestInfo) -> Self {
         self.request_info = request_info;
         self
     }

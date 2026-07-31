@@ -1,5 +1,5 @@
-use crate::models::advanced_commerce_descriptors::Descriptors;
-use crate::models::advanced_commerce_period::Period;
+use crate::models::advanced_commerce_descriptors::AdvancedCommerceDescriptors;
+use crate::models::advanced_commerce_period::AdvancedCommercePeriod;
 use crate::models::advanced_commerce_renewal_item::AdvancedCommerceRenewalItem;
 use serde::{Deserialize, Serialize};
 
@@ -10,13 +10,13 @@ pub struct AdvancedCommerceRenewalInfo {
     pub consistency_token: Option<String>,
 
     /// advancedCommerceDescriptors
-    pub descriptors: Option<Descriptors>,
+    pub descriptors: Option<AdvancedCommerceDescriptors>,
 
     /// advancedCommerceRenewalItems
     pub items: Option<Vec<AdvancedCommerceRenewalItem>>,
 
     /// advancedCommercePeriod
-    pub period: Option<Period>,
+    pub period: Option<AdvancedCommercePeriod>,
 
     /// advancedCommerceRequestReferenceId
     pub request_reference_id: Option<String>,

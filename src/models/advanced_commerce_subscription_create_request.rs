@@ -1,26 +1,27 @@
-use crate::models::advanced_commerce_descriptors::Descriptors;
+use crate::models::advanced_commerce_descriptors::AdvancedCommerceDescriptors;
 use crate::models::advanced_commerce_in_app_request::AdvancedCommerceInAppRequest;
-use crate::models::advanced_commerce_in_app_request_operation::InAppRequestOperation;
-use crate::models::advanced_commerce_in_app_request_version::InAppRequestVersion;
-use crate::models::advanced_commerce_period::Period;
-use crate::models::advanced_commerce_request_info::RequestInfo;
-use crate::models::advanced_commerce_subscription_create_item::SubscriptionCreateItem;
+use crate::models::advanced_commerce_in_app_request_operation::AdvancedCommerceInAppRequestOperation;
+use crate::models::advanced_commerce_in_app_request_version::AdvancedCommerceInAppRequestVersion;
+use crate::models::advanced_commerce_period::AdvancedCommercePeriod;
+use crate::models::advanced_commerce_request_info::AdvancedCommerceRequestInfo;
+use crate::models::advanced_commerce_subscription_create_item::AdvancedCommerceSubscriptionCreateItem;
+use crate::models::helper_validation_utils::{validate_items, ValidationError};
 use serde::{Deserialize, Serialize};
 
 /// The metadata your app provides when a customer purchases an auto-renewable subscription.
 ///
-/// [SubscriptionCreateRequest](https://developer.apple.com/documentation/advancedcommerceapi/subscriptioncreaterequest)
+/// [AdvancedCommerceSubscriptionCreateRequest](https://developer.apple.com/documentation/advancedcommerceapi/subscriptioncreaterequest)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SubscriptionCreateRequest {
+pub struct AdvancedCommerceSubscriptionCreateRequest {
     /// The operation type for this request.
     /// Value: CREATE_SUBSCRIPTION
     #[serde(default = "default_operation")]
-    pub operation: InAppRequestOperation,
+    pub operation: AdvancedCommerceInAppRequestOperation,
 
     /// The version of this request.
     #[serde(default = "default_version")]
-    pub version: InAppRequestVersion,
+    pub version: AdvancedCommerceInAppRequestVersion,
 
     /// The currency of the price of the product.
     ///
@@ -29,18 +30,18 @@ pub struct SubscriptionCreateRequest {
 
     /// The display name and description of a subscription product.
     ///
-    /// [Descriptors](https://developer.apple.com/documentation/advancedcommerceapi/descriptors)
-    pub descriptors: Descriptors,
+    /// [AdvancedCommerceDescriptors](https://developer.apple.com/documentation/advancedcommerceapi/descriptors)
+    pub descriptors: AdvancedCommerceDescriptors,
 
     /// The details of the subscription product for purchase.
     ///
-    /// [SubscriptionCreateItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptioncreateitem)
-    pub items: Vec<SubscriptionCreateItem>,
+    /// [AdvancedCommerceSubscriptionCreateItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptioncreateitem)
+    pub items: Vec<AdvancedCommerceSubscriptionCreateItem>,
 
     /// The duration of a single cycle of an auto-renewable subscription.
     ///
     /// [period](https://developer.apple.com/documentation/advancedcommerceapi/period)
-    pub period: Period,
+    pub period: AdvancedCommercePeriod,
 
     /// The identifier of a previous transaction for the subscription.
     ///
@@ -51,7 +52,7 @@ pub struct SubscriptionCreateRequest {
     /// The metadata to include in server requests.
     ///
     /// [requestInfo](https://developer.apple.com/documentation/advancedcommerceapi/requestinfo)
-    pub request_info: RequestInfo,
+    pub request_info: AdvancedCommerceRequestInfo,
 
     /// The storefront for the transaction.
     ///
@@ -65,15 +66,49 @@ pub struct SubscriptionCreateRequest {
     pub tax_code: String,
 }
 
-impl AdvancedCommerceInAppRequest for SubscriptionCreateRequest {}
+impl AdvancedCommerceSubscriptionCreateRequest {
+    pub fn new(
+        currency: String,
+        descriptors: AdvancedCommerceDescriptors,
+        items: Vec<AdvancedCommerceSubscriptionCreateItem>,
+        period: AdvancedCommercePeriod,
+        request_info: AdvancedCommerceRequestInfo,
+        tax_code: String,
+    ) -> Result<Self, ValidationError> {
+        Ok(Self {
+            operation: default_operation(),
+            version: default_version(),
+            currency,
+            descriptors,
+            items: validate_items(items)?,
+            period,
+            previous_transaction_id: None,
+            request_info,
+            storefront: None,
+            tax_code,
+        })
+    }
+
+    pub fn with_previous_transaction_id(mut self, previous_transaction_id: String) -> Self {
+        self.previous_transaction_id = Some(previous_transaction_id);
+        self
+    }
+
+    pub fn with_storefront(mut self, storefront: String) -> Self {
+        self.storefront = Some(storefront);
+        self
+    }
+}
+
+impl AdvancedCommerceInAppRequest for AdvancedCommerceSubscriptionCreateRequest {}
 
 /// Apple fixes this request's operation; it is emitted on encode and defaulted on decode,
 /// matching the Swift library where `operation` is a computed constant that is never decoded.
-fn default_operation() -> InAppRequestOperation {
-    InAppRequestOperation::CreateSubscription
+fn default_operation() -> AdvancedCommerceInAppRequestOperation {
+    AdvancedCommerceInAppRequestOperation::CreateSubscription
 }
 
 /// Apple fixes this request's version; see [`default_operation`].
-fn default_version() -> InAppRequestVersion {
-    InAppRequestVersion::V1
+fn default_version() -> AdvancedCommerceInAppRequestVersion {
+    AdvancedCommerceInAppRequestVersion::V1
 }

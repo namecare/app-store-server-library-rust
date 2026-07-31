@@ -1,4 +1,4 @@
-use crate::models::advanced_commerce_offer::Offer;
+use crate::models::advanced_commerce_offer::AdvancedCommerceOffer;
 use crate::models::advanced_commerce_price_increase_info::AdvancedCommercePriceIncreaseInfo;
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +12,7 @@ pub struct AdvancedCommerceRenewalItem {
 
     pub display_name: Option<String>,
 
-    pub offer: Option<Offer>,
+    pub offer: Option<AdvancedCommerceOffer>,
 
     pub price: Option<i64>,
 

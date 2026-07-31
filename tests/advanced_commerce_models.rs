@@ -4,56 +4,56 @@
 //! `app-store-server-library-swift/Tests/AppStoreServerLibraryTests/AdvancedCommerceModelsTests.swift`
 //!
 //! Swift test names map to snake_case here so the correspondence stays auditable.
-//! `testBillingPlanType`, `testRenewalBillingPlanType`, and
-//! `testTransactionCommitmentInfoBillingPeriodNumberValidation` live in
-//! `tests/phase_1_core_api_tests.rs` instead, and are not duplicated here.
 
-use app_store_server_library::models::advanced_commerce_descriptors::Descriptors;
-use app_store_server_library::models::advanced_commerce_effective::Effective;
-use app_store_server_library::models::advanced_commerce_in_app_request_operation::InAppRequestOperation;
-use app_store_server_library::models::advanced_commerce_in_app_request_version::InAppRequestVersion;
-use app_store_server_library::models::advanced_commerce_offer::Offer;
-use app_store_server_library::models::advanced_commerce_offer_period::OfferPeriod;
-use app_store_server_library::models::advanced_commerce_offer_reason::OfferReason;
-use app_store_server_library::models::advanced_commerce_one_time_charge_create_request::OneTimeChargeCreateRequest;
-use app_store_server_library::models::advanced_commerce_one_time_charge_item::OneTimeChargeItem;
-use app_store_server_library::models::advanced_commerce_period::Period;
-use app_store_server_library::models::advanced_commerce_reason::Reason;
-use app_store_server_library::models::advanced_commerce_refund_reason::RefundReason;
-use app_store_server_library::models::advanced_commerce_refund_type::RefundType;
-use app_store_server_library::models::advanced_commerce_request_info::RequestInfo;
-use app_store_server_library::models::advanced_commerce_request_refund_item::RequestRefundItem;
-use app_store_server_library::models::advanced_commerce_request_refund_request::RequestRefundRequest;
-use app_store_server_library::models::advanced_commerce_request_refund_response::RequestRefundResponse;
-use app_store_server_library::models::advanced_commerce_subscription_cancel_request::SubscriptionCancelRequest;
-use app_store_server_library::models::advanced_commerce_subscription_cancel_response::SubscriptionCancelResponse;
-use app_store_server_library::models::advanced_commerce_subscription_change_metadata_descriptors::SubscriptionChangeMetadataDescriptors;
-use app_store_server_library::models::advanced_commerce_subscription_change_metadata_item::SubscriptionChangeMetadataItem;
-use app_store_server_library::models::advanced_commerce_subscription_change_metadata_request::SubscriptionChangeMetadataRequest;
-use app_store_server_library::models::advanced_commerce_subscription_change_metadata_response::SubscriptionChangeMetadataResponse;
-use app_store_server_library::models::advanced_commerce_subscription_create_item::SubscriptionCreateItem;
-use app_store_server_library::models::advanced_commerce_subscription_create_request::SubscriptionCreateRequest;
-use app_store_server_library::models::advanced_commerce_subscription_migrate_descriptors::SubscriptionMigrateDescriptors;
-use app_store_server_library::models::advanced_commerce_subscription_migrate_item::SubscriptionMigrateItem;
-use app_store_server_library::models::advanced_commerce_subscription_migrate_renewal_item::SubscriptionMigrateRenewalItem;
-use app_store_server_library::models::advanced_commerce_subscription_migrate_request::SubscriptionMigrateRequest;
-use app_store_server_library::models::advanced_commerce_subscription_migrate_response::SubscriptionMigrateResponse;
-use app_store_server_library::models::advanced_commerce_subscription_modify_add_item::SubscriptionModifyAddItem;
-use app_store_server_library::models::advanced_commerce_subscription_modify_change_item::SubscriptionModifyChangeItem;
-use app_store_server_library::models::advanced_commerce_subscription_modify_descriptors::SubscriptionModifyDescriptors;
-use app_store_server_library::models::advanced_commerce_subscription_modify_in_app_request::SubscriptionModifyInAppRequest;
-use app_store_server_library::models::advanced_commerce_subscription_modify_period_change::SubscriptionModifyPeriodChange;
-use app_store_server_library::models::advanced_commerce_subscription_modify_remove_item::SubscriptionModifyRemoveItem;
-use app_store_server_library::models::advanced_commerce_subscription_price_change_item::SubscriptionPriceChangeItem;
-use app_store_server_library::models::advanced_commerce_subscription_price_change_request::SubscriptionPriceChangeRequest;
-use app_store_server_library::models::advanced_commerce_subscription_price_change_response::SubscriptionPriceChangeResponse;
-use app_store_server_library::models::advanced_commerce_subscription_reactivate_in_app_request::SubscriptionReactivateInAppRequest;
-use app_store_server_library::models::advanced_commerce_subscription_reactivate_item::SubscriptionReactivateItem;
-use app_store_server_library::models::advanced_commerce_subscription_revoke_request::SubscriptionRevokeRequest;
-use app_store_server_library::models::advanced_commerce_subscription_revoke_response::SubscriptionRevokeResponse;
+use app_store_server_library::models::advanced_commerce_descriptors::AdvancedCommerceDescriptors;
+use app_store_server_library::models::advanced_commerce_effective::AdvancedCommerceEffective;
+use app_store_server_library::models::advanced_commerce_in_app_request_operation::AdvancedCommerceInAppRequestOperation;
+use app_store_server_library::models::advanced_commerce_in_app_request_version::AdvancedCommerceInAppRequestVersion;
+use app_store_server_library::models::advanced_commerce_offer::AdvancedCommerceOffer;
+use app_store_server_library::models::advanced_commerce_offer_period::AdvancedCommerceOfferPeriod;
+use app_store_server_library::models::advanced_commerce_offer_reason::AdvancedCommerceOfferReason;
+use app_store_server_library::models::advanced_commerce_one_time_charge_create_request::AdvancedCommerceOneTimeChargeCreateRequest;
+use app_store_server_library::models::advanced_commerce_one_time_charge_item::AdvancedCommerceOneTimeChargeItem;
+use app_store_server_library::models::advanced_commerce_period::AdvancedCommercePeriod;
+use app_store_server_library::models::advanced_commerce_reason::AdvancedCommerceReason;
+use app_store_server_library::models::advanced_commerce_refund_reason::AdvancedCommerceRefundReason;
+use app_store_server_library::models::advanced_commerce_refund_type::AdvancedCommerceRefundType;
+use app_store_server_library::models::advanced_commerce_request_info::AdvancedCommerceRequestInfo;
+use app_store_server_library::models::advanced_commerce_request_refund_item::AdvancedCommerceRequestRefundItem;
+use app_store_server_library::models::advanced_commerce_request_refund_request::AdvancedCommerceRequestRefundRequest;
+use app_store_server_library::models::advanced_commerce_request_refund_response::AdvancedCommerceRequestRefundResponse;
+use app_store_server_library::models::advanced_commerce_subscription_cancel_request::AdvancedCommerceSubscriptionCancelRequest;
+use app_store_server_library::models::advanced_commerce_subscription_cancel_response::AdvancedCommerceSubscriptionCancelResponse;
+use app_store_server_library::models::advanced_commerce_subscription_change_metadata_descriptors::AdvancedCommerceSubscriptionChangeMetadataDescriptors;
+use app_store_server_library::models::advanced_commerce_subscription_change_metadata_item::AdvancedCommerceSubscriptionChangeMetadataItem;
+use app_store_server_library::models::advanced_commerce_subscription_change_metadata_request::AdvancedCommerceSubscriptionChangeMetadataRequest;
+use app_store_server_library::models::advanced_commerce_subscription_change_metadata_response::AdvancedCommerceSubscriptionChangeMetadataResponse;
+use app_store_server_library::models::advanced_commerce_subscription_create_item::AdvancedCommerceSubscriptionCreateItem;
+use app_store_server_library::models::advanced_commerce_subscription_create_request::AdvancedCommerceSubscriptionCreateRequest;
+use app_store_server_library::models::advanced_commerce_subscription_migrate_descriptors::AdvancedCommerceSubscriptionMigrateDescriptors;
+use app_store_server_library::models::advanced_commerce_subscription_migrate_item::AdvancedCommerceSubscriptionMigrateItem;
+use app_store_server_library::models::advanced_commerce_subscription_migrate_renewal_item::AdvancedCommerceSubscriptionMigrateRenewalItem;
+use app_store_server_library::models::advanced_commerce_subscription_migrate_request::AdvancedCommerceSubscriptionMigrateRequest;
+use app_store_server_library::models::advanced_commerce_subscription_migrate_response::AdvancedCommerceSubscriptionMigrateResponse;
+use app_store_server_library::models::advanced_commerce_subscription_modify_add_item::AdvancedCommerceSubscriptionModifyAddItem;
+use app_store_server_library::models::advanced_commerce_subscription_modify_change_item::AdvancedCommerceSubscriptionModifyChangeItem;
+use app_store_server_library::models::advanced_commerce_subscription_modify_descriptors::AdvancedCommerceSubscriptionModifyDescriptors;
+use app_store_server_library::models::advanced_commerce_subscription_modify_in_app_request::AdvancedCommerceSubscriptionModifyInAppRequest;
+use app_store_server_library::models::advanced_commerce_subscription_modify_period_change::AdvancedCommerceSubscriptionModifyPeriodChange;
+use app_store_server_library::models::advanced_commerce_subscription_modify_remove_item::AdvancedCommerceSubscriptionModifyRemoveItem;
+use app_store_server_library::models::advanced_commerce_subscription_price_change_item::AdvancedCommerceSubscriptionPriceChangeItem;
+use app_store_server_library::models::advanced_commerce_subscription_price_change_request::AdvancedCommerceSubscriptionPriceChangeRequest;
+use app_store_server_library::models::advanced_commerce_subscription_price_change_response::AdvancedCommerceSubscriptionPriceChangeResponse;
+use app_store_server_library::models::advanced_commerce_subscription_reactivate_in_app_request::AdvancedCommerceSubscriptionReactivateInAppRequest;
+use app_store_server_library::models::advanced_commerce_subscription_reactivate_item::AdvancedCommerceSubscriptionReactivateItem;
+use app_store_server_library::models::advanced_commerce_subscription_revoke_request::AdvancedCommerceSubscriptionRevokeRequest;
+use app_store_server_library::models::advanced_commerce_subscription_revoke_response::AdvancedCommerceSubscriptionRevokeResponse;
+use app_store_server_library::models::billing_plan_type::BillingPlanType;
+use app_store_server_library::models::renewal_billing_plan_type::RenewalBillingPlanType;
+use app_store_server_library::models::transaction_commitment_info::TransactionCommitmentInfo;
 use app_store_server_library::models::helper_validation_utils::{
-    validate_description, validate_display_name, validate_period_count, validate_sku,
-    ValidationError,
+    validate_description, validate_display_name, validate_items, validate_period_count,
+    validate_sku, ValidationError,
 };
 use app_store_server_library::models::advanced_commerce_price_increase_info_status::AdvancedCommercePriceIncreaseInfoStatus;
 use uuid::Uuid;
@@ -102,83 +102,83 @@ where
 
 #[test]
 fn advanced_commerce_period() {
-    assert_enum_raw_value("P1W", Period::P1W);
-    assert_enum_raw_value("P1M", Period::P1M);
-    assert_enum_raw_value("P2M", Period::P2M);
-    assert_enum_raw_value("P3M", Period::P3M);
-    assert_enum_raw_value("P6M", Period::P6M);
-    assert_enum_raw_value("P1Y", Period::P1Y);
+    assert_enum_raw_value("P1W", AdvancedCommercePeriod::P1W);
+    assert_enum_raw_value("P1M", AdvancedCommercePeriod::P1M);
+    assert_enum_raw_value("P2M", AdvancedCommercePeriod::P2M);
+    assert_enum_raw_value("P3M", AdvancedCommercePeriod::P3M);
+    assert_enum_raw_value("P6M", AdvancedCommercePeriod::P6M);
+    assert_enum_raw_value("P1Y", AdvancedCommercePeriod::P1Y);
 
     // Swift: XCTAssertNil(AdvancedCommercePeriod(rawValue: "INVALID"))
-    assert!(serde_json::from_str::<Period>("\"INVALID\"").is_err());
+    assert!(serde_json::from_str::<AdvancedCommercePeriod>("\"INVALID\"").is_err());
     // A guard against a SCREAMING_SNAKE_CASE regression, which would emit "P1_M".
-    assert!(serde_json::from_str::<Period>("\"P1_M\"").is_err());
+    assert!(serde_json::from_str::<AdvancedCommercePeriod>("\"P1_M\"").is_err());
 }
 
 #[test]
 fn advanced_commerce_reason() {
-    assert_enum_raw_value("UPGRADE", Reason::Upgrade);
-    assert_enum_raw_value("DOWNGRADE", Reason::Downgrade);
-    assert_enum_raw_value("APPLY_OFFER", Reason::ApplyOffer);
+    assert_enum_raw_value("UPGRADE", AdvancedCommerceReason::Upgrade);
+    assert_enum_raw_value("DOWNGRADE", AdvancedCommerceReason::Downgrade);
+    assert_enum_raw_value("APPLY_OFFER", AdvancedCommerceReason::ApplyOffer);
 
-    assert!(serde_json::from_str::<Reason>("\"INVALID\"").is_err());
+    assert!(serde_json::from_str::<AdvancedCommerceReason>("\"INVALID\"").is_err());
 }
 
 #[test]
 fn advanced_commerce_refund_reason() {
-    assert_enum_raw_value("UNINTENDED_PURCHASE", RefundReason::UnintendedPurchase);
-    assert_enum_raw_value("FULFILLMENT_ISSUE", RefundReason::FulfillmentIssue);
+    assert_enum_raw_value("UNINTENDED_PURCHASE", AdvancedCommerceRefundReason::UnintendedPurchase);
+    assert_enum_raw_value("FULFILLMENT_ISSUE", AdvancedCommerceRefundReason::FulfillmentIssue);
     assert_enum_raw_value(
         "UNSATISFIED_WITH_PURCHASE",
-        RefundReason::UnsatisfiedWithPurchase,
+        AdvancedCommerceRefundReason::UnsatisfiedWithPurchase,
     );
-    assert_enum_raw_value("LEGAL", RefundReason::Legal);
-    assert_enum_raw_value("OTHER", RefundReason::Other);
-    assert_enum_raw_value("MODIFY_ITEMS_REFUND", RefundReason::ModifyItemsRefund);
-    assert_enum_raw_value("SIMULATE_REFUND_DECLINE", RefundReason::SimulateRefundDecline);
+    assert_enum_raw_value("LEGAL", AdvancedCommerceRefundReason::Legal);
+    assert_enum_raw_value("OTHER", AdvancedCommerceRefundReason::Other);
+    assert_enum_raw_value("MODIFY_ITEMS_REFUND", AdvancedCommerceRefundReason::ModifyItemsRefund);
+    assert_enum_raw_value("SIMULATE_REFUND_DECLINE", AdvancedCommerceRefundReason::SimulateRefundDecline);
 
-    assert!(serde_json::from_str::<RefundReason>("\"INVALID\"").is_err());
+    assert!(serde_json::from_str::<AdvancedCommerceRefundReason>("\"INVALID\"").is_err());
 }
 
 #[test]
 fn advanced_commerce_refund_type() {
-    assert_enum_raw_value("FULL", RefundType::Full);
-    assert_enum_raw_value("PRORATED", RefundType::Prorated);
-    assert_enum_raw_value("CUSTOM", RefundType::Custom);
+    assert_enum_raw_value("FULL", AdvancedCommerceRefundType::Full);
+    assert_enum_raw_value("PRORATED", AdvancedCommerceRefundType::Prorated);
+    assert_enum_raw_value("CUSTOM", AdvancedCommerceRefundType::Custom);
 
-    assert!(serde_json::from_str::<RefundType>("\"INVALID\"").is_err());
+    assert!(serde_json::from_str::<AdvancedCommerceRefundType>("\"INVALID\"").is_err());
 }
 
 #[test]
 fn advanced_commerce_offer_period() {
-    assert_enum_raw_value("P3D", OfferPeriod::P3d);
-    assert_enum_raw_value("P1W", OfferPeriod::P1w);
-    assert_enum_raw_value("P2W", OfferPeriod::P2w);
-    assert_enum_raw_value("P1M", OfferPeriod::P1m);
-    assert_enum_raw_value("P2M", OfferPeriod::P2m);
-    assert_enum_raw_value("P3M", OfferPeriod::P3m);
-    assert_enum_raw_value("P6M", OfferPeriod::P6m);
-    assert_enum_raw_value("P9M", OfferPeriod::P9m);
-    assert_enum_raw_value("P1Y", OfferPeriod::P1y);
+    assert_enum_raw_value("P3D", AdvancedCommerceOfferPeriod::P3d);
+    assert_enum_raw_value("P1W", AdvancedCommerceOfferPeriod::P1w);
+    assert_enum_raw_value("P2W", AdvancedCommerceOfferPeriod::P2w);
+    assert_enum_raw_value("P1M", AdvancedCommerceOfferPeriod::P1m);
+    assert_enum_raw_value("P2M", AdvancedCommerceOfferPeriod::P2m);
+    assert_enum_raw_value("P3M", AdvancedCommerceOfferPeriod::P3m);
+    assert_enum_raw_value("P6M", AdvancedCommerceOfferPeriod::P6m);
+    assert_enum_raw_value("P9M", AdvancedCommerceOfferPeriod::P9m);
+    assert_enum_raw_value("P1Y", AdvancedCommerceOfferPeriod::P1y);
 
-    assert!(serde_json::from_str::<OfferPeriod>("\"INVALID\"").is_err());
+    assert!(serde_json::from_str::<AdvancedCommerceOfferPeriod>("\"INVALID\"").is_err());
 }
 
 #[test]
 fn advanced_commerce_offer_reason() {
-    assert_enum_raw_value("ACQUISITION", OfferReason::Acquisition);
-    assert_enum_raw_value("WIN_BACK", OfferReason::WinBack);
-    assert_enum_raw_value("RETENTION", OfferReason::Retention);
+    assert_enum_raw_value("ACQUISITION", AdvancedCommerceOfferReason::Acquisition);
+    assert_enum_raw_value("WIN_BACK", AdvancedCommerceOfferReason::WinBack);
+    assert_enum_raw_value("RETENTION", AdvancedCommerceOfferReason::Retention);
 
-    assert!(serde_json::from_str::<OfferReason>("\"INVALID\"").is_err());
+    assert!(serde_json::from_str::<AdvancedCommerceOfferReason>("\"INVALID\"").is_err());
 }
 
 #[test]
 fn advanced_commerce_effective() {
-    assert_enum_raw_value("IMMEDIATELY", Effective::Immediately);
-    assert_enum_raw_value("NEXT_BILL_CYCLE", Effective::NextBillCycle);
+    assert_enum_raw_value("IMMEDIATELY", AdvancedCommerceEffective::Immediately);
+    assert_enum_raw_value("NEXT_BILL_CYCLE", AdvancedCommerceEffective::NextBillCycle);
 
-    assert!(serde_json::from_str::<Effective>("\"INVALID\"").is_err());
+    assert!(serde_json::from_str::<AdvancedCommerceEffective>("\"INVALID\"").is_err());
 }
 
 #[test]
@@ -236,6 +236,20 @@ fn validation_utils_sku() {
 }
 
 #[test]
+fn validation_utils_items() {
+    let valid_list = vec![AdvancedCommerceOneTimeChargeItem::new(
+        "sku1".to_string(),
+        "desc".to_string(),
+        "name".to_string(),
+        1000,
+    )];
+    assert_eq!(validate_items(valid_list.clone()).unwrap(), valid_list);
+
+    let empty_list: Vec<AdvancedCommerceOneTimeChargeItem> = vec![];
+    assert!(validate_items(empty_list).is_err());
+}
+
+#[test]
 fn validation_utils_period_count() {
     // Swift bounds this to 1..=12 inclusive via minPeriod/maxPeriod.
     assert_eq!(validate_period_count(1).unwrap(), 1);
@@ -260,7 +274,7 @@ fn validation_utils_period_count() {
 
 #[test]
 fn advanced_commerce_descriptors() {
-    let parsed: Descriptors =
+    let parsed: AdvancedCommerceDescriptors =
         serde_json::from_str(&fixture("advancedCommerceDescriptors.json")).unwrap();
     assert_eq!(parsed.description, "description");
     assert_eq!(parsed.display_name, "display name");
@@ -274,7 +288,7 @@ fn advanced_commerce_descriptors() {
 
 #[test]
 fn advanced_commerce_one_time_charge_item() {
-    let item: OneTimeChargeItem =
+    let item: AdvancedCommerceOneTimeChargeItem =
         serde_json::from_str(&fixture("advancedCommerceOneTimeChargeItem.json")).unwrap();
     assert_eq!(item.description, "description");
     assert_eq!(item.display_name, "display name");
@@ -286,7 +300,7 @@ fn advanced_commerce_one_time_charge_item() {
 
 #[test]
 fn advanced_commerce_subscription_create_item() {
-    let item: SubscriptionCreateItem =
+    let item: AdvancedCommerceSubscriptionCreateItem =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionCreateItem.json")).unwrap();
     assert_eq!(item.description, "description");
     assert_eq!(item.display_name, "display name");
@@ -298,11 +312,11 @@ fn advanced_commerce_subscription_create_item() {
 
 #[test]
 fn advanced_commerce_request_refund_item() {
-    let item: RequestRefundItem =
+    let item: AdvancedCommerceRequestRefundItem =
         serde_json::from_str(&fixture("advancedCommerceRequestRefundItem.json")).unwrap();
     assert_eq!(item.sku, "sku");
-    assert_eq!(item.refund_reason, RefundReason::Legal);
-    assert_eq!(item.refund_type, RefundType::Full);
+    assert_eq!(item.refund_reason, AdvancedCommerceRefundReason::Legal);
+    assert_eq!(item.refund_type, AdvancedCommerceRefundType::Full);
     assert_eq!(item.revoke, true);
     assert_eq!(item.refund_amount, Some(5000));
 
@@ -311,18 +325,18 @@ fn advanced_commerce_request_refund_item() {
 
 #[test]
 fn advanced_commerce_offer() {
-    let offer: Offer = serde_json::from_str(&fixture("advancedCommerceOffer.json")).unwrap();
-    assert_eq!(offer.period, OfferPeriod::P1w);
+    let offer: AdvancedCommerceOffer = serde_json::from_str(&fixture("advancedCommerceOffer.json")).unwrap();
+    assert_eq!(offer.period, AdvancedCommerceOfferPeriod::P1w);
     assert_eq!(offer.period_count, 3);
     assert_eq!(offer.price, 5000);
-    assert_eq!(offer.reason, OfferReason::WinBack);
+    assert_eq!(offer.reason, AdvancedCommerceOfferReason::WinBack);
 
     assert_codable_round_trips(&offer);
 }
 
 #[test]
 fn advanced_commerce_one_time_charge_create_request() {
-    let request: OneTimeChargeCreateRequest =
+    let request: AdvancedCommerceOneTimeChargeCreateRequest =
         serde_json::from_str(&fixture("advancedCommerceOneTimeChargeCreateRequest.json")).unwrap();
     assert_eq!(request.currency, "USD");
     assert_eq!(request.item.sku, "sku");
@@ -338,12 +352,12 @@ fn advanced_commerce_one_time_charge_create_request() {
 
 #[test]
 fn advanced_commerce_subscription_create_request() {
-    let request: SubscriptionCreateRequest =
+    let request: AdvancedCommerceSubscriptionCreateRequest =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionCreateRequest.json")).unwrap();
     assert_eq!(request.currency, "USD");
     assert_eq!(request.descriptors.description, "description");
     assert_eq!(request.items.len(), 2);
-    assert_eq!(request.period, Period::P1M);
+    assert_eq!(request.period, AdvancedCommercePeriod::P1M);
     assert_eq!(request.tax_code, "taxCode");
     assert_eq!(request.storefront.as_deref(), Some("USA"));
     assert_eq!(request.previous_transaction_id.as_deref(), Some("transactionId"));
@@ -353,7 +367,7 @@ fn advanced_commerce_subscription_create_request() {
 
 #[test]
 fn advanced_commerce_request_refund_request() {
-    let request: RequestRefundRequest =
+    let request: AdvancedCommerceRequestRefundRequest =
         serde_json::from_str(&fixture("advancedCommerceRequestRefundRequest.json")).unwrap();
     assert_eq!(request.items.len(), 2);
     assert_eq!(request.refund_risking_preference, true);
@@ -365,7 +379,7 @@ fn advanced_commerce_request_refund_request() {
 
 #[test]
 fn advanced_commerce_subscription_cancel_request() {
-    let request: SubscriptionCancelRequest =
+    let request: AdvancedCommerceSubscriptionCancelRequest =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionCancelRequest.json")).unwrap();
     assert_eq!(
         request.request_info.request_reference_id,
@@ -378,15 +392,15 @@ fn advanced_commerce_subscription_cancel_request() {
 
 #[test]
 fn advanced_commerce_subscription_revoke_request() {
-    let request: SubscriptionRevokeRequest =
+    let request: AdvancedCommerceSubscriptionRevokeRequest =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionRevokeRequest.json")).unwrap();
     assert_eq!(
         request.request_info.request_reference_id,
         Uuid::parse_str("550e8400-e29b-41d4-a716-446655440004").unwrap()
     );
     assert_eq!(request.refund_risking_preference, true);
-    assert_eq!(request.refund_reason, RefundReason::Legal);
-    assert_eq!(request.refund_type, RefundType::Full);
+    assert_eq!(request.refund_reason, AdvancedCommerceRefundReason::Legal);
+    assert_eq!(request.refund_type, AdvancedCommerceRefundType::Full);
     assert_eq!(request.storefront.as_deref(), Some("USA"));
 
     assert_codable_round_trips(&request);
@@ -394,7 +408,7 @@ fn advanced_commerce_subscription_revoke_request() {
 
 #[test]
 fn advanced_commerce_subscription_price_change_request() {
-    let request: SubscriptionPriceChangeRequest =
+    let request: AdvancedCommerceSubscriptionPriceChangeRequest =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionPriceChangeRequest.json"))
             .unwrap();
     assert_eq!(request.items.len(), 1);
@@ -409,7 +423,7 @@ fn advanced_commerce_subscription_price_change_request() {
 
 #[test]
 fn advanced_commerce_request_refund_response() {
-    let response: RequestRefundResponse =
+    let response: AdvancedCommerceRequestRefundResponse =
         serde_json::from_str(&fixture("advancedCommerceRequestRefundResponse.json")).unwrap();
     assert_eq!(response.signed_renewal_info, None);
     assert_eq!(response.signed_transaction_info, "signed_transaction_info_value");
@@ -419,7 +433,7 @@ fn advanced_commerce_request_refund_response() {
 
 #[test]
 fn advanced_commerce_subscription_cancel_response() {
-    let response: SubscriptionCancelResponse =
+    let response: AdvancedCommerceSubscriptionCancelResponse =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionCancelResponse.json")).unwrap();
     assert_eq!(response.signed_renewal_info, "signed_renewal_info");
     assert_eq!(response.signed_transaction_info, "signed_transaction_info");
@@ -429,7 +443,7 @@ fn advanced_commerce_subscription_cancel_response() {
 
 #[test]
 fn advanced_commerce_subscription_revoke_response() {
-    let response: SubscriptionRevokeResponse =
+    let response: AdvancedCommerceSubscriptionRevokeResponse =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionRevokeResponse.json")).unwrap();
     assert_eq!(response.signed_renewal_info, "signed_renewal_info");
     assert_eq!(response.signed_transaction_info, "signed_transaction_info");
@@ -439,7 +453,7 @@ fn advanced_commerce_subscription_revoke_response() {
 
 #[test]
 fn advanced_commerce_subscription_price_change_response() {
-    let response: SubscriptionPriceChangeResponse =
+    let response: AdvancedCommerceSubscriptionPriceChangeResponse =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionPriceChangeResponse.json"))
             .unwrap();
     assert_eq!(response.signed_renewal_info, "signed_renewal_info");
@@ -450,7 +464,7 @@ fn advanced_commerce_subscription_price_change_response() {
 
 #[test]
 fn advanced_commerce_subscription_change_metadata_response() {
-    let response: SubscriptionChangeMetadataResponse =
+    let response: AdvancedCommerceSubscriptionChangeMetadataResponse =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionChangeMetadataResponse.json"))
             .unwrap();
     assert_eq!(response.signed_renewal_info, "signed_renewal_info");
@@ -461,7 +475,7 @@ fn advanced_commerce_subscription_change_metadata_response() {
 
 #[test]
 fn advanced_commerce_subscription_migrate_request() {
-    let request: SubscriptionMigrateRequest =
+    let request: AdvancedCommerceSubscriptionMigrateRequest =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionMigrateRequest.json")).unwrap();
     assert!(request.descriptors.is_some());
     assert_eq!(request.items.len(), 1);
@@ -473,7 +487,7 @@ fn advanced_commerce_subscription_migrate_request() {
 
 #[test]
 fn advanced_commerce_subscription_modify_in_app_request() {
-    let request: SubscriptionModifyInAppRequest =
+    let request: AdvancedCommerceSubscriptionModifyInAppRequest =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionModifyInAppRequest.json"))
             .unwrap();
     assert_eq!(request.currency.as_deref(), Some("USD"));
@@ -487,7 +501,7 @@ fn advanced_commerce_subscription_modify_in_app_request() {
 
 #[test]
 fn advanced_commerce_subscription_reactivate_in_app_request() {
-    let request: SubscriptionReactivateInAppRequest =
+    let request: AdvancedCommerceSubscriptionReactivateInAppRequest =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionReactivateInAppRequest.json"))
             .unwrap();
     assert!(request.items.is_some());
@@ -498,7 +512,7 @@ fn advanced_commerce_subscription_reactivate_in_app_request() {
 
 #[test]
 fn advanced_commerce_subscription_change_metadata_request() {
-    let request: SubscriptionChangeMetadataRequest =
+    let request: AdvancedCommerceSubscriptionChangeMetadataRequest =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionChangeMetadataRequest.json"))
             .unwrap();
     assert!(request.items.is_some());
@@ -512,7 +526,7 @@ fn advanced_commerce_subscription_change_metadata_request() {
 
 #[test]
 fn advanced_commerce_subscription_migrate_descriptors() {
-    let descriptors: SubscriptionMigrateDescriptors =
+    let descriptors: AdvancedCommerceSubscriptionMigrateDescriptors =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionMigrateDescriptors.json"))
             .unwrap();
     assert_eq!(descriptors.description, "description");
@@ -523,31 +537,31 @@ fn advanced_commerce_subscription_migrate_descriptors() {
 
 #[test]
 fn advanced_commerce_subscription_modify_descriptors() {
-    let descriptors: SubscriptionModifyDescriptors =
+    let descriptors: AdvancedCommerceSubscriptionModifyDescriptors =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionModifyDescriptors.json"))
             .unwrap();
     assert_eq!(descriptors.description.as_deref(), Some("description"));
     assert_eq!(descriptors.display_name.as_deref(), Some("displayName"));
-    assert_eq!(descriptors.effective, Effective::Immediately);
+    assert_eq!(descriptors.effective, AdvancedCommerceEffective::Immediately);
 
     assert_codable_round_trips(&descriptors);
 }
 
 #[test]
 fn advanced_commerce_subscription_change_metadata_descriptors() {
-    let descriptors: SubscriptionChangeMetadataDescriptors =
+    let descriptors: AdvancedCommerceSubscriptionChangeMetadataDescriptors =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionChangeMetadataDescriptors.json"))
             .unwrap();
     assert_eq!(descriptors.description.as_deref(), Some("description"));
     assert_eq!(descriptors.display_name.as_deref(), Some("displayName"));
-    assert_eq!(descriptors.effective, Effective::Immediately);
+    assert_eq!(descriptors.effective, AdvancedCommerceEffective::Immediately);
 
     assert_codable_round_trips(&descriptors);
 }
 
 #[test]
 fn advanced_commerce_subscription_migrate_item() {
-    let item: SubscriptionMigrateItem =
+    let item: AdvancedCommerceSubscriptionMigrateItem =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionMigrateItem.json")).unwrap();
     assert_eq!(item.description, "description");
     assert_eq!(item.display_name, "displayName");
@@ -558,7 +572,7 @@ fn advanced_commerce_subscription_migrate_item() {
 
 #[test]
 fn advanced_commerce_subscription_migrate_renewal_item() {
-    let item: SubscriptionMigrateRenewalItem =
+    let item: AdvancedCommerceSubscriptionMigrateRenewalItem =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionMigrateRenewalItem.json"))
             .unwrap();
     assert_eq!(item.description, "description");
@@ -570,20 +584,20 @@ fn advanced_commerce_subscription_migrate_renewal_item() {
 
 #[test]
 fn advanced_commerce_subscription_modify_add_item() {
-    let item: SubscriptionModifyAddItem =
+    let item: AdvancedCommerceSubscriptionModifyAddItem =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionModifyAddItem.json")).unwrap();
     assert_eq!(item.description, "description");
     assert_eq!(item.display_name, "displayName");
     assert_eq!(item.sku, "sku");
     assert_eq!(item.price, 12000);
 
-    // SubscriptionModifyAddItem has no Eq/Hash derive path issue, but confirm round trip.
+    // AdvancedCommerceSubscriptionModifyAddItem has no Eq/Hash derive path issue, but confirm round trip.
     assert_codable_round_trips(&item);
 }
 
 #[test]
 fn advanced_commerce_subscription_modify_change_item() {
-    let item: SubscriptionModifyChangeItem =
+    let item: AdvancedCommerceSubscriptionModifyChangeItem =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionModifyChangeItem.json"))
             .unwrap();
     assert_eq!(item.description, "description");
@@ -591,15 +605,15 @@ fn advanced_commerce_subscription_modify_change_item() {
     assert_eq!(item.sku, "sku");
     assert_eq!(item.current_sku, "currentSku");
     assert_eq!(item.price, 13000);
-    assert_eq!(item.effective, Effective::Immediately);
-    assert_eq!(item.reason, Reason::Upgrade);
+    assert_eq!(item.effective, AdvancedCommerceEffective::Immediately);
+    assert_eq!(item.reason, AdvancedCommerceReason::Upgrade);
 
     assert_codable_round_trips(&item);
 }
 
 #[test]
 fn advanced_commerce_subscription_modify_remove_item() {
-    let item: SubscriptionModifyRemoveItem =
+    let item: AdvancedCommerceSubscriptionModifyRemoveItem =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionModifyRemoveItem.json"))
             .unwrap();
     assert_eq!(item.sku, "sku");
@@ -609,18 +623,18 @@ fn advanced_commerce_subscription_modify_remove_item() {
 
 #[test]
 fn advanced_commerce_subscription_modify_period_change() {
-    let period_change: SubscriptionModifyPeriodChange =
+    let period_change: AdvancedCommerceSubscriptionModifyPeriodChange =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionModifyPeriodChange.json"))
             .unwrap();
-    assert_eq!(period_change.period, Period::P3M);
-    assert_eq!(period_change.effective, Effective::Immediately);
+    assert_eq!(period_change.period, AdvancedCommercePeriod::P3M);
+    assert_eq!(period_change.effective, AdvancedCommerceEffective::Immediately);
 
     assert_codable_round_trips(&period_change);
 }
 
 #[test]
 fn advanced_commerce_subscription_price_change_item() {
-    let item: SubscriptionPriceChangeItem =
+    let item: AdvancedCommerceSubscriptionPriceChangeItem =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionPriceChangeItem.json"))
             .unwrap();
     assert_eq!(item.sku, "sku");
@@ -638,23 +652,23 @@ fn advanced_commerce_subscription_price_change_item_dependent_sku_validation() {
     let valid_sku = "A".repeat(128);
     let too_long_sku = "A".repeat(129);
 
-    let item = SubscriptionPriceChangeItem::new("sku".to_string(), 1000, Some(vec![valid_sku.clone()]))
+    let item = AdvancedCommerceSubscriptionPriceChangeItem::new("sku".to_string(), 1000, Some(vec![valid_sku.clone()]))
         .unwrap();
     assert_eq!(item.dependent_skus.as_ref().and_then(|v| v.first()), Some(&valid_sku));
 
     assert!(matches!(
-        SubscriptionPriceChangeItem::new("sku".to_string(), 1000, Some(vec![too_long_sku])),
+        AdvancedCommerceSubscriptionPriceChangeItem::new("sku".to_string(), 1000, Some(vec![too_long_sku])),
         Err(ValidationError::SkuTooLong(129))
     ));
 
     let nil_list_item =
-        SubscriptionPriceChangeItem::new("sku".to_string(), 1000, None).unwrap();
+        AdvancedCommerceSubscriptionPriceChangeItem::new("sku".to_string(), 1000, None).unwrap();
     assert_eq!(nil_list_item.dependent_skus, None);
 }
 
 #[test]
 fn advanced_commerce_subscription_reactivate_item() {
-    let item: SubscriptionReactivateItem =
+    let item: AdvancedCommerceSubscriptionReactivateItem =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionReactivateItem.json")).unwrap();
     assert_eq!(item.sku, "sku");
 
@@ -663,21 +677,21 @@ fn advanced_commerce_subscription_reactivate_item() {
 
 #[test]
 fn advanced_commerce_subscription_change_metadata_item() {
-    let item: SubscriptionChangeMetadataItem =
+    let item: AdvancedCommerceSubscriptionChangeMetadataItem =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionChangeMetadataItem.json"))
             .unwrap();
     assert_eq!(item.description.as_deref(), Some("description"));
     assert_eq!(item.display_name.as_deref(), Some("displayName"));
     assert_eq!(item.sku.as_deref(), Some("sku"));
     assert_eq!(item.current_sku, "currentSku");
-    assert_eq!(item.effective, Effective::NextBillCycle);
+    assert_eq!(item.effective, AdvancedCommerceEffective::NextBillCycle);
 
     assert_codable_round_trips(&item);
 }
 
 #[test]
 fn advanced_commerce_request_info() {
-    let request_info: RequestInfo =
+    let request_info: AdvancedCommerceRequestInfo =
         serde_json::from_str(&fixture("advancedCommerceRequestInfo.json")).unwrap();
     assert_eq!(
         request_info.request_reference_id,
@@ -694,7 +708,7 @@ fn advanced_commerce_request_info() {
 
 #[test]
 fn advanced_commerce_subscription_migrate_response() {
-    let response: SubscriptionMigrateResponse =
+    let response: AdvancedCommerceSubscriptionMigrateResponse =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionMigrateResponse.json")).unwrap();
     assert_eq!(response.signed_renewal_info, "signed_renewal_info_value");
     assert_eq!(response.signed_transaction_info, "signed_transaction_info_value");
@@ -714,10 +728,10 @@ fn advanced_commerce_subscription_migrate_response() {
 
 #[test]
 fn one_time_charge_create_request_deserialization_sets_operation_and_version() {
-    let parsed: OneTimeChargeCreateRequest =
+    let parsed: AdvancedCommerceOneTimeChargeCreateRequest =
         serde_json::from_str(&fixture("advancedCommerceOneTimeChargeCreateRequest.json")).unwrap();
-    assert_eq!(parsed.operation, InAppRequestOperation::CreateOneTimeCharge);
-    assert_eq!(parsed.version, InAppRequestVersion::V1);
+    assert_eq!(parsed.operation, AdvancedCommerceInAppRequestOperation::CreateOneTimeCharge);
+    assert_eq!(parsed.version, AdvancedCommerceInAppRequestVersion::V1);
 
     // The constants must still reach the wire.
     let json = serde_json::to_string(&parsed).unwrap();
@@ -727,10 +741,10 @@ fn one_time_charge_create_request_deserialization_sets_operation_and_version() {
 
 #[test]
 fn subscription_create_request_deserialization_sets_operation_and_version() {
-    let parsed: SubscriptionCreateRequest =
+    let parsed: AdvancedCommerceSubscriptionCreateRequest =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionCreateRequest.json")).unwrap();
-    assert_eq!(parsed.operation, InAppRequestOperation::CreateSubscription);
-    assert_eq!(parsed.version, InAppRequestVersion::V1);
+    assert_eq!(parsed.operation, AdvancedCommerceInAppRequestOperation::CreateSubscription);
+    assert_eq!(parsed.version, AdvancedCommerceInAppRequestVersion::V1);
 
     let json = serde_json::to_string(&parsed).unwrap();
     assert!(json.contains("\"CREATE_SUBSCRIPTION\""), "got: {}", json);
@@ -738,11 +752,11 @@ fn subscription_create_request_deserialization_sets_operation_and_version() {
 
 #[test]
 fn subscription_modify_in_app_request_deserialization_sets_operation_and_version() {
-    let parsed: SubscriptionModifyInAppRequest =
+    let parsed: AdvancedCommerceSubscriptionModifyInAppRequest =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionModifyInAppRequest.json"))
             .unwrap();
-    assert_eq!(parsed.operation, InAppRequestOperation::ModifySubscription);
-    assert_eq!(parsed.version, InAppRequestVersion::V1);
+    assert_eq!(parsed.operation, AdvancedCommerceInAppRequestOperation::ModifySubscription);
+    assert_eq!(parsed.version, AdvancedCommerceInAppRequestVersion::V1);
 
     let json = serde_json::to_string(&parsed).unwrap();
     assert!(json.contains("\"MODIFY_SUBSCRIPTION\""), "got: {}", json);
@@ -750,12 +764,96 @@ fn subscription_modify_in_app_request_deserialization_sets_operation_and_version
 
 #[test]
 fn subscription_reactivate_in_app_request_deserialization_sets_operation_and_version() {
-    let parsed: SubscriptionReactivateInAppRequest =
+    let parsed: AdvancedCommerceSubscriptionReactivateInAppRequest =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionReactivateInAppRequest.json"))
             .unwrap();
-    assert_eq!(parsed.operation, InAppRequestOperation::ReactivateSubscription);
-    assert_eq!(parsed.version, InAppRequestVersion::V1);
+    assert_eq!(parsed.operation, AdvancedCommerceInAppRequestOperation::ReactivateSubscription);
+    assert_eq!(parsed.version, AdvancedCommerceInAppRequestVersion::V1);
 
     let json = serde_json::to_string(&parsed).unwrap();
     assert!(json.contains("\"REACTIVATE_SUBSCRIPTION\""), "got: {}", json);
+}
+
+// ---------------------------------------------------------------------------
+// Billing plan types / commitment info
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_billing_plan_type() {
+    assert_eq!(
+        serde_json::to_string(&BillingPlanType::BilledUpfront).unwrap(),
+        r#""BILLED_UPFRONT""#
+    );
+    assert_eq!(
+        serde_json::to_string(&BillingPlanType::Monthly).unwrap(),
+        r#""MONTHLY""#
+    );
+
+    assert_eq!(
+        serde_json::from_str::<BillingPlanType>(r#""BILLED_UPFRONT""#).unwrap(),
+        BillingPlanType::BilledUpfront
+    );
+    assert_eq!(
+        serde_json::from_str::<BillingPlanType>(r#""MONTHLY""#).unwrap(),
+        BillingPlanType::Monthly
+    );
+    assert!(serde_json::from_str::<BillingPlanType>(r#""INVALID""#).is_err());
+}
+
+#[test]
+fn test_renewal_billing_plan_type() {
+    assert_eq!(
+        serde_json::to_string(&RenewalBillingPlanType::BilledUpfront).unwrap(),
+        r#""BILLED_UPFRONT""#
+    );
+    assert_eq!(
+        serde_json::to_string(&RenewalBillingPlanType::Monthly).unwrap(),
+        r#""MONTHLY""#
+    );
+
+    assert_eq!(
+        serde_json::from_str::<RenewalBillingPlanType>(r#""BILLED_UPFRONT""#).unwrap(),
+        RenewalBillingPlanType::BilledUpfront
+    );
+    assert_eq!(
+        serde_json::from_str::<RenewalBillingPlanType>(r#""MONTHLY""#).unwrap(),
+        RenewalBillingPlanType::Monthly
+    );
+    assert!(serde_json::from_str::<RenewalBillingPlanType>(r#""INVALID""#).is_err());
+}
+
+fn commitment_with_billing_period(billing_period_number: Option<i32>) -> TransactionCommitmentInfo {
+    TransactionCommitmentInfo {
+        billing_period_number,
+        commitment_expires_date: None,
+        commitment_price: None,
+        total_billing_periods: None,
+    }
+}
+
+#[test]
+fn test_transaction_commitment_info_billing_period_number_validation() {
+    assert!(commitment_with_billing_period(Some(1)).validate().is_ok());
+    assert!(commitment_with_billing_period(Some(12)).validate().is_ok());
+    assert!(commitment_with_billing_period(None).validate().is_ok());
+
+    for bad in [0, 13, -1] {
+        assert!(
+            commitment_with_billing_period(Some(bad)).validate().is_err(),
+            "billingPeriodNumber {} should be rejected",
+            bad
+        );
+    }
+}
+
+#[test]
+fn test_commitment_info_does_not_validate_total_billing_periods() {
+    // Apple's library imposes no bound here, so a large value must still be accepted.
+    let info = TransactionCommitmentInfo {
+        billing_period_number: Some(3),
+        commitment_expires_date: None,
+        commitment_price: Some(119880),
+        total_billing_periods: Some(600),
+    };
+    assert!(info.validate().is_ok());
 }

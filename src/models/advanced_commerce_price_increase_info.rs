@@ -11,6 +11,7 @@ pub struct AdvancedCommercePriceIncreaseInfo {
     /// The dependent SKUs for the price increase.
     ///
     /// [dependentSKUs](https://developer.apple.com/documentation/appstoreserverapi/advancedcommercepriceincreasedependentskus)
+    #[serde(rename = "dependentSKUs")]
     pub dependent_skus: Option<Vec<String>>,
 
     /// The new price for the subscription.

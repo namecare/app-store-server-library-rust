@@ -1,18 +1,18 @@
 use crate::api_client::api_client::ApiClient;
 use crate::api_client::error::{ApiClientError, ConfigurationError};
 use crate::api_client::transport::Transport;
-use crate::models::advanced_commerce_request_refund_request::RequestRefundRequest;
-use crate::models::advanced_commerce_request_refund_response::RequestRefundResponse;
-use crate::models::advanced_commerce_subscription_cancel_request::SubscriptionCancelRequest;
-use crate::models::advanced_commerce_subscription_cancel_response::SubscriptionCancelResponse;
-use crate::models::advanced_commerce_subscription_change_metadata_request::SubscriptionChangeMetadataRequest;
-use crate::models::advanced_commerce_subscription_change_metadata_response::SubscriptionChangeMetadataResponse;
-use crate::models::advanced_commerce_subscription_migrate_request::SubscriptionMigrateRequest;
-use crate::models::advanced_commerce_subscription_migrate_response::SubscriptionMigrateResponse;
-use crate::models::advanced_commerce_subscription_price_change_request::SubscriptionPriceChangeRequest;
-use crate::models::advanced_commerce_subscription_price_change_response::SubscriptionPriceChangeResponse;
-use crate::models::advanced_commerce_subscription_revoke_request::SubscriptionRevokeRequest;
-use crate::models::advanced_commerce_subscription_revoke_response::SubscriptionRevokeResponse;
+use crate::models::advanced_commerce_request_refund_request::AdvancedCommerceRequestRefundRequest;
+use crate::models::advanced_commerce_request_refund_response::AdvancedCommerceRequestRefundResponse;
+use crate::models::advanced_commerce_subscription_cancel_request::AdvancedCommerceSubscriptionCancelRequest;
+use crate::models::advanced_commerce_subscription_cancel_response::AdvancedCommerceSubscriptionCancelResponse;
+use crate::models::advanced_commerce_subscription_change_metadata_request::AdvancedCommerceSubscriptionChangeMetadataRequest;
+use crate::models::advanced_commerce_subscription_change_metadata_response::AdvancedCommerceSubscriptionChangeMetadataResponse;
+use crate::models::advanced_commerce_subscription_migrate_request::AdvancedCommerceSubscriptionMigrateRequest;
+use crate::models::advanced_commerce_subscription_migrate_response::AdvancedCommerceSubscriptionMigrateResponse;
+use crate::models::advanced_commerce_subscription_price_change_request::AdvancedCommerceSubscriptionPriceChangeRequest;
+use crate::models::advanced_commerce_subscription_price_change_response::AdvancedCommerceSubscriptionPriceChangeResponse;
+use crate::models::advanced_commerce_subscription_revoke_request::AdvancedCommerceSubscriptionRevokeRequest;
+use crate::models::advanced_commerce_subscription_revoke_response::AdvancedCommerceSubscriptionRevokeResponse;
 use crate::models::app_store_environment::Environment;
 use http::Method;
 use serde::de::DeserializeOwned;
@@ -128,8 +128,8 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
     pub async fn cancel_subscription(
         &self,
         transaction_id: &str,
-        subscription_cancel_request: &SubscriptionCancelRequest,
-    ) -> Result<SubscriptionCancelResponse, AdvancedCommerceApiClientError> {
+        subscription_cancel_request: &AdvancedCommerceSubscriptionCancelRequest,
+    ) -> Result<AdvancedCommerceSubscriptionCancelResponse, AdvancedCommerceApiClientError> {
         let path = format!("/advancedCommerce/v1/subscription/cancel/{}", transaction_id);
         self.request(path.as_str(), Method::POST, Some(subscription_cancel_request))
             .await
@@ -157,8 +157,8 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
     pub async fn change_subscription_metadata(
         &self,
         transaction_id: &str,
-        subscription_change_metadata_request: &SubscriptionChangeMetadataRequest,
-    ) -> Result<SubscriptionChangeMetadataResponse, AdvancedCommerceApiClientError> {
+        subscription_change_metadata_request: &AdvancedCommerceSubscriptionChangeMetadataRequest,
+    ) -> Result<AdvancedCommerceSubscriptionChangeMetadataResponse, AdvancedCommerceApiClientError> {
         let path = format!("/advancedCommerce/v1/subscription/changeMetadata/{}", transaction_id);
         self.request(
             path.as_str(),
@@ -190,8 +190,8 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
     pub async fn change_subscription_price(
         &self,
         transaction_id: &str,
-        subscription_price_change_request: &SubscriptionPriceChangeRequest,
-    ) -> Result<SubscriptionPriceChangeResponse, AdvancedCommerceApiClientError> {
+        subscription_price_change_request: &AdvancedCommerceSubscriptionPriceChangeRequest,
+    ) -> Result<AdvancedCommerceSubscriptionPriceChangeResponse, AdvancedCommerceApiClientError> {
         let path = format!("/advancedCommerce/v1/subscription/changePrice/{}", transaction_id);
         self.request(path.as_str(), Method::POST, Some(subscription_price_change_request))
             .await
@@ -219,8 +219,8 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
     pub async fn migrate_subscription(
         &self,
         transaction_id: &str,
-        subscription_migrate_request: &SubscriptionMigrateRequest,
-    ) -> Result<SubscriptionMigrateResponse, AdvancedCommerceApiClientError> {
+        subscription_migrate_request: &AdvancedCommerceSubscriptionMigrateRequest,
+    ) -> Result<AdvancedCommerceSubscriptionMigrateResponse, AdvancedCommerceApiClientError> {
         let path = format!("/advancedCommerce/v1/subscription/migrate/{}", transaction_id);
         self.request(path.as_str(), Method::POST, Some(subscription_migrate_request))
             .await
@@ -245,8 +245,8 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
     pub async fn request_transaction_refund(
         &self,
         transaction_id: &str,
-        request_refund_request: &RequestRefundRequest,
-    ) -> Result<RequestRefundResponse, AdvancedCommerceApiClientError> {
+        request_refund_request: &AdvancedCommerceRequestRefundRequest,
+    ) -> Result<AdvancedCommerceRequestRefundResponse, AdvancedCommerceApiClientError> {
         let path = format!("/advancedCommerce/v1/transaction/requestRefund/{}", transaction_id);
         self.request(path.as_str(), Method::POST, Some(request_refund_request))
             .await
@@ -274,8 +274,8 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
     pub async fn revoke_subscription(
         &self,
         transaction_id: &str,
-        subscription_revoke_request: &SubscriptionRevokeRequest,
-    ) -> Result<SubscriptionRevokeResponse, AdvancedCommerceApiClientError> {
+        subscription_revoke_request: &AdvancedCommerceSubscriptionRevokeRequest,
+    ) -> Result<AdvancedCommerceSubscriptionRevokeResponse, AdvancedCommerceApiClientError> {
         let path = format!("/advancedCommerce/v1/subscription/revoke/{}", transaction_id);
         self.request(path.as_str(), Method::POST, Some(subscription_revoke_request))
             .await
@@ -687,7 +687,7 @@ pub enum ApiErrorCode {
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/periodcountnotpositive)
     PeriodCountNotPositive = 4000094,
 
-    /// Period reset conflicts with retaining billing cycle.
+    /// AdvancedCommercePeriod reset conflicts with retaining billing cycle.
     /// [Documentation](https://developer.apple.com/documentation/advancedcommerceapi/periodresetwithretainbillingcycle)
     PeriodResetWithRetainBillingCycle = 4000141,
 

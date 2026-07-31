@@ -1,35 +1,35 @@
 use crate::models::advanced_commerce_in_app_request::AdvancedCommerceInAppRequest;
-use crate::models::advanced_commerce_in_app_request_operation::InAppRequestOperation;
-use crate::models::advanced_commerce_in_app_request_version::InAppRequestVersion;
-use crate::models::advanced_commerce_request_info::RequestInfo;
-use crate::models::advanced_commerce_subscription_reactivate_item::SubscriptionReactivateItem;
+use crate::models::advanced_commerce_in_app_request_operation::AdvancedCommerceInAppRequestOperation;
+use crate::models::advanced_commerce_in_app_request_version::AdvancedCommerceInAppRequestVersion;
+use crate::models::advanced_commerce_request_info::AdvancedCommerceRequestInfo;
+use crate::models::advanced_commerce_subscription_reactivate_item::AdvancedCommerceSubscriptionReactivateItem;
 use serde::{Deserialize, Serialize};
 
 /// The metadata your app provides to reactivate an auto-renewable subscription.
 ///
-/// [SubscriptionReactivateInAppRequest](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionreactivateinapprequest)
+/// [AdvancedCommerceSubscriptionReactivateInAppRequest](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionreactivateinapprequest)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SubscriptionReactivateInAppRequest {
+pub struct AdvancedCommerceSubscriptionReactivateInAppRequest {
     /// The operation type for this request.
     /// Value: REACTIVATE_SUBSCRIPTION
     #[serde(default = "default_operation")]
-    pub operation: InAppRequestOperation,
+    pub operation: AdvancedCommerceInAppRequestOperation,
 
     /// The version of this request.
     #[serde(default = "default_version")]
-    pub version: InAppRequestVersion,
+    pub version: AdvancedCommerceInAppRequestVersion,
 
     /// The details of the reactivation items.
     ///
-    /// [SubscriptionReactivateItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionreactivateitem)
+    /// [AdvancedCommerceSubscriptionReactivateItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionreactivateitem)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub items: Option<Vec<SubscriptionReactivateItem>>,
+    pub items: Option<Vec<AdvancedCommerceSubscriptionReactivateItem>>,
 
     /// The metadata to include in server requests.
     ///
     /// [requestInfo](https://developer.apple.com/documentation/advancedcommerceapi/requestinfo)
-    pub request_info: RequestInfo,
+    pub request_info: AdvancedCommerceRequestInfo,
 
     /// The storefront for the transaction.
     ///
@@ -43,15 +43,15 @@ pub struct SubscriptionReactivateInAppRequest {
     pub transaction_id: String,
 }
 
-impl AdvancedCommerceInAppRequest for SubscriptionReactivateInAppRequest {}
+impl AdvancedCommerceInAppRequest for AdvancedCommerceSubscriptionReactivateInAppRequest {}
 
 /// Apple fixes this request's operation; it is emitted on encode and defaulted on decode,
 /// matching the Swift library where `operation` is a computed constant that is never decoded.
-fn default_operation() -> InAppRequestOperation {
-    InAppRequestOperation::ReactivateSubscription
+fn default_operation() -> AdvancedCommerceInAppRequestOperation {
+    AdvancedCommerceInAppRequestOperation::ReactivateSubscription
 }
 
 /// Apple fixes this request's version; see [`default_operation`].
-fn default_version() -> InAppRequestVersion {
-    InAppRequestVersion::V1
+fn default_version() -> AdvancedCommerceInAppRequestVersion {
+    AdvancedCommerceInAppRequestVersion::V1
 }

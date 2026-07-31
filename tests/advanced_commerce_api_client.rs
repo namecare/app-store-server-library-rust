@@ -1,15 +1,18 @@
 mod common;
 use app_store_server_library::advanced_commerce_api_client::AdvancedCommerceApiClient;
 use app_store_server_library::api_client::error::ConfigurationError;
-use app_store_server_library::models::advanced_commerce_refund_reason::RefundReason;
-use app_store_server_library::models::advanced_commerce_refund_type::RefundType;
-use app_store_server_library::models::advanced_commerce_request_info::RequestInfo;
-use app_store_server_library::models::advanced_commerce_request_refund_request::RequestRefundRequest;
-use app_store_server_library::models::advanced_commerce_subscription_cancel_request::SubscriptionCancelRequest;
-use app_store_server_library::models::advanced_commerce_subscription_change_metadata_request::SubscriptionChangeMetadataRequest;
-use app_store_server_library::models::advanced_commerce_subscription_migrate_request::SubscriptionMigrateRequest;
-use app_store_server_library::models::advanced_commerce_subscription_price_change_request::SubscriptionPriceChangeRequest;
-use app_store_server_library::models::advanced_commerce_subscription_revoke_request::SubscriptionRevokeRequest;
+use app_store_server_library::models::advanced_commerce_refund_reason::AdvancedCommerceRefundReason;
+use app_store_server_library::models::advanced_commerce_refund_type::AdvancedCommerceRefundType;
+use app_store_server_library::models::advanced_commerce_request_info::AdvancedCommerceRequestInfo;
+use app_store_server_library::models::advanced_commerce_request_refund_item::AdvancedCommerceRequestRefundItem;
+use app_store_server_library::models::advanced_commerce_request_refund_request::AdvancedCommerceRequestRefundRequest;
+use app_store_server_library::models::advanced_commerce_subscription_cancel_request::AdvancedCommerceSubscriptionCancelRequest;
+use app_store_server_library::models::advanced_commerce_subscription_change_metadata_request::AdvancedCommerceSubscriptionChangeMetadataRequest;
+use app_store_server_library::models::advanced_commerce_subscription_migrate_item::AdvancedCommerceSubscriptionMigrateItem;
+use app_store_server_library::models::advanced_commerce_subscription_migrate_request::AdvancedCommerceSubscriptionMigrateRequest;
+use app_store_server_library::models::advanced_commerce_subscription_price_change_item::AdvancedCommerceSubscriptionPriceChangeItem;
+use app_store_server_library::models::advanced_commerce_subscription_price_change_request::AdvancedCommerceSubscriptionPriceChangeRequest;
+use app_store_server_library::models::advanced_commerce_subscription_revoke_request::AdvancedCommerceSubscriptionRevokeRequest;
 use app_store_server_library::models::app_store_environment::Environment;
 use common::transport_mock::{MockTransport, RequestVerifier};
 use http::{Method, StatusCode};
@@ -35,7 +38,7 @@ async fn test_cancel_subscription() {
         })),
     );
 
-    let request = SubscriptionCancelRequest::new(Uuid::new_v4()).with_storefront("test_storefront".to_string());
+    let request = AdvancedCommerceSubscriptionCancelRequest::new(Uuid::new_v4()).with_storefront("test_storefront".to_string());
 
     let response = client
         .cancel_subscription("test_transaction_id", &request)
@@ -67,11 +70,11 @@ async fn test_revoke_subscription() {
         })),
     );
 
-    let request = SubscriptionRevokeRequest::new(
+    let request = AdvancedCommerceSubscriptionRevokeRequest::new(
         Uuid::new_v4(),
-        RefundReason::UnsatisfiedWithPurchase,
+        AdvancedCommerceRefundReason::UnsatisfiedWithPurchase,
         true,
-        RefundType::Full,
+        AdvancedCommerceRefundType::Full,
     );
 
     let response = client
@@ -103,13 +106,18 @@ async fn test_request_transaction_refund() {
         })),
     );
 
-    let request = RequestRefundRequest {
-        request_info: RequestInfo::new(Uuid::new_v4()),
-        currency: None,
-        items: vec![],
-        refund_risking_preference: false,
-        storefront: None,
-    };
+    let request = AdvancedCommerceRequestRefundRequest::new(
+        vec![AdvancedCommerceRequestRefundItem {
+            sku: "sku".to_string(),
+            refund_amount: None,
+            refund_reason: AdvancedCommerceRefundReason::FulfillmentIssue,
+            refund_type: AdvancedCommerceRefundType::Full,
+            revoke: false,
+        }],
+        false,
+        AdvancedCommerceRequestInfo::new(Uuid::new_v4()),
+    )
+    .unwrap();
 
     let response = client
         .request_transaction_refund("test_transaction_id", &request)
@@ -139,7 +147,7 @@ async fn test_change_subscription_metadata() {
         })),
     );
 
-    let request = SubscriptionChangeMetadataRequest::new(Uuid::new_v4()).with_items(vec![]);
+    let request = AdvancedCommerceSubscriptionChangeMetadataRequest::new(Uuid::new_v4()).with_items(vec![]);
 
     let response = client
         .change_subscription_metadata("test_transaction_id", &request)
@@ -170,7 +178,12 @@ async fn test_change_subscription_price() {
         })),
     );
 
-    let request = SubscriptionPriceChangeRequest::new("test_storefront".to_string(), vec![], Uuid::new_v4());
+    let request = AdvancedCommerceSubscriptionPriceChangeRequest::new(
+        "test_storefront".to_string(),
+        vec![AdvancedCommerceSubscriptionPriceChangeItem::new("sku".to_string(), 1000, None).unwrap()],
+        Uuid::new_v4(),
+    )
+    .unwrap();
 
     let response = client
         .change_subscription_price("test_transaction_id", &request)
@@ -201,12 +214,17 @@ async fn test_migrate_subscription() {
         })),
     );
 
-    let request = SubscriptionMigrateRequest::new(
+    let request = AdvancedCommerceSubscriptionMigrateRequest::new(
         Uuid::new_v4(),
-        vec![],
+        vec![AdvancedCommerceSubscriptionMigrateItem::new(
+            "sku".to_string(),
+            "description".to_string(),
+            "display_name".to_string(),
+        )],
         "target_product".to_string(),
         "tax_code".to_string(),
-    );
+    )
+    .unwrap();
 
     let response = client
         .migrate_subscription("test_transaction_id", &request)

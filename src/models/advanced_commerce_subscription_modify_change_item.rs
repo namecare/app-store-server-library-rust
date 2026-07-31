@@ -1,14 +1,14 @@
-use crate::models::advanced_commerce_effective::Effective;
-use crate::models::advanced_commerce_offer::Offer;
-use crate::models::advanced_commerce_reason::Reason;
+use crate::models::advanced_commerce_effective::AdvancedCommerceEffective;
+use crate::models::advanced_commerce_offer::AdvancedCommerceOffer;
+use crate::models::advanced_commerce_reason::AdvancedCommerceReason;
 use serde::{Deserialize, Serialize};
 
 /// The data your app provides to change an item of an auto-renewable subscription.
 ///
-/// [SubscriptionModifyChangeItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionmodifychangeitem)
+/// [AdvancedCommerceSubscriptionModifyChangeItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionmodifychangeitem)
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SubscriptionModifyChangeItem {
+pub struct AdvancedCommerceSubscriptionModifyChangeItem {
     /// The new SKU identifier for the item.
     ///
     /// [SKU](https://developer.apple.com/documentation/advancedcommerceapi/sku)
@@ -33,8 +33,8 @@ pub struct SubscriptionModifyChangeItem {
 
     /// When the change takes effect.
     ///
-    /// [Effective](https://developer.apple.com/documentation/advancedcommerceapi/effective)
-    pub effective: Effective,
+    /// [AdvancedCommerceEffective](https://developer.apple.com/documentation/advancedcommerceapi/effective)
+    pub effective: AdvancedCommerceEffective,
 
     /// The price in milliunits.
     ///
@@ -43,14 +43,14 @@ pub struct SubscriptionModifyChangeItem {
 
     /// The reason for the change.
     ///
-    /// [Reason](https://developer.apple.com/documentation/advancedcommerceapi/reason)
-    pub reason: Reason,
+    /// [AdvancedCommerceReason](https://developer.apple.com/documentation/advancedcommerceapi/reason)
+    pub reason: AdvancedCommerceReason,
 
     /// An offer for the item.
     ///
-    /// [Offer](https://developer.apple.com/documentation/advancedcommerceapi/offer)
+    /// [AdvancedCommerceOffer](https://developer.apple.com/documentation/advancedcommerceapi/offer)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub offer: Option<Offer>,
+    pub offer: Option<AdvancedCommerceOffer>,
 
     /// The prorated price for the item.
     ///
@@ -59,15 +59,15 @@ pub struct SubscriptionModifyChangeItem {
     pub prorated_price: Option<i64>,
 }
 
-impl SubscriptionModifyChangeItem {
+impl AdvancedCommerceSubscriptionModifyChangeItem {
     pub fn new(
         sku: String,
         current_sku: String,
         description: String,
         display_name: String,
-        effective: Effective,
+        effective: AdvancedCommerceEffective,
         price: i64,
-        reason: Reason,
+        reason: AdvancedCommerceReason,
     ) -> Self {
         Self {
             sku,
@@ -82,7 +82,7 @@ impl SubscriptionModifyChangeItem {
         }
     }
 
-    pub fn with_offer(mut self, offer: Offer) -> Self {
+    pub fn with_offer(mut self, offer: AdvancedCommerceOffer) -> Self {
         self.offer = Some(offer);
         self
     }

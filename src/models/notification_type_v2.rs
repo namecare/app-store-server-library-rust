@@ -24,7 +24,7 @@ pub enum NotificationTypeV2 {
     #[serde(rename = "PRICE_INCREASE")]
     PriceIncrease,
     #[serde(rename = "REFUND")]
-    Refund,
+    AdvancedCommerceRefund,
     #[serde(rename = "REFUND_DECLINED")]
     RefundDeclined,
     #[serde(rename = "CONSUMPTION_REQUEST")]

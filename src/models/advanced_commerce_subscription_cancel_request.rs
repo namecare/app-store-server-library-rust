@@ -1,17 +1,17 @@
-use crate::models::advanced_commerce_request_info::RequestInfo;
+use crate::models::advanced_commerce_request_info::AdvancedCommerceRequestInfo;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// The request data your app provides to cancel an auto-renewable subscription.
 ///
-/// [SubscriptionCancelRequest](https://developer.apple.com/documentation/advancedcommerceapi/subscriptioncancelrequest)
+/// [AdvancedCommerceSubscriptionCancelRequest](https://developer.apple.com/documentation/advancedcommerceapi/subscriptioncancelrequest)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SubscriptionCancelRequest {
+pub struct AdvancedCommerceSubscriptionCancelRequest {
     /// The metadata to include in server requests.
     ///
     /// [requestInfo](https://developer.apple.com/documentation/advancedcommerceapi/requestinfo)
-    pub request_info: RequestInfo,
+    pub request_info: AdvancedCommerceRequestInfo,
 
     /// The storefront for the transaction.
     ///
@@ -20,10 +20,10 @@ pub struct SubscriptionCancelRequest {
     pub storefront: Option<String>,
 }
 
-impl SubscriptionCancelRequest {
+impl AdvancedCommerceSubscriptionCancelRequest {
     pub fn new(request_reference_id: Uuid) -> Self {
         Self {
-            request_info: RequestInfo::new(request_reference_id),
+            request_info: AdvancedCommerceRequestInfo::new(request_reference_id),
             storefront: None,
         }
     }
@@ -33,7 +33,7 @@ impl SubscriptionCancelRequest {
         self
     }
 
-    pub fn with_request_info(mut self, request_info: RequestInfo) -> Self {
+    pub fn with_request_info(mut self, request_info: AdvancedCommerceRequestInfo) -> Self {
         self.request_info = request_info;
         self
     }

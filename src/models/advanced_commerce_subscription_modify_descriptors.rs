@@ -1,12 +1,12 @@
-use crate::models::advanced_commerce_effective::Effective;
+use crate::models::advanced_commerce_effective::AdvancedCommerceEffective;
 use serde::{Deserialize, Serialize};
 
 /// The data your app provides to change the description and display name of an auto-renewable subscription.
 ///
-/// [SubscriptionModifyDescriptors](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionmodifydescriptors)
+/// [AdvancedCommerceSubscriptionModifyDescriptors](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionmodifydescriptors)
 #[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
-pub struct SubscriptionModifyDescriptors {
+pub struct AdvancedCommerceSubscriptionModifyDescriptors {
     /// The description of the subscription.
     ///
     /// [Description](https://developer.apple.com/documentation/advancedcommerceapi/description)
@@ -21,12 +21,12 @@ pub struct SubscriptionModifyDescriptors {
 
     /// When the modification takes effect.
     ///
-    /// [Effective](https://developer.apple.com/documentation/advancedcommerceapi/effective)
-    pub effective: Effective,
+    /// [AdvancedCommerceEffective](https://developer.apple.com/documentation/advancedcommerceapi/effective)
+    pub effective: AdvancedCommerceEffective,
 }
 
-impl SubscriptionModifyDescriptors {
-    pub fn new(effective: Effective) -> Self {
+impl AdvancedCommerceSubscriptionModifyDescriptors {
+    pub fn new(effective: AdvancedCommerceEffective) -> Self {
         Self {
             description: None,
             display_name: None,

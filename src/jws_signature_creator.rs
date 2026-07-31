@@ -108,7 +108,7 @@ impl JWSSignatureCreator {
     }
 }
 
-/// Creator for Promotional Offer V2 signatures
+/// Creator for Promotional AdvancedCommerceOffer V2 signatures
 pub struct PromotionalOfferV2SignatureCreator {
     base: JWSSignatureCreator,
 }
@@ -178,7 +178,7 @@ impl PromotionalOfferV2SignatureCreator {
     }
 }
 
-/// Creator for Introductory Offer Eligibility signatures
+/// Creator for Introductory AdvancedCommerceOffer Eligibility signatures
 pub struct IntroductoryOfferEligibilitySignatureCreator {
     base: JWSSignatureCreator,
 }

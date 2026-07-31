@@ -5,10 +5,10 @@ use serde::{Deserialize, Serialize};
 /// Unlike the other Advanced Commerce responses, `signedRenewalInfo` is optional here:
 /// a one-time-charge refund has no subscription renewal to report.
 ///
-/// [RequestRefundResponse](https://developer.apple.com/documentation/advancedcommerceapi/requestrefundresponse)
+/// [AdvancedCommerceRequestRefundResponse](https://developer.apple.com/documentation/advancedcommerceapi/requestrefundresponse)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct RequestRefundResponse {
+pub struct AdvancedCommerceRequestRefundResponse {
     /// Subscription renewal information signed by the App Store, in JSON Web Signature (JWS) format.
     ///
     /// [signedRenewalInfo](https://developer.apple.com/documentation/advancedcommerceapi/jwsrenewalinfo)

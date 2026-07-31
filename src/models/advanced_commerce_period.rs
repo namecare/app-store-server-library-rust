@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// [period](https://developer.apple.com/documentation/advancedcommerceapi/period)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize, Serialize)]
-pub enum Period {
+pub enum AdvancedCommercePeriod {
     /// One week period
     #[serde(rename = "P1W")]
     P1W,

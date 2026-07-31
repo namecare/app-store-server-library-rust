@@ -1,17 +1,17 @@
-use crate::models::advanced_commerce_offer_period::OfferPeriod;
-use crate::models::advanced_commerce_offer_reason::OfferReason;
+use crate::models::advanced_commerce_offer_period::AdvancedCommerceOfferPeriod;
+use crate::models::advanced_commerce_offer_reason::AdvancedCommerceOfferReason;
 use serde::{Deserialize, Serialize};
 
 /// A discount offer for an auto-renewable subscription.
 ///
-/// [Offer](https://developer.apple.com/documentation/advancedcommerceapi/offer)
+/// [AdvancedCommerceOffer](https://developer.apple.com/documentation/advancedcommerceapi/offer)
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
-pub struct Offer {
+pub struct AdvancedCommerceOffer {
     /// The period of the offer.
     ///
-    /// [Period](https://developer.apple.com/documentation/advancedcommerceapi/period)
-    pub period: OfferPeriod,
+    /// [AdvancedCommercePeriod](https://developer.apple.com/documentation/advancedcommerceapi/period)
+    pub period: AdvancedCommerceOfferPeriod,
 
     /// The number of periods the offer is active.
     /// Minimum: 1, Maximum: 12
@@ -24,12 +24,12 @@ pub struct Offer {
 
     /// The reason for the offer.
     ///
-    /// [Reason](https://developer.apple.com/documentation/advancedcommerceapi/reason)
-    pub reason: OfferReason,
+    /// [AdvancedCommerceReason](https://developer.apple.com/documentation/advancedcommerceapi/reason)
+    pub reason: AdvancedCommerceOfferReason,
 }
 
-impl Offer {
-    pub fn new(period: OfferPeriod, period_count: i32, price: i64, reason: OfferReason) -> Self {
+impl AdvancedCommerceOffer {
+    pub fn new(period: AdvancedCommerceOfferPeriod, period_count: i32, price: i64, reason: AdvancedCommerceOfferReason) -> Self {
         Self {
             period,
             period_count,

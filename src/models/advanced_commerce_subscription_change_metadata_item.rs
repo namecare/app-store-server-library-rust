@@ -1,12 +1,12 @@
-use crate::models::advanced_commerce_effective::Effective;
+use crate::models::advanced_commerce_effective::AdvancedCommerceEffective;
 use serde::{Deserialize, Serialize};
 
 /// The metadata to change for an item, specifically its SKU, description, and display name.
 ///
-/// [SubscriptionChangeMetadataItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionchangemetadataitem)
+/// [AdvancedCommerceSubscriptionChangeMetadataItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionchangemetadataitem)
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
-pub struct SubscriptionChangeMetadataItem {
+pub struct AdvancedCommerceSubscriptionChangeMetadataItem {
     /// The new SKU of the item.
     ///
     /// [SKU](https://developer.apple.com/documentation/advancedcommerceapi/sku)
@@ -33,12 +33,12 @@ pub struct SubscriptionChangeMetadataItem {
 
     /// The string that determines when the metadata change goes into effect.
     ///
-    /// [Effective](https://developer.apple.com/documentation/advancedcommerceapi/effective)
-    pub effective: Effective,
+    /// [AdvancedCommerceEffective](https://developer.apple.com/documentation/advancedcommerceapi/effective)
+    pub effective: AdvancedCommerceEffective,
 }
 
-impl SubscriptionChangeMetadataItem {
-    pub fn new(current_sku: String, effective: Effective) -> Self {
+impl AdvancedCommerceSubscriptionChangeMetadataItem {
+    pub fn new(current_sku: String, effective: AdvancedCommerceEffective) -> Self {
         Self {
             sku: None,
             current_sku,

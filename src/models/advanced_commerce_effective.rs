@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 /// [effective](https://developer.apple.com/documentation/advancedcommerceapi/effective)
 #[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum Effective {
+pub enum AdvancedCommerceEffective {
     Immediately,
     NextBillCycle,
 }

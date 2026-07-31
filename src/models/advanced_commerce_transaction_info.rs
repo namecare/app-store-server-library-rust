@@ -1,5 +1,5 @@
-use crate::models::advanced_commerce_descriptors::Descriptors;
-use crate::models::advanced_commerce_period::Period;
+use crate::models::advanced_commerce_descriptors::AdvancedCommerceDescriptors;
+use crate::models::advanced_commerce_period::AdvancedCommercePeriod;
 use crate::models::advanced_commerce_transaction_item::AdvancedCommerceTransactionItem;
 use serde::{Deserialize, Serialize};
 
@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 /// [AdvancedCommerceTransactionInfo](https://developer.apple.com/documentation/appstoreserverapi/advancedcommercetransactioninfo)
 pub struct AdvancedCommerceTransactionInfo {
     /// [descriptors](https://developer.apple.com/documentation/appstoreserverapi/advancedcommercedescriptors)
-    pub descriptors: Option<Descriptors>,
+    pub descriptors: Option<AdvancedCommerceDescriptors>,
 
     /// [estimatedTax](https://developer.apple.com/documentation/appstoreserverapi/advancedcommerceestimatedtax)
     pub estimated_tax: Option<i64>,
@@ -17,7 +17,7 @@ pub struct AdvancedCommerceTransactionInfo {
     pub items: Option<Vec<AdvancedCommerceTransactionItem>>,
 
     /// [period](https://developer.apple.com/documentation/appstoreserverapi/advancedcommerceperiod)
-    pub period: Option<Period>,
+    pub period: Option<AdvancedCommercePeriod>,
 
     /// [requestReferenceId](https://developer.apple.com/documentation/appstoreserverapi/advancedcommercerequestreferenceid)
     pub request_reference_id: Option<String>,

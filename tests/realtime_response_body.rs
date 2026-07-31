@@ -1,4 +1,6 @@
+use app_store_server_library::models::advanced_commerce_info::AdvancedCommerceInfo;
 use app_store_server_library::models::alternate_product::AlternateProduct;
+use app_store_server_library::models::billing_plan_type::BillingPlanType;
 use app_store_server_library::models::message::Message;
 use app_store_server_library::models::promotional_offer::PromotionalOffer;
 use app_store_server_library::models::promotional_offer_signature_v1::PromotionalOfferSignatureV1;
@@ -78,7 +80,7 @@ fn test_realtime_response_body_with_alternate_product() {
     let alternate_product = AlternateProduct {
         message_identifier: Some(message_id),
         product_id: Some(product_id.clone()),
-        billing_plan_type: None,
+        billing_plan_type: Some(BillingPlanType::Monthly),
     };
     let response_body = RealtimeResponseBody {
         message: None,
@@ -120,6 +122,12 @@ fn test_realtime_response_body_with_alternate_product() {
             .as_str()
             .unwrap()
     );
+    assert_eq!(
+        "MONTHLY",
+        alternate_product_dict["billingPlanType"]
+            .as_str()
+            .unwrap()
+    );
     assert!(
         json_data.get("message").is_none(),
         "JSON should not have 'message' field"
@@ -153,6 +161,14 @@ fn test_realtime_response_body_with_alternate_product() {
             .as_ref()
             .unwrap()
             .product_id
+    );
+    assert_eq!(
+        Some(BillingPlanType::Monthly),
+        deserialized
+            .alternate_product
+            .as_ref()
+            .unwrap()
+            .billing_plan_type
     );
     assert!(deserialized.promotional_offer.is_none());
 }
@@ -428,6 +444,68 @@ fn test_realtime_response_body_with_promotional_offer_v1() {
     assert_eq!("keyId123", deserialized_v1.key_id);
     assert_eq!(Some(app_account_token), deserialized_v1.app_account_token);
     assert_eq!("base64encodedSignature", deserialized_v1.encoded_signature);
+}
+
+#[test]
+fn test_realtime_response_body_with_advanced_commerce_info() {
+    let message_id = Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap();
+    let ac_data = "eyJhbGciOiJFUzI1NiJ9.base64data".to_string();
+    let ac_info = AdvancedCommerceInfo {
+        message_identifier: message_id,
+        advanced_commerce_data: ac_data.clone(),
+    };
+    let response_body = RealtimeResponseBody {
+        message: None,
+        alternate_product: None,
+        promotional_offer: None,
+        advanced_commerce_info: Some(ac_info),
+    };
+
+    let json_data = serde_json::to_value(&response_body).unwrap();
+
+    assert!(json_data.get("advancedCommerceInfo").is_some());
+    let ac_info_dict = json_data["advancedCommerceInfo"]
+        .as_object()
+        .unwrap();
+    assert_eq!(
+        "a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890",
+        ac_info_dict["messageIdentifier"]
+            .as_str()
+            .unwrap()
+    );
+    assert_eq!(
+        ac_data,
+        ac_info_dict["advancedCommerceData"]
+            .as_str()
+            .unwrap()
+    );
+    assert!(json_data.get("message").is_none());
+    assert!(json_data.get("alternateProduct").is_none());
+    assert!(json_data.get("promotionalOffer").is_none());
+
+    let json_str = serde_json::to_string(&response_body).unwrap();
+    let deserialized: RealtimeResponseBody = serde_json::from_str(&json_str).unwrap();
+
+    assert!(deserialized.message.is_none());
+    assert!(deserialized.alternate_product.is_none());
+    assert!(deserialized.promotional_offer.is_none());
+    assert!(deserialized.advanced_commerce_info.is_some());
+    assert_eq!(
+        message_id,
+        deserialized
+            .advanced_commerce_info
+            .as_ref()
+            .unwrap()
+            .message_identifier
+    );
+    assert_eq!(
+        ac_data,
+        deserialized
+            .advanced_commerce_info
+            .as_ref()
+            .unwrap()
+            .advanced_commerce_data
+    );
 }
 
 #[test]

@@ -15,6 +15,7 @@ pub enum ValidationError {
     DisplayNameTooLong(usize),
     SkuTooLong(usize),
     InvalidPeriodCount(i32),
+    EmptyItems,
 }
 
 impl fmt::Display for ValidationError {
@@ -71,10 +72,11 @@ impl fmt::Display for ValidationError {
             ValidationError::InvalidPeriodCount(period_count) => {
                 write!(
                     f,
-                    "Period count must be between 1 and {} inclusive, got {}",
+                    "AdvancedCommercePeriod count must be between 1 and {} inclusive, got {}",
                     MAXIMUM_PERIOD_COUNT, period_count
                 )
             }
+            ValidationError::EmptyItems => write!(f, "Items list cannot be empty"),
         }
     }
 }
@@ -250,6 +252,21 @@ pub fn validate_period_count(period_count: i32) -> Result<i32, ValidationError> 
     Ok(period_count)
 }
 
+/// Validates that a list of items is not empty.
+///
+/// # Arguments
+/// * `items` - The list of items to validate
+///
+/// # Returns
+/// * `Ok(Vec<T>)` - The validated list of items
+/// * `Err(ValidationError)` - If the list is empty
+pub fn validate_items<T>(items: Vec<T>) -> Result<Vec<T>, ValidationError> {
+    if items.is_empty() {
+        return Err(ValidationError::EmptyItems);
+    }
+    Ok(items)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -373,6 +390,18 @@ mod tests {
         assert!(matches!(
             validate_period_count(-1),
             Err(ValidationError::InvalidPeriodCount(-1))
+        ));
+    }
+
+    #[test]
+    fn test_validate_items() {
+        let valid_list = vec!["item1"];
+        assert_eq!(validate_items(valid_list.clone()).unwrap(), valid_list);
+
+        let empty_list: Vec<&str> = vec![];
+        assert!(matches!(
+            validate_items(empty_list),
+            Err(ValidationError::EmptyItems)
         ));
     }
 }

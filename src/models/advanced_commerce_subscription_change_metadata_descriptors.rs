@@ -1,12 +1,12 @@
-use crate::models::advanced_commerce_effective::Effective;
+use crate::models::advanced_commerce_effective::AdvancedCommerceEffective;
 use serde::{Deserialize, Serialize};
 
-/// Descriptors for the metadata changes of a subscription.
+/// AdvancedCommerceDescriptors for the metadata changes of a subscription.
 ///
-/// [SubscriptionChangeMetadataDescriptors](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionchangemetadatadescriptors)
+/// [AdvancedCommerceSubscriptionChangeMetadataDescriptors](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionchangemetadatadescriptors)
 #[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
-pub struct SubscriptionChangeMetadataDescriptors {
+pub struct AdvancedCommerceSubscriptionChangeMetadataDescriptors {
     /// The new description for the subscription.
     ///
     /// [Description](https://developer.apple.com/documentation/advancedcommerceapi/description)
@@ -21,12 +21,12 @@ pub struct SubscriptionChangeMetadataDescriptors {
 
     /// The string that determines when the metadata change goes into effect.
     ///
-    /// [Effective](https://developer.apple.com/documentation/advancedcommerceapi/effective)
-    pub effective: Effective,
+    /// [AdvancedCommerceEffective](https://developer.apple.com/documentation/advancedcommerceapi/effective)
+    pub effective: AdvancedCommerceEffective,
 }
 
-impl SubscriptionChangeMetadataDescriptors {
-    pub fn new(effective: Effective) -> Self {
+impl AdvancedCommerceSubscriptionChangeMetadataDescriptors {
+    pub fn new(effective: AdvancedCommerceEffective) -> Self {
         Self {
             description: None,
             display_name: None,

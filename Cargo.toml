@@ -77,8 +77,8 @@ path = "tests/app_store_server_api_client.rs"
 required-features = ["api-client"]
 
 [[test]]
-name = "ac_api_client"
-path = "tests/ac_api_client.rs"
+name = "advanced_commerce_api_client"
+path = "tests/advanced_commerce_api_client.rs"
 required-features = ["api-client"]
 
 [[test]]

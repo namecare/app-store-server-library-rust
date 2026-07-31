@@ -95,3 +95,4 @@ Cargo.lock
 .claude
 CLAUDE.md
 rustfmt.toml
+/.superpowers/

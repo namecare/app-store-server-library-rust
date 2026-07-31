@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 /// The base response body for an Advanced Commerce request.
 ///
-/// [SubscriptionRevokeResponse](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionrevokeresponse)
+/// [AdvancedCommerceSubscriptionRevokeResponse](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionrevokeresponse)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AdvancedCommerceResponse {

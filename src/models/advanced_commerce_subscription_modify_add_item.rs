@@ -1,12 +1,12 @@
-use crate::models::advanced_commerce_offer::Offer;
+use crate::models::advanced_commerce_offer::AdvancedCommerceOffer;
 use serde::{Deserialize, Serialize};
 
 /// The data your app provides to add items when it makes changes to an auto-renewable subscription.
 ///
-/// [SubscriptionModifyAddItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionmodifyadditem)
+/// [AdvancedCommerceSubscriptionModifyAddItem](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionmodifyadditem)
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SubscriptionModifyAddItem {
+pub struct AdvancedCommerceSubscriptionModifyAddItem {
     /// The item's product identifier.
     ///
     /// [SKU](https://developer.apple.com/documentation/advancedcommerceapi/sku)
@@ -30,9 +30,9 @@ pub struct SubscriptionModifyAddItem {
 
     /// An offer for the item.
     ///
-    /// [Offer](https://developer.apple.com/documentation/advancedcommerceapi/offer)
+    /// [AdvancedCommerceOffer](https://developer.apple.com/documentation/advancedcommerceapi/offer)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub offer: Option<Offer>,
+    pub offer: Option<AdvancedCommerceOffer>,
 
     /// The prorated price for the item.
     ///
@@ -41,7 +41,7 @@ pub struct SubscriptionModifyAddItem {
     pub prorated_price: Option<i64>,
 }
 
-impl SubscriptionModifyAddItem {
+impl AdvancedCommerceSubscriptionModifyAddItem {
     pub fn new(sku: String, description: String, display_name: String, price: i64) -> Self {
         Self {
             sku,
@@ -53,7 +53,7 @@ impl SubscriptionModifyAddItem {
         }
     }
 
-    pub fn with_offer(mut self, offer: Offer) -> Self {
+    pub fn with_offer(mut self, offer: AdvancedCommerceOffer) -> Self {
         self.offer = Some(offer);
         self
     }
