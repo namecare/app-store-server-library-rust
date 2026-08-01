@@ -1,4 +1,5 @@
 use crate::models::app_data::AppData;
+use crate::models::decoded_signed_data::DecodedSignedData;
 use crate::models::notification_data::Data;
 use crate::models::external_purchase_token::ExternalPurchaseToken;
 use crate::models::notification_type_v2::NotificationTypeV2;
@@ -69,4 +70,10 @@ pub struct ResponseBodyV2DecodedPayload {
     /// [appData](https://developer.apple.com/documentation/appstoreservernotifications/appdata)
     #[serde(rename = "appData")]
     pub app_data: Option<AppData>,
+}
+
+impl DecodedSignedData for ResponseBodyV2DecodedPayload {
+    fn signed_date_optional(&self) -> Option<DateTime<Utc>> {
+        self.signed_date
+    }
 }

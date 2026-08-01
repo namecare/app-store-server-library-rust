@@ -66,6 +66,7 @@ pub mod consumption_request_reason;
 pub mod consumption_request_v1;
 pub mod consumption_status;
 pub mod decoded_realtime_request_body;
+pub mod decoded_signed_data;
 pub mod default_configuration_request;
 pub mod default_configuration_response;
 pub mod delivery_status;

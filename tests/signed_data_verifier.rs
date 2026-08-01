@@ -1,12 +1,14 @@
+use app_store_server_library::crypto::jws;
+use app_store_server_library::crypto::CryptoProvider;
 use app_store_server_library::models::advanced_commerce_period::AdvancedCommercePeriod;
 use app_store_server_library::models::advanced_commerce_price_increase_info_status::AdvancedCommercePriceIncreaseInfoStatus;
 use app_store_server_library::models::advanced_commerce_refund_reason::AdvancedCommerceRefundReason;
 use app_store_server_library::models::advanced_commerce_refund_type::AdvancedCommerceRefundType;
 use app_store_server_library::models::app_data::AppData;
+use app_store_server_library::models::app_store_environment::Environment;
 use app_store_server_library::models::auto_renew_status::AutoRenewStatus;
 use app_store_server_library::models::billing_plan_type::BillingPlanType;
 use app_store_server_library::models::consumption_request_reason::ConsumptionRequestReason;
-use app_store_server_library::models::app_store_environment::Environment;
 use app_store_server_library::models::expiration_intent::ExpirationIntent;
 use app_store_server_library::models::in_app_ownership_type::InAppOwnershipType;
 use app_store_server_library::models::jws_renewal_info_decoded_payload::JWSRenewalInfoDecodedPayload;
@@ -25,7 +27,6 @@ use app_store_server_library::models::subtype::Subtype;
 use app_store_server_library::models::transaction_reason::TransactionReason;
 use app_store_server_library::signed_data_verifier::{SignedDataVerifier, SignedDataVerifierError};
 use app_store_server_library::utils::StringExt;
-use jsonwebtoken::Algorithm;
 use serde_json::{Map, Value};
 use std::fs;
 
@@ -288,7 +289,7 @@ fn test_malformed_jwt_with_too_many_parts() {
         .err()
         .unwrap()
         .to_string()
-        .contains("InternalJWTError"));
+        .contains("InternalJWSError"));
 }
 
 #[test]
@@ -299,7 +300,7 @@ fn test_malformed_jwt_with_malformed_data() {
         .err()
         .unwrap()
         .to_string()
-        .contains("InternalJWTError"));
+        .contains("InternalJWSError"));
 }
 
 fn get_signed_data_verifier(
@@ -314,7 +315,9 @@ fn get_signed_data_verifier(
         environment,
         bundle_id.to_string(),
         app_apple_id.or(Some(1234)),
-    );
+        false,
+    )
+    .expect("valid config");
 
     verifier
 }
@@ -1520,11 +1523,22 @@ fn create_signed_data_from_json(path: &str) -> String {
     let json_payload = fs::read_to_string(path).expect("Failed to read JSON file");
     let json: Map<String, Value> = serde_json::from_str(json_payload.as_str()).expect("Expect JSON");
 
-    let header = jsonwebtoken::Header::new(Algorithm::ES256);
     let private_key_pem = include_str!("resources/certs/testSigningKey.p8");
-    let key = jsonwebtoken::EncodingKey::from_ec_pem(private_key_pem.as_bytes()).expect("Failed to load test key");
-    let payload = jsonwebtoken::encode(&header, &json, &key).expect("Failed to encode JWT");
-    payload
+    let key = CryptoProvider::default_provider()
+        .p256_signing
+        .private_key(private_key_pem)
+        .expect("Failed to load test key");
+
+    let header = serde_json::json!({ "alg": "ES256", "typ": "JWT" });
+    let encoded_header = jws::b64url_encode(&serde_json::to_vec(&header).expect("Expect header JSON"));
+    let encoded_payload = jws::b64url_encode(&serde_json::to_vec(&json).expect("Expect payload JSON"));
+    let signing_input = format!("{encoded_header}.{encoded_payload}");
+
+    let signature = key
+        .signature(signing_input.as_bytes())
+        .expect("Failed to sign payload");
+
+    jws::encode_compact(&encoded_header, &encoded_payload, &signature.raw_representation())
 }
 
 #[test]

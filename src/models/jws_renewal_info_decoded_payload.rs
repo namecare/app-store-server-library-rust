@@ -1,6 +1,7 @@
 use crate::models::advanced_commerce_renewal_info::AdvancedCommerceRenewalInfo;
 use crate::models::auto_renew_status::AutoRenewStatus;
 use crate::models::app_store_environment::Environment;
+use crate::models::decoded_signed_data::DecodedSignedData;
 use crate::models::expiration_intent::ExpirationIntent;
 use crate::models::offer_discount_type::OfferDiscountType;
 use crate::models::offer_type::OfferType;
@@ -144,4 +145,10 @@ pub struct JWSRenewalInfoDecodedPayload {
     ///
     /// [commitmentInfo](https://developer.apple.com/documentation/appstoreserverapi/renewalcommitmentinfo)
     pub commitment_info: Option<RenewalCommitmentInfo>,
+}
+
+impl DecodedSignedData for JWSRenewalInfoDecodedPayload {
+    fn signed_date_optional(&self) -> Option<DateTime<Utc>> {
+        self.signed_date
+    }
 }

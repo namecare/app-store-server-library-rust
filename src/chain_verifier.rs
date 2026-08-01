@@ -1,3 +1,7 @@
+use crate::crypto::{CryptoError, CryptoProvider};
+use std::collections::HashMap;
+use std::sync::Mutex;
+use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -42,23 +46,188 @@ pub enum ChainVerificationFailureReason {
     RetryableVerificationFailure,
 }
 
-/// Trait for certificate chain verification
-pub trait ChainVerifier: Send + Sync {
-    /// Verifies a certificate chain and returns the leaf's public key
+impl From<CryptoError> for ChainVerifierError {
+    fn from(e: CryptoError) -> Self {
+        match e {
+            CryptoError::VerificationError(m) if m.contains("expired") => {
+                ChainVerifierError::VerificationFailure(
+                    ChainVerificationFailureReason::CertificateExpired,
+                )
+            }
+            CryptoError::VerificationError(_) | CryptoError::KeyError(_) => {
+                ChainVerifierError::VerificationFailure(
+                    ChainVerificationFailureReason::InvalidCertificate,
+                )
+            }
+            CryptoError::SigningError(m) => ChainVerifierError::InternalError(m),
+        }
+    }
+}
+
+/// Apple's receipt-signing OID, expected on the leaf certificate.
+const APPLE_RECEIPT_SIGNER_OID: &str = "1.2.840.113635.100.6.11.1";
+/// Apple's WWDR OID, expected on the intermediate certificate.
+const APPLE_WWDR_INTERMEDIATE_OID: &str = "1.2.840.113635.100.6.2.1";
+
+/// There are unlikely to be more than a couple of keys at once.
+const MAXIMUM_CACHE_SIZE: usize = 32;
+/// 15 minutes, in seconds.
+const CACHE_TIME_LIMIT: u64 = 15 * 60;
+
+#[derive(PartialEq, Eq, Hash)]
+struct CacheKey {
+    leaf: Vec<u8>,
+    intermediate: Vec<u8>,
+}
+
+struct CacheValue {
+    expiration_time: u64,
+    public_key: Vec<u8>,
+}
+
+/// Verifies Apple's certificate chains.
+///
+/// Holds the trusted roots and a cache of verified public keys. Certificate
+/// mechanics are delegated to [`CryptoProvider`]'s X.509 suite; this struct
+/// owns only Apple's policy — chain length, the two required OIDs, and
+/// caching.
+pub struct ChainVerifier {
+    root_certificates: Vec<Vec<u8>>,
+    verified_public_key_cache: Mutex<HashMap<CacheKey, CacheValue>>,
+}
+
+impl ChainVerifier {
+    /// Creates a verifier trusting the given DER-encoded root certificates.
+    pub fn new(root_certificates: Vec<Vec<u8>>) -> Self {
+        Self {
+            root_certificates,
+            verified_public_key_cache: Mutex::new(HashMap::new()),
+        }
+    }
+
+    /// Verifies the chain and returns the leaf's DER-encoded
+    /// SubjectPublicKeyInfo.
     ///
     /// # Arguments
-    /// * `leaf_certificate` - DER-encoded leaf certificate
-    /// * `intermediate_certificate` - DER-encoded intermediate certificate
-    /// * `root_certificates` - List of trusted DER-encoded root certificates
-    /// * `effective_date` - Optional Unix timestamp for validity check
-    ///
-    /// # Returns
-    /// The public key bytes from the leaf certificate if verification succeeds
-    fn verify(
+    /// * `leaf` - DER-encoded leaf certificate
+    /// * `intermediate` - DER-encoded intermediate certificate
+    /// * `effective_date` - Optional Unix timestamp for validity checks
+    /// * `enable_online_checks` - Whether revocation checking is enabled. Also
+    ///   gates the cache, matching the official Apple libraries.
+    pub fn verify(
         &self,
-        leaf_certificate: &[u8],
-        intermediate_certificate: &[u8],
-        root_certificates: &[Vec<u8>],
+        leaf: &[u8],
+        intermediate: &[u8],
         effective_date: Option<u64>,
-    ) -> Result<Vec<u8>, ChainVerifierError>;
+        enable_online_checks: bool,
+    ) -> Result<Vec<u8>, ChainVerifierError> {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        self.verify_at(leaf, intermediate, effective_date, enable_online_checks, now)
+    }
+
+    /// [`ChainVerifier::verify`], with the current time injected. Exposed for
+    /// deterministic testing of cache expiry.
+    pub fn verify_at(
+        &self,
+        leaf: &[u8],
+        intermediate: &[u8],
+        effective_date: Option<u64>,
+        enable_online_checks: bool,
+        now: u64,
+    ) -> Result<Vec<u8>, ChainVerifierError> {
+        // The cache exists to avoid repeated OCSP network calls, so it is
+        // consulted and populated only for online verification.
+        if enable_online_checks {
+            if let Some(cached) = self.cached_public_key(leaf, intermediate, now) {
+                return Ok(cached);
+            }
+        }
+
+        let public_key = self.verify_without_caching(leaf, intermediate, effective_date)?;
+
+        if enable_online_checks {
+            self.store_public_key(leaf, intermediate, &public_key, now);
+        }
+
+        Ok(public_key)
+    }
+
+    /// Number of entries currently held. Exposed for testing.
+    pub fn cache_len(&self) -> usize {
+        self.verified_public_key_cache
+            .lock()
+            .map(|c| c.len())
+            .unwrap_or(0)
+    }
+
+    fn verify_without_caching(
+        &self,
+        leaf: &[u8],
+        intermediate: &[u8],
+        effective_date: Option<u64>,
+    ) -> Result<Vec<u8>, ChainVerifierError> {
+        let provider = CryptoProvider::default_provider();
+
+        let chain = provider.x509.verify_chain(
+            leaf,
+            intermediate,
+            &self.root_certificates,
+            effective_date,
+        )?;
+
+        if !chain.has_extension(0, APPLE_RECEIPT_SIGNER_OID) {
+            return Err(ChainVerifierError::VerificationFailure(
+                ChainVerificationFailureReason::InvalidCertificate,
+            ));
+        }
+
+        if !chain.has_extension(1, APPLE_WWDR_INTERMEDIATE_OID) {
+            return Err(ChainVerifierError::VerificationFailure(
+                ChainVerificationFailureReason::InvalidCertificate,
+            ));
+        }
+
+        Ok(chain.leaf_spki_der())
+    }
+
+    fn cached_public_key(&self, leaf: &[u8], intermediate: &[u8], now: u64) -> Option<Vec<u8>> {
+        let key = CacheKey {
+            leaf: leaf.to_vec(),
+            intermediate: intermediate.to_vec(),
+        };
+        let cache = self
+            .verified_public_key_cache
+            .lock()
+            .ok()?;
+        let value = cache.get(&key)?;
+        if value.expiration_time > now {
+            Some(value.public_key.clone())
+        } else {
+            None
+        }
+    }
+
+    fn store_public_key(&self, leaf: &[u8], intermediate: &[u8], public_key: &[u8], now: u64) {
+        let Ok(mut cache) = self.verified_public_key_cache.lock() else {
+            return;
+        };
+
+        cache.insert(
+            CacheKey {
+                leaf: leaf.to_vec(),
+                intermediate: intermediate.to_vec(),
+            },
+            CacheValue {
+                expiration_time: now + CACHE_TIME_LIMIT,
+                public_key: public_key.to_vec(),
+            },
+        );
+
+        if cache.len() > MAXIMUM_CACHE_SIZE {
+            cache.retain(|_, v| v.expiration_time > now);
+        }
+    }
 }

@@ -6,18 +6,12 @@ use app_store_server_library::chain_verifier::ChainVerificationFailureReason::{
     CertificateExpired, InvalidCertificate,
 };
 use app_store_server_library::chain_verifier::{ChainVerifier, ChainVerifierError};
-use app_store_server_library::crypto::CryptoProvider;
 use app_store_server_library::utils::StringExt;
 use base64::engine::general_purpose::STANDARD;
 use base64::{DecodeError, Engine};
 use common::*;
 
 extern crate base64;
-
-fn create_verifier() -> Box<dyn ChainVerifier> {
-    let provider = CryptoProvider::default_provider();
-    (provider.chain_verifier)()
-}
 
 #[test]
 fn test_valid_chain_without_ocsp() -> Result<(), ChainVerifierError> {
@@ -31,8 +25,8 @@ fn test_valid_chain_without_ocsp() -> Result<(), ChainVerifierError> {
         .as_der_bytes()
         .unwrap();
 
-    let verifier = create_verifier();
-    let public_key = verifier.verify(&leaf, &intermediate, &[root], Some(EFFECTIVE_DATE))?;
+    let verifier = ChainVerifier::new(vec![root]);
+    let public_key = verifier.verify(&leaf, &intermediate, Some(EFFECTIVE_DATE), false)?;
     assert_eq!(
         LEAF_CERT_PUBLIC_KEY_BASE64_ENCODED
             .as_der_bytes()
@@ -54,8 +48,8 @@ fn test_valid_chain_invalid_intermediate_oid_without_ocsp() -> Result<(), ChainV
         .as_der_bytes()
         .unwrap();
 
-    let verifier = create_verifier();
-    let public_key = verifier.verify(&leaf, &intermediate, &[root], Some(EFFECTIVE_DATE));
+    let verifier = ChainVerifier::new(vec![root]);
+    let public_key = verifier.verify(&leaf, &intermediate, Some(EFFECTIVE_DATE), false);
 
     assert_eq!(
         public_key.expect_err("Expect error"),
@@ -76,8 +70,8 @@ fn test_valid_chain_invalid_leaf_oid_without_ocsp() -> Result<(), ChainVerifierE
         .as_der_bytes()
         .unwrap();
 
-    let verifier = create_verifier();
-    let public_key = verifier.verify(&leaf, &intermediate, &[root], Some(EFFECTIVE_DATE));
+    let verifier = ChainVerifier::new(vec![root]);
+    let public_key = verifier.verify(&leaf, &intermediate, Some(EFFECTIVE_DATE), false);
 
     assert_eq!(
         public_key.expect_err("Expect error"),
@@ -111,8 +105,8 @@ fn test_invalid_data_in_certificate_list() -> Result<(), ChainVerifierError> {
         .as_der_bytes()
         .unwrap();
 
-    let verifier = create_verifier();
-    let public_key = verifier.verify(&leaf, &intermediate, &[root], Some(EFFECTIVE_DATE));
+    let verifier = ChainVerifier::new(vec![root]);
+    let public_key = verifier.verify(&leaf, &intermediate, Some(EFFECTIVE_DATE), false);
 
     assert_eq!(
         public_key.expect_err("Expect error"),
@@ -134,13 +128,8 @@ fn test_malformed_root_cert() -> Result<(), ChainVerifierError> {
         .as_der_bytes()
         .unwrap();
 
-    let verifier = create_verifier();
-    let public_key = verifier.verify(
-        &leaf,
-        &intermediate,
-        &[malformed_root],
-        Some(EFFECTIVE_DATE),
-    );
+    let verifier = ChainVerifier::new(vec![malformed_root]);
+    let public_key = verifier.verify(&leaf, &intermediate, Some(EFFECTIVE_DATE), false);
     assert_eq!(
         public_key.expect_err("Expect error"),
         ChainVerifierError::VerificationFailure(InvalidCertificate)
@@ -160,8 +149,8 @@ fn test_chain_different_than_root_certificate() -> Result<(), ChainVerifierError
         .as_der_bytes()
         .unwrap();
 
-    let verifier = create_verifier();
-    let public_key = verifier.verify(&leaf, &intermediate, &[real_root], Some(EFFECTIVE_DATE));
+    let verifier = ChainVerifier::new(vec![real_root]);
+    let public_key = verifier.verify(&leaf, &intermediate, Some(EFFECTIVE_DATE), false);
 
     assert_eq!(
         public_key.expect_err("Expect error"),
@@ -182,8 +171,8 @@ fn test_valid_expired_chain() -> Result<(), ChainVerifierError> {
         .as_der_bytes()
         .unwrap();
 
-    let verifier = create_verifier();
-    let public_key = verifier.verify(&leaf, &intermediate, &[root], Some(2280946846));
+    let verifier = ChainVerifier::new(vec![root]);
+    let public_key = verifier.verify(&leaf, &intermediate, Some(2280946846), false);
 
     assert_eq!(
         public_key.expect_err("Expect error"),
@@ -204,8 +193,8 @@ fn test_apple_chain_is_valid() -> Result<(), ChainVerifierError> {
         .as_der_bytes()
         .unwrap();
 
-    let verifier = create_verifier();
-    let _public_key = verifier.verify(&leaf, &intermediate, &[root], Some(EFFECTIVE_DATE))?;
+    let verifier = ChainVerifier::new(vec![root]);
+    let _public_key = verifier.verify(&leaf, &intermediate, Some(EFFECTIVE_DATE), false)?;
     Ok(())
 }
 
@@ -219,7 +208,7 @@ fn test_apple_chain_is_valid_multi_root() -> Result<(), ChainVerifierError> {
         .map(|str| str.as_der_bytes().unwrap())
         .collect();
 
-    let verifier = create_verifier();
-    let _public_key = verifier.verify(&leaf, &intermediate, &multi_root, Some(EFFECTIVE_DATE))?;
+    let verifier = ChainVerifier::new(multi_root);
+    let _public_key = verifier.verify(&leaf, &intermediate, Some(EFFECTIVE_DATE), false)?;
     Ok(())
 }

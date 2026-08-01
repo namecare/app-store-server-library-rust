@@ -1,27 +1,21 @@
 use base64::engine::general_purpose::STANDARD;
 use base64::{DecodeError, Engine};
 
-/// Converts a base64URL-encoded string to a standard base64-encoded string.
-///
-/// Replaces '-' with '+' and '_' with '/', and adds padding if needed.
-///
-/// # Examples
-///
-/// ```ignore
-/// let encoded_string = "aGVsbG8gd29ybGQh";
-/// let result = base64_url_to_base64(encoded_string);
-/// assert_eq!(result, "aGVsbG8gd29ybGQh==");
-/// ```
-pub(crate) fn base64_url_to_base64(encoded_string: &str) -> String {
-    let replaced_string = encoded_string
-        .replace('-', "+")
-        .replace('_', "/");
-
-    if replaced_string.len() % 4 != 0 {
-        return replaced_string.clone() + &"=".repeat(4 - replaced_string.len() % 4);
+/// Percent-encodes a string for safe use as a URL query parameter value.
+pub(crate) fn percent_encode_query_value(value: &str) -> String {
+    let mut encoded = String::with_capacity(value.len());
+    for byte in value.as_bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                encoded.push(*byte as char);
+            }
+            _ => {
+                encoded.push('%');
+                encoded.push_str(&format!("{:02X}", byte));
+            }
+        }
     }
-
-    replaced_string
+    encoded
 }
 
 /// A trait for extending the functionality of Rust strings.
@@ -52,20 +46,7 @@ impl StringExt for &str {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_base64_url_to_base64() {
-        // Test with a base64URL-encoded string
-        let encoded_string = "aGVsbG8gd29ybGQh";
-        let result = base64_url_to_base64(encoded_string);
-        assert_eq!(result, "aGVsbG8gd29ybGQh");
-
-        // Test with a base64URL-encoded string requiring padding
-        let encoded_string_padding = "aGVsbG8gd29ybz";
-        let result_padding = base64_url_to_base64(encoded_string_padding);
-        assert_eq!(result_padding, "aGVsbG8gd29ybz==");
-    }
-}
+// `base64_url_to_base64` and its test were removed with the `jsonwebtoken`
+// migration: `crate::jws` now owns base64url handling and covers it in
+// `tests/jws.rs` (`b64url_round_trips_without_padding`,
+// `b64url_decode_accepts_unpadded_input`).

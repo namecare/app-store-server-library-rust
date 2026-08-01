@@ -1,4 +1,5 @@
 use crate::models::app_store_environment::Environment;
+use crate::models::decoded_signed_data::DecodedSignedData;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::formats::Flexible;
@@ -52,4 +53,10 @@ pub struct DecodedRealtimeRequestBody {
     ///
     /// [environment](https://developer.apple.com/documentation/retentionmessaging/environment)
     pub environment: Environment,
+}
+
+impl DecodedSignedData for DecodedRealtimeRequestBody {
+    fn signed_date_optional(&self) -> Option<DateTime<Utc>> {
+        Some(self.signed_date)
+    }
 }

@@ -1,4 +1,5 @@
 use crate::models::app_store_environment::Environment;
+use crate::models::decoded_signed_data::DecodedSignedData;
 use crate::models::purchase_platform::PurchasePlatform;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -87,6 +88,12 @@ impl AppTransaction {
     /// The date that the App Store signed the JWS app transaction.
     /// [signedDate](https://developer.apple.com/documentation/storekit/apptransaction/3954449-signeddate)
     pub fn signed_date(&self) -> Option<DateTime<Utc>> {
+        self.receipt_creation_date
+    }
+}
+
+impl DecodedSignedData for AppTransaction {
+    fn signed_date_optional(&self) -> Option<DateTime<Utc>> {
         self.receipt_creation_date
     }
 }

@@ -1,5 +1,6 @@
 pub mod chain_verifier;
 pub mod crypto;
+pub mod ocsp_requester;
 pub mod jws_signature_creator;
 pub mod models;
 pub mod promotional_offer_signature_creator;

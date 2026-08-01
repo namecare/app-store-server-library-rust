@@ -13,3 +13,12 @@ pub enum ImageSize {
     #[serde(rename = "BULLET_POINT")]
     BulletPoint,
 }
+
+impl ImageSize {
+    pub fn raw_value(&self) -> &str {
+        match self {
+            ImageSize::FullSize => "FULL_SIZE",
+            ImageSize::BulletPoint => "BULLET_POINT",
+        }
+    }
+}

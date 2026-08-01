@@ -1,35 +1,101 @@
 //! RustCrypto backend implementation
 
 use p256::ecdsa::signature::Signer;
-use p256::ecdsa::{DerSignature, SigningKey};
+use p256::ecdsa::SigningKey;
 use p256::pkcs8::DecodePrivateKey;
 
-use crate::chain_verifier::{ChainVerificationFailureReason, ChainVerifier, ChainVerifierError};
-use crate::crypto::{ChainVerifierFactory, CryptoProvider, PromotionalOfferSignerFactory};
-use crate::promotional_offer_signature_creator::{PromotionalOfferSignatureCreatorError, PromotionalOfferSigner};
+use crate::crypto::{
+    CryptoError, CryptoProvider, P256PrivateKey, P256PublicKey, P256Signature,
+    P256SigningSuite, Sha1Hasher, VerifiedChain, X509Suite,
+};
 
-struct RustCryptoPromotionalOfferSigner {
-    key: SigningKey,
-}
+/// Marker type implementing every capability this backend provides.
+#[derive(Debug)]
+struct RustCrypto;
 
-impl PromotionalOfferSigner for RustCryptoPromotionalOfferSigner {
-    fn sign(&self, message: &[u8]) -> Result<Vec<u8>, PromotionalOfferSignatureCreatorError> {
-        let sig: DerSignature = self.key.sign(message);
-        Ok(sig.to_bytes().to_vec())
+impl Sha1Hasher for RustCrypto {
+    fn hash(&self, data: &[u8]) -> [u8; 20] {
+        use sha1::{Digest, Sha1};
+        Sha1::digest(data).into()
     }
 }
 
-fn new_promotional_offer_signer(
-    private_key_pem: &str,
-) -> Result<Box<dyn PromotionalOfferSigner>, PromotionalOfferSignatureCreatorError> {
-    let mut buf = [0u8; 2048];
-    let (_, der) = pem_rfc7468::decode(private_key_pem.as_bytes(), &mut buf)
-        .map_err(|e| PromotionalOfferSignatureCreatorError::KeyError(e.to_string()))?;
+#[derive(Debug)]
+struct RustCryptoP256PrivateKey {
+    key: SigningKey,
+}
 
-    let key =
-        SigningKey::from_pkcs8_der(der).map_err(|e| PromotionalOfferSignatureCreatorError::KeyError(e.to_string()))?;
+impl P256PrivateKey for RustCryptoP256PrivateKey {
+    fn signature(&self, message: &[u8]) -> Result<Box<dyn P256Signature>, CryptoError> {
+        let sig: p256::ecdsa::Signature = self.key.sign(message);
+        Ok(Box::new(RustCryptoP256Signature { sig }))
+    }
+}
 
-    Ok(Box::new(RustCryptoPromotionalOfferSigner { key }))
+#[derive(Debug)]
+struct RustCryptoP256PublicKey {
+    key: p256::ecdsa::VerifyingKey,
+}
+
+impl P256PublicKey for RustCryptoP256PublicKey {
+    fn is_valid_signature(
+        &self,
+        signature: &dyn P256Signature,
+        message: &[u8],
+    ) -> Result<(), CryptoError> {
+        use signature::Verifier;
+
+        // Rebuild from the raw form so signatures from any backend are accepted.
+        let sig = p256::ecdsa::Signature::from_slice(&signature.raw_representation())
+            .map_err(|e| CryptoError::VerificationError(e.to_string()))?;
+
+        self.key
+            .verify(message, &sig)
+            .map_err(|e| CryptoError::VerificationError(e.to_string()))
+    }
+}
+
+#[derive(Debug)]
+struct RustCryptoP256Signature {
+    sig: p256::ecdsa::Signature,
+}
+
+impl P256Signature for RustCryptoP256Signature {
+    fn raw_representation(&self) -> [u8; 64] {
+        self.sig.to_bytes().into()
+    }
+
+    fn der_representation(&self) -> Result<Vec<u8>, CryptoError> {
+        Ok(self.sig.to_der().to_bytes().to_vec())
+    }
+}
+
+impl P256SigningSuite for RustCrypto {
+    fn private_key(&self, pem: &str) -> Result<Box<dyn P256PrivateKey>, CryptoError> {
+        let mut buf = [0u8; 2048];
+        let (_, der) = pem_rfc7468::decode(pem.as_bytes(), &mut buf)
+            .map_err(|e| CryptoError::KeyError(e.to_string()))?;
+
+        let key = SigningKey::from_pkcs8_der(der)
+            .map_err(|e| CryptoError::KeyError(e.to_string()))?;
+
+        Ok(Box::new(RustCryptoP256PrivateKey { key }))
+    }
+
+    fn public_key(&self, spki_der: &[u8]) -> Result<Box<dyn P256PublicKey>, CryptoError> {
+        use p256::pkcs8::DecodePublicKey;
+
+        let key = p256::ecdsa::VerifyingKey::from_public_key_der(spki_der)
+            .map_err(|e| CryptoError::KeyError(e.to_string()))?;
+
+        Ok(Box::new(RustCryptoP256PublicKey { key }))
+    }
+
+    fn signature_from_raw(&self, rs: &[u8; 64]) -> Result<Box<dyn P256Signature>, CryptoError> {
+        let sig = p256::ecdsa::Signature::from_slice(rs)
+            .map_err(|e| CryptoError::VerificationError(e.to_string()))?;
+        Ok(Box::new(RustCryptoP256Signature { sig }))
+    }
 }
 
 use const_oid::ObjectIdentifier;
@@ -38,86 +104,78 @@ use der::{Decode, Encode};
 use x509_cert::time::Time;
 use x509_cert::Certificate;
 
-// Apple-specific OIDs
-const APPLE_LEAF_OID: &str = "1.2.840.113635.100.6.11.1";
-const APPLE_INTERMEDIATE_OID: &str = "1.2.840.113635.100.6.2.1";
-
 // Signature algorithm OIDs
 const OID_RSA_SHA256: &str = "1.2.840.113549.1.1.11";
 const OID_RSA_SHA384: &str = "1.2.840.113549.1.1.12";
 const OID_ECDSA_SHA256: &str = "1.2.840.10045.4.3.2";
 const OID_ECDSA_SHA384: &str = "1.2.840.10045.4.3.3";
 
-struct RustCryptoChainVerifier;
+struct RustCryptoVerifiedChain {
+    leaf: Certificate,
+    intermediate: Certificate,
+    root: Certificate,
+}
 
-impl ChainVerifier for RustCryptoChainVerifier {
-    fn verify(
+impl VerifiedChain for RustCryptoVerifiedChain {
+    fn has_extension(&self, index: usize, oid: &str) -> bool {
+        let cert = match index {
+            0 => &self.leaf,
+            1 => &self.intermediate,
+            2 => &self.root,
+            _ => return false,
+        };
+        let Ok(parsed) = ObjectIdentifier::new(oid) else {
+            return false;
+        };
+        has_extension(cert, &parsed)
+    }
+
+    fn leaf_spki_der(&self) -> Vec<u8> {
+        public_key_bytes(&self.leaf)
+    }
+}
+
+impl X509Suite for RustCrypto {
+    fn verify_chain(
         &self,
-        leaf_certificate: &[u8],
-        intermediate_certificate: &[u8],
-        root_certificates: &[Vec<u8>],
+        leaf: &[u8],
+        intermediate: &[u8],
+        roots: &[Vec<u8>],
         effective_date: Option<u64>,
-    ) -> Result<Vec<u8>, ChainVerifierError> {
-        use ChainVerificationFailureReason::*;
-
-        if root_certificates.is_empty() {
-            return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
+    ) -> Result<Box<dyn VerifiedChain>, CryptoError> {
+        if roots.is_empty() {
+            return Err(CryptoError::VerificationError("no root certificates".into()));
         }
 
-        // Parse leaf certificate
-        let leaf = parse_certificate(leaf_certificate)
-            .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
+        let leaf = parse_certificate(leaf).map_err(CryptoError::VerificationError)?;
+        let intermediate = parse_certificate(intermediate).map_err(CryptoError::VerificationError)?;
 
-        // Check Apple-specific leaf OID
-        let leaf_oid =
-            ObjectIdentifier::new(APPLE_LEAF_OID).map_err(|e| ChainVerifierError::InternalError(e.to_string()))?;
-        if !has_extension(&leaf, &leaf_oid) {
-            return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
-        }
-
-        // Parse intermediate certificate
-        let intermediate = parse_certificate(intermediate_certificate)
-            .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
-
-        // Check Apple-specific intermediate OID
-        let intermediate_oid = ObjectIdentifier::new(APPLE_INTERMEDIATE_OID)
-            .map_err(|e| ChainVerifierError::InternalError(e.to_string()))?;
-        if !has_extension(&intermediate, &intermediate_oid) {
-            return Err(ChainVerifierError::VerificationFailure(InvalidCertificate));
-        }
-
-        // Find matching root certificate
+        // Find the root that signed the intermediate, by trial verification.
         let mut root: Option<Certificate> = None;
-        for cert_bytes in root_certificates {
-            let cert = parse_certificate(cert_bytes)
-                .map_err(|_| ChainVerifierError::VerificationFailure(InvalidCertificate))?;
-
+        for cert_bytes in roots {
+            let cert = parse_certificate(cert_bytes).map_err(CryptoError::VerificationError)?;
             if verify_signature(&intermediate, &cert).is_ok() {
                 root = Some(cert);
                 break;
             }
         }
+        let root = root.ok_or_else(|| CryptoError::VerificationError("no matching root".into()))?;
 
-        let root = root.ok_or(ChainVerifierError::VerificationFailure(InvalidCertificate))?;
+        verify_signature(&leaf, &intermediate).map_err(CryptoError::VerificationError)?;
 
-        // Verify leaf signature against intermediate
-        verify_signature(&leaf, &intermediate).map_err(|e| ChainVerifierError::InternalError(e))?;
-
-        // Check validity dates if effective_date provided
         if let Some(date) = effective_date {
-            let timestamp =
-                i64::try_from(date).map_err(|_| ChainVerifierError::VerificationFailure(InvalidEffectiveDate))?;
+            let timestamp = i64::try_from(date)
+                .map_err(|_| CryptoError::VerificationError("effective date out of range".into()))?;
 
             if !is_valid_at(&leaf, timestamp)
                 || !is_valid_at(&intermediate, timestamp)
                 || !is_valid_at(&root, timestamp)
             {
-                return Err(ChainVerifierError::VerificationFailure(CertificateExpired));
+                return Err(CryptoError::VerificationError("certificate expired".into()));
             }
         }
 
-        // Return leaf's public key
-        Ok(public_key_bytes(&leaf))
+        Ok(Box::new(RustCryptoVerifiedChain { leaf, intermediate, root }))
     }
 }
 
@@ -277,10 +335,6 @@ fn verify_ecdsa_p256_sha384(message: &[u8], signature: &[u8], public_key: &[u8])
         .map_err(|e| e.to_string())
 }
 
-fn new_chain_verifier() -> Box<dyn ChainVerifier> {
-    Box::new(RustCryptoChainVerifier)
-}
-
 #[cfg(feature = "ocsp")]
 mod ocsp_support {
     use super::*;
@@ -417,7 +471,7 @@ mod ocsp_support {
     }
 
     fn parse_aia_for_ocsp(aia_bytes: &[u8]) -> Result<String, ChainVerifierError> {
-        use crate::crypto::asn1::asn1_basics::{read_oid, read_sequence, read_tlv};
+        use crate::crypto::asn1::asn1::{read_oid, read_sequence, read_tlv};
 
         let (mut offset, length) =
             read_sequence(aia_bytes, 0).map_err(|e| ChainVerifierError::InternalError(e.to_string()))?;
@@ -463,7 +517,8 @@ mod ocsp_support {
 #[cfg(feature = "ocsp")]
 pub use ocsp_support::check_ocsp_status;
 
-pub static DEFAULT_PROVIDER: CryptoProvider = CryptoProvider {
-    chain_verifier: new_chain_verifier as ChainVerifierFactory,
-    promotional_offer_signer: new_promotional_offer_signer as PromotionalOfferSignerFactory,
+pub const DEFAULT_PROVIDER: CryptoProvider = CryptoProvider {
+    p256_signing: &RustCrypto,
+    x509: &RustCrypto,
+    sha1_hasher: &RustCrypto,
 };

@@ -31,11 +31,11 @@ use crate::models::transaction_history_request::TransactionHistoryRequest;
 use crate::models::transaction_info_response::TransactionInfoResponse;
 use crate::models::update_app_account_token_request::UpdateAppAccountTokenRequest;
 use crate::models::upload_message_request_body::UploadMessageRequestBody;
+use crate::models::image_size::ImageSize;
+use crate::utils::percent_encode_query_value;
 use http::Method;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use serde_json::Value;
-use std::collections::HashMap;
 use std::fmt;
 use uuid::Uuid;
 
@@ -241,7 +241,7 @@ impl<T: Transport> AppStoreServerApiClient<T> {
                 .map(|item| format!("status={}", item.raw_value()))
                 .collect();
             if !query_params.is_empty() {
-                path.push_str("?");
+                path.push('?');
                 path.push_str(&query_params.join("&"));
             }
         }
@@ -276,7 +276,7 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     ) -> Result<RefundHistoryResponse, AppStoreServerApiClientError> {
         let mut path = format!("/inApps/v2/refund/lookup/{}", transaction_id);
         if !revision.is_empty() {
-            path.push_str(&format!("?revision={}", revision));
+            path.push_str(&format!("?revision={}", percent_encode_query_value(revision)));
         }
         self.request::<RefundHistoryResponse, ()>(path.as_str(), Method::GET, None)
             .await
@@ -396,14 +396,9 @@ impl<T: Transport> AppStoreServerApiClient<T> {
         pagination_token: &str,
         notification_history_request: &NotificationHistoryRequest,
     ) -> Result<NotificationHistoryResponse, AppStoreServerApiClientError> {
-        let mut query_parameters: HashMap<&str, &str> = HashMap::new();
-        if !pagination_token.is_empty() {
-            query_parameters.insert("paginationToken", pagination_token);
-        }
-
         let mut path = "/inApps/v1/notifications/history".to_string();
         if !pagination_token.is_empty() {
-            path.push_str(&format!("?paginationToken={}", pagination_token));
+            path.push_str(&format!("?paginationToken={}", percent_encode_query_value(pagination_token)));
         }
 
         self.request(path.as_str(), Method::POST, Some(notification_history_request))
@@ -436,63 +431,60 @@ impl<T: Transport> AppStoreServerApiClient<T> {
         transaction_history_request: &TransactionHistoryRequest,
         version: GetTransactionHistoryVersion,
     ) -> Result<HistoryResponse, AppStoreServerApiClientError> {
-        let mut query_parameters: Vec<(&str, Value)> = vec![];
+        let mut query_strings: Vec<String> = vec![];
 
         if let Some(rev) = revision {
-            query_parameters.push(("revision", rev.into()));
+            query_strings.push(format!("revision={}", percent_encode_query_value(rev)));
         }
 
         if let Some(start_date) = transaction_history_request.start_date {
-            let start_date = start_date.timestamp_millis().to_string();
-            query_parameters.push(("startDate", start_date.into()));
+            query_strings.push(format!("startDate={}", start_date.timestamp_millis()));
         }
 
         if let Some(end_date) = transaction_history_request.end_date {
-            let end_date = end_date.timestamp_millis().to_string();
-            query_parameters.push(("endDate", end_date.into()));
+            query_strings.push(format!("endDate={}", end_date.timestamp_millis()));
         }
 
         if let Some(product_ids) = &transaction_history_request.product_ids {
             for item in product_ids {
-                query_parameters.push(("productId", item.as_str().into()));
+                query_strings.push(format!("productId={}", percent_encode_query_value(item)));
             }
         }
 
         if let Some(product_types) = &transaction_history_request.product_types {
             for item in product_types {
-                query_parameters.push(("productType", item.raw_value().to_string().into()));
+                query_strings.push(format!("productType={}", percent_encode_query_value(item.raw_value())));
             }
         }
 
         if let Some(sort) = &transaction_history_request.sort {
-            query_parameters.push(("sort", sort.raw_value().to_string().into()));
+            query_strings.push(format!("sort={}", percent_encode_query_value(sort.raw_value())));
         }
 
         if let Some(subscription_group_ids) = &transaction_history_request.subscription_group_identifiers {
             for item in subscription_group_ids {
-                query_parameters.push(("subscriptionGroupIdentifier", item.as_str().into()));
+                query_strings.push(format!(
+                    "subscriptionGroupIdentifier={}",
+                    percent_encode_query_value(item)
+                ));
             }
         }
 
         if let Some(ownership_type) = &transaction_history_request.in_app_ownership_type {
-            query_parameters.push(("inAppOwnershipType", ownership_type.raw_value().to_string().into()));
+            query_strings.push(format!(
+                "inAppOwnershipType={}",
+                percent_encode_query_value(ownership_type.raw_value())
+            ));
         }
 
         if let Some(revoked) = &transaction_history_request.revoked {
-            query_parameters.push(("revoked", revoked.to_string().into()));
+            query_strings.push(format!("revoked={}", revoked));
         }
 
         let mut path = format!("/inApps/{}/history/{}", version.as_str(), transaction_id);
 
-        let mut query_strings: Vec<String> = vec![];
-        for (key, value) in query_parameters {
-            if let Value::String(s) = value {
-                query_strings.push(format!("{}={}", key, s));
-            }
-        }
-
         if !query_strings.is_empty() {
-            path.push_str("?");
+            path.push('?');
             path.push_str(&query_strings.join("&"));
         }
 
@@ -683,6 +675,7 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     ///
     /// * `image_identifier` - A UUID you provide to uniquely identify the image you upload.
     /// * `image` - The PNG image data to upload.
+    /// * `image_size` - The size of the image you upload.
     ///
     /// # Errors
     ///
@@ -691,8 +684,12 @@ impl<T: Transport> AppStoreServerApiClient<T> {
         &self,
         image_identifier: Uuid,
         image: Vec<u8>,
+        image_size: Option<ImageSize>,
     ) -> Result<(), AppStoreServerApiClientError> {
-        let path = format!("/inApps/v1/messaging/image/{}", image_identifier);
+        let mut path = format!("/inApps/v1/messaging/image/{}", image_identifier);
+        if let Some(image_size) = image_size {
+            path.push_str(&format!("?imageSize={}", percent_encode_query_value(image_size.raw_value())));
+        }
         self.request_custom_content(&path, Method::PUT, image, "image/png").await
     }
 

@@ -1,11 +1,12 @@
 use crate::api_client::error::{ApiClientError, ConfigurationError};
 use crate::api_client::transport::Transport;
+use crate::crypto::jws;
+use crate::crypto::CryptoProvider;
 use crate::models::app_store_environment::Environment;
 
 use chrono::Utc;
 use http::Method;
 use http::{Request, Response};
-use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 
 pub struct ApiClient<T: Transport> {
@@ -59,26 +60,52 @@ impl<T: Transport> ApiClient<T> {
         })
     }
 
-    pub(crate) fn generate_token(&self) -> String {
-        let future_time = Utc::now() + chrono::Duration::minutes(5);
-        let key_id = (&self.key_id).to_string();
+    pub(crate) fn generate_token(&self) -> Result<String, ApiClientError> {
+        let now = Utc::now();
+        let future_time = now + chrono::Duration::minutes(5);
 
-        let mut header = Header::new(Algorithm::ES256);
-        header.kid = Some(key_id);
+        let header = serde_json::json!({
+            "alg": "ES256",
+            "kid": self.key_id,
+            "typ": "JWT",
+        });
 
         let claims = Claims {
             bid: &self.bundle_id,
             iss: &self.issuer_id,
             aud: "appstoreconnect-v1",
+            iat: now.timestamp(),
             exp: future_time.timestamp(),
         };
 
-        encode(
-            &header,
-            &claims,
-            &EncodingKey::from_ec_pem(self.signing_key.as_slice()).unwrap(),
-        )
-        .unwrap()
+        let signing_error = || {
+            ApiClientError::new(500, None, Some("Failed to sign request token".to_string()))
+        };
+
+        let pem = std::str::from_utf8(self.signing_key.as_slice())
+            .map_err(|_| signing_error())?;
+        let key = CryptoProvider::default_provider()
+            .p256_signing
+            .private_key(pem)
+            .map_err(|_| signing_error())?;
+
+        let encoded_header = jws::b64url_encode(
+            &serde_json::to_vec(&header).map_err(|_| signing_error())?,
+        );
+        let encoded_payload = jws::b64url_encode(
+            &serde_json::to_vec(&claims).map_err(|_| signing_error())?,
+        );
+        let signing_input = format!("{encoded_header}.{encoded_payload}");
+
+        let signature = key
+            .signature(signing_input.as_bytes())
+            .map_err(|_| signing_error())?;
+
+        Ok(jws::encode_compact(
+            &encoded_header,
+            &encoded_payload,
+            &signature.raw_representation(),
+        ))
     }
 
     pub(crate) fn build_request<B: serde::Serialize>(
@@ -121,7 +148,7 @@ impl<T: Transport> ApiClient<T> {
             .method(method)
             .uri(url)
             .header("User-Agent", "app-store-server-library/rust/4.3.0")
-            .header("Authorization", format!("Bearer {}", self.generate_token()))
+            .header("Authorization", format!("Bearer {}", self.generate_token()?))
             .header("Accept", "application/json");
 
         if let Some(ct) = content_type {
@@ -177,10 +204,14 @@ impl<T: Transport> ApiClient<T> {
         }
 
         serde_json::from_slice::<ErrorPayload>(response.body())
-            .map(|payload| ApiClientError::new(status_code, payload.error_code, payload.error_message))
-            .unwrap_or_else(|_| {
-                ApiClientError::new(status_code, None, Some("Failed to deserialize error JSON".to_string()))
+            .ok()
+            .and_then(|payload| match (payload.error_code, payload.error_message) {
+                (Some(error_code), Some(error_message)) => {
+                    Some(ApiClientError::new(status_code, Some(error_code), Some(error_message)))
+                }
+                _ => None,
             })
+            .unwrap_or_else(|| ApiClientError::new(status_code, None, None))
     }
 }
 
@@ -189,5 +220,6 @@ struct Claims<'a> {
     bid: &'a str,
     iss: &'a str,
     aud: &'a str,
+    iat: i64,
     exp: i64,
 }

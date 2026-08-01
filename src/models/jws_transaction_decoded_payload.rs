@@ -1,6 +1,7 @@
 use crate::models::advanced_commerce_transaction_info::AdvancedCommerceTransactionInfo;
 use crate::models::billing_plan_type::BillingPlanType;
 use crate::models::app_store_environment::Environment;
+use crate::models::decoded_signed_data::DecodedSignedData;
 use crate::models::in_app_ownership_type::InAppOwnershipType;
 use crate::models::offer_discount_type::OfferDiscountType;
 use crate::models::offer_type::OfferType;
@@ -196,4 +197,10 @@ pub struct JWSTransactionDecodedPayload {
     ///
     /// [commitmentInfo](https://developer.apple.com/documentation/appstoreserverapi/transactioncommitmentinfo)
     pub commitment_info: Option<TransactionCommitmentInfo>,
+}
+
+impl DecodedSignedData for JWSTransactionDecodedPayload {
+    fn signed_date_optional(&self) -> Option<DateTime<Utc>> {
+        self.signed_date
+    }
 }

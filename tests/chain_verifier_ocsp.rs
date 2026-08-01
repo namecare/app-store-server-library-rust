@@ -27,7 +27,7 @@ fn test_apple_chain_is_valid_with_ocsp() -> Result<(), ChainVerifierError> {
         .unwrap();
 
     let verifier = create_verifier();
-    let _public_key = verifier.verify(&leaf, &intermediate, &[root], Some(EFFECTIVE_DATE))?;
+    let _public_key = verifier.verify(&leaf, &intermediate, &[root], Some(EFFECTIVE_DATE), true)?;
 
     // OCSP check would be called explicitly if needed:
     // check_ocsp_status(&leaf_cert, &intermediate_cert)?;

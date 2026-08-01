@@ -1,16 +1,16 @@
-use base64::engine::general_purpose::STANDARD;
-use base64::{DecodeError, Engine};
+use base64::DecodeError;
 
 use crate::chain_verifier::{ChainVerificationFailureReason, ChainVerifier, ChainVerifierError};
+use crate::crypto::jws;
 use crate::crypto::CryptoProvider;
-use crate::models::app_transaction::AppTransaction;
 use crate::models::app_store_environment::Environment;
+use crate::models::app_transaction::AppTransaction;
+use crate::models::decoded_realtime_request_body::DecodedRealtimeRequestBody;
+use crate::models::decoded_signed_data::DecodedSignedData;
 use crate::models::jws_renewal_info_decoded_payload::JWSRenewalInfoDecodedPayload;
 use crate::models::jws_transaction_decoded_payload::JWSTransactionDecodedPayload;
 use crate::models::response_body_v2_decoded_payload::ResponseBodyV2DecodedPayload;
-use crate::models::decoded_realtime_request_body::DecodedRealtimeRequestBody;
-use crate::utils::{base64_url_to_base64, StringExt};
-use jsonwebtoken::{Algorithm, DecodingKey, Validation};
+use crate::utils::StringExt;
 use serde::de::DeserializeOwned;
 
 #[derive(thiserror::Error, Debug)]
@@ -24,6 +24,9 @@ pub enum SignedDataVerifierError {
     #[error("InvalidEnvironment")]
     InvalidEnvironment,
 
+    #[error("InvalidAppAppleId")]
+    InvalidAppAppleId,
+
     #[error("InternalChainVerifierError")]
     InternalChainVerifierError(#[from] ChainVerifierError),
 
@@ -33,8 +36,8 @@ pub enum SignedDataVerifierError {
     #[error("InternalDeserializationError: [{0}]")]
     InternalDeserializationError(#[from] serde_json::Error),
 
-    #[error("InternalJWTError: [{0}]")]
-    InternalJWTError(#[from] jsonwebtoken::errors::Error),
+    #[error("InternalJWSError: [{0}]")]
+    InternalJWSError(#[from] crate::crypto::jws::JwsError),
 }
 
 const EXPECTED_CHAIN_LENGTH: usize = 3;
@@ -45,8 +48,8 @@ pub struct SignedDataVerifier {
     environment: Environment,
     bundle_id: String,
     app_apple_id: Option<i64>,
-    root_certificates: Vec<Vec<u8>>,
-    chain_verifier: Box<dyn ChainVerifier>,
+    enable_online_checks: bool,
+    chain_verifier: ChainVerifier,
 }
 
 impl SignedDataVerifier {
@@ -57,27 +60,34 @@ impl SignedDataVerifier {
     /// * `root_certificates` - A vector of DER-encoded root certificates used for verification.
     /// * `environment` - The environment (e.g., `Environment::PRODUCTION` or `Environment::SANDBOX`).
     /// * `bundle_id` - The bundle ID associated with the application.
-    /// * `app_apple_id` - An optional Apple ID associated with the application.
+    /// * `app_apple_id` - An optional Apple ID associated with the application. Required when
+    ///   `environment` is `Environment::Production`.
+    /// * `enable_online_checks` - Whether to enable revocation checking (OCSP) and check
+    ///   certificate expiration against the current date rather than the JWS's signed date.
     ///
     /// # Returns
     ///
-    /// A new `SignedDataVerifier` instance.
+    /// - `Ok(SignedDataVerifier)` on success.
+    /// - `Err(SignedDataVerifierError::InvalidAppAppleId)` if `environment` is
+    ///   `Environment::Production` and `app_apple_id` is `None`.
     pub fn new(
         root_certificates: Vec<Vec<u8>>,
         environment: Environment,
         bundle_id: String,
         app_apple_id: Option<i64>,
-    ) -> Self {
-        let provider = CryptoProvider::default_provider();
-        let chain_verifier = (provider.chain_verifier)();
+        enable_online_checks: bool,
+    ) -> Result<Self, SignedDataVerifierError> {
+        if environment == Environment::Production && app_apple_id.is_none() {
+            return Err(SignedDataVerifierError::InvalidAppAppleId);
+        }
 
-        SignedDataVerifier {
+        Ok(SignedDataVerifier {
             environment,
             bundle_id,
             app_apple_id,
-            root_certificates,
-            chain_verifier,
-        }
+            enable_online_checks,
+            chain_verifier: ChainVerifier::new(root_certificates),
+        })
     }
 }
 
@@ -100,7 +110,13 @@ impl SignedDataVerifier {
         &self,
         signed_renewal_info: &str,
     ) -> Result<JWSRenewalInfoDecodedPayload, SignedDataVerifierError> {
-        Ok(self.decode_signed_object(signed_renewal_info)?)
+        let decoded_renewal_info: JWSRenewalInfoDecodedPayload = self.decode_signed_object(signed_renewal_info)?;
+
+        if decoded_renewal_info.environment.as_ref() != Some(&self.environment) {
+            return Err(SignedDataVerifierError::InvalidEnvironment);
+        }
+
+        Ok(decoded_renewal_info)
     }
 
     /// Verifies and decodes a signed transaction.
@@ -204,20 +220,18 @@ impl SignedDataVerifier {
         app_apple_id: Option<i64>,
         environment: Option<Environment>,
     ) -> Result<(), SignedDataVerifierError> {
-        if let Some(bundle_id) = bundle_id {
-            if bundle_id != self.bundle_id {
-                return Err(SignedDataVerifierError::InvalidAppIdentifier);
-            }
+        if self.environment == Environment::LocalTesting {
+            return Ok(());
         }
 
-        if self.environment == Environment::Production && self.app_apple_id != app_apple_id {
+        if bundle_id.as_deref() != Some(self.bundle_id.as_str())
+            || (self.environment == Environment::Production && self.app_apple_id != app_apple_id)
+        {
             return Err(SignedDataVerifierError::InvalidAppIdentifier);
         }
 
-        if let Some(environment) = environment {
-            if self.environment != Environment::LocalTesting && self.environment != environment {
-                return Err(SignedDataVerifierError::InvalidEnvironment);
-            }
+        if environment.as_ref() != Some(&self.environment) {
+            return Err(SignedDataVerifierError::InvalidEnvironment);
         }
 
         Ok(())
@@ -296,71 +310,79 @@ impl SignedDataVerifier {
     }
 
     /// Private method used for decoding a signed object (internal use).
-    fn decode_signed_object<T: DeserializeOwned>(&self, signed_obj: &str) -> Result<T, SignedDataVerifierError> {
-        // Data is not signed by the App Store, and verification should be skipped
-        // The environment MUST be checked in the public method calling this
+    fn decode_signed_object<T: DeserializeOwned + DecodedSignedData>(
+        &self,
+        signed_obj: &str,
+    ) -> Result<T, SignedDataVerifierError> {
+        // Data is not signed by the App Store, and verification should be skipped.
+        // The environment MUST be checked in the public method calling this.
         if self.environment == Environment::Xcode || self.environment == Environment::LocalTesting {
-            const EXPECTED_JWT_SEGMENTS: usize = 3;
-
-            let body_segments: Vec<&str> = signed_obj.split('.').collect();
-
-            if body_segments.len() != EXPECTED_JWT_SEGMENTS {
-                return Err(SignedDataVerifierError::VerificationFailure);
-            }
-
-            let _ = jsonwebtoken::decode_header(&signed_obj)?;
-            let body_base64 = base64_url_to_base64(body_segments[1]);
-            let body_data = STANDARD.decode(body_base64)?;
-            let decoded_body = serde_json::from_slice(&body_data)?;
-            return Ok(decoded_body);
+            let _ = jws::decode_header(signed_obj)?;
+            return Ok(jws::decode_payload(signed_obj)?);
         }
 
-        let header = jsonwebtoken::decode_header(signed_obj)?;
+        let header = jws::decode_header(signed_obj)?;
+
+        if header.alg.as_deref() != Some("ES256") {
+            return Err(SignedDataVerifierError::VerificationFailure);
+        }
 
         let Some(x5c) = header.x5c else {
             return Err(SignedDataVerifierError::VerificationFailure);
         };
 
-        if x5c.is_empty() {
-            return Err(SignedDataVerifierError::VerificationFailure);
-        }
-
-        let x5c: Result<Vec<Vec<u8>>, DecodeError> = x5c
-            .iter()
-            .map(|c| c.as_der_bytes())
-            .collect();
-        let chain = x5c?;
-
-        if header.alg != Algorithm::ES256 {
-            return Err(SignedDataVerifierError::VerificationFailure);
-        }
-
-        let pub_key = self.verify_chain(&chain, None)?;
-        let pub_key = &pub_key[pub_key.len() - 65..];
-
-        let decoding_key = DecodingKey::from_ec_der(pub_key);
-        let claims: [&str; 0] = [];
-
-        let mut validator = Validation::new(Algorithm::ES256);
-        validator.validate_exp = false;
-        validator.set_required_spec_claims(&claims);
-
-        let payload = jsonwebtoken::decode::<T>(signed_obj, &decoding_key, &validator)?;
-        Ok(payload.claims)
-    }
-
-    fn verify_chain(&self, chain: &Vec<Vec<u8>>, effective_date: Option<u64>) -> Result<Vec<u8>, ChainVerifierError> {
-        if chain.len() != EXPECTED_CHAIN_LENGTH {
-            return Err(ChainVerifierError::VerificationFailure(
-                ChainVerificationFailureReason::InvalidChainLength,
+        if x5c.len() != EXPECTED_CHAIN_LENGTH {
+            return Err(SignedDataVerifierError::InternalChainVerifierError(
+                ChainVerifierError::VerificationFailure(
+                    ChainVerificationFailureReason::InvalidChainLength,
+                ),
             ));
         }
 
-        let leaf = &chain[0];
-        let intermediate = &chain[1];
+        let chain: Vec<Vec<u8>> = x5c
+            .iter()
+            .map(|c| c.as_der_bytes())
+            .collect::<Result<_, DecodeError>>()?;
 
-        self.chain_verifier
-            .verify(leaf, intermediate, &self.root_certificates, effective_date)
+        let decoded_body: T = jws::decode_payload(signed_obj)?;
+
+        let effective_date = if self.enable_online_checks {
+            chrono::Utc::now().timestamp() as u64
+        } else {
+            match decoded_body.signed_date_optional() {
+                Some(date) => date.timestamp() as u64,
+                None => chrono::Utc::now().timestamp() as u64,
+            }
+        };
+
+        let spki = self.chain_verifier.verify(
+            &chain[0],
+            &chain[1],
+            Some(effective_date),
+            self.enable_online_checks,
+        )?;
+
+        let signature_bytes = jws::decode_signature_bytes(signed_obj)?;
+        let raw: [u8; 64] = signature_bytes
+            .try_into()
+            .map_err(|_| SignedDataVerifierError::VerificationFailure)?;
+
+        let provider = CryptoProvider::default_provider();
+        let public_key = provider
+            .p256_signing
+            .public_key(&spki)
+            .map_err(|_| SignedDataVerifierError::VerificationFailure)?;
+        let signature = provider
+            .p256_signing
+            .signature_from_raw(&raw)
+            .map_err(|_| SignedDataVerifierError::VerificationFailure)?;
+
+        let signing_input = jws::signing_input(signed_obj)?;
+        public_key
+            .is_valid_signature(signature.as_ref(), signing_input.as_bytes())
+            .map_err(|_| SignedDataVerifierError::VerificationFailure)?;
+
+        Ok(decoded_body)
     }
 }
 
@@ -370,24 +392,31 @@ mod tests {
     use crate::chain_verifier::ChainVerificationFailureReason::InvalidChainLength;
 
     #[test]
-    fn test_invalid_chain_length() -> Result<(), ChainVerifierError> {
-        let root = Vec::new();
-        let leaf = Vec::new();
-        let intermediate = Vec::new();
+    fn test_invalid_chain_length() {
+        // The length check happens before any signature verification, so a
+        // minimal unsigned JWS with a 4-element x5c is enough to exercise it
+        // through the public API.
+        let header = jws::b64url_encode(br#"{"alg":"ES256","x5c":["YQ","YQ","YQ","YQ"]}"#);
+        let payload = jws::b64url_encode(b"{}");
+        let signature = jws::b64url_encode(b"sig");
+        let jws_token = format!("{header}.{payload}.{signature}");
 
-        let chain = vec![leaf, intermediate, Vec::new(), Vec::new()];
         let verifier = SignedDataVerifier::new(
-            vec![root],
+            vec![Vec::new()],
             Environment::Production,
             "com.example".into(),
             Some(1234),
-        );
-        let public_key = verifier.verify_chain(&chain, None);
+            false,
+        )
+        .expect("valid config");
+
+        let result = verifier.verify_and_decode_app_transaction(&jws_token);
 
         assert!(matches!(
-            public_key.expect_err("Expect error"),
-            ChainVerifierError::VerificationFailure(InvalidChainLength)
+            result.expect_err("expect error"),
+            SignedDataVerifierError::InternalChainVerifierError(ChainVerifierError::VerificationFailure(
+                InvalidChainLength
+            ))
         ));
-        Ok(())
     }
 }

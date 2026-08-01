@@ -1,8 +1,9 @@
+use crate::crypto::jws;
+use crate::crypto::{CryptoError, CryptoProvider, P256PrivateKey};
 use crate::models::advanced_commerce_in_app_request::AdvancedCommerceInAppRequest;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
 use chrono::Utc;
-use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
@@ -12,11 +13,20 @@ pub enum JWSSignatureCreatorError {
     #[error("InvalidPrivateKey")]
     InvalidPrivateKey,
 
-    #[error("JWTEncodingError: [{0}]")]
-    JWTEncodingError(#[from] jsonwebtoken::errors::Error),
+    #[error("SigningError: [{0}]")]
+    SigningError(String),
 
     #[error("SerializationError: [{0}]")]
     SerializationError(#[from] serde_json::Error),
+}
+
+impl From<CryptoError> for JWSSignatureCreatorError {
+    fn from(e: CryptoError) -> Self {
+        match e {
+            CryptoError::KeyError(_) => Self::InvalidPrivateKey,
+            CryptoError::SigningError(m) | CryptoError::VerificationError(m) => Self::SigningError(m),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -62,7 +72,7 @@ struct AdvancedCommerceInAppPayload {
 /// Base struct for creating JWS signatures for App Store requests
 struct JWSSignatureCreator {
     audience: String,
-    signing_key: EncodingKey,
+    signing_key: Box<dyn P256PrivateKey>,
     key_id: String,
     issuer_id: String,
     bundle_id: String,
@@ -76,7 +86,10 @@ impl JWSSignatureCreator {
         issuer_id: String,
         bundle_id: String,
     ) -> Result<Self, JWSSignatureCreatorError> {
-        let key = EncodingKey::from_ec_pem(signing_key.as_bytes())
+        let provider = CryptoProvider::default_provider();
+        let key = provider
+            .p256_signing
+            .private_key(signing_key)
             .map_err(|_| JWSSignatureCreatorError::InvalidPrivateKey)?;
 
         Ok(Self {
@@ -99,12 +112,23 @@ impl JWSSignatureCreator {
     }
 
     fn create_signature<T: Serialize>(&self, payload: &T) -> Result<String, JWSSignatureCreatorError> {
-        let mut header = Header::new(Algorithm::ES256);
-        header.kid = Some(self.key_id.clone());
-        header.typ = Some("JWT".to_string());
+        let header = serde_json::json!({
+            "alg": "ES256",
+            "kid": self.key_id,
+            "typ": "JWT",
+        });
 
-        let token = encode(&header, payload, &self.signing_key)?;
-        Ok(token)
+        let encoded_header = jws::b64url_encode(&serde_json::to_vec(&header)?);
+        let encoded_payload = jws::b64url_encode(&serde_json::to_vec(payload)?);
+        let signing_input = format!("{encoded_header}.{encoded_payload}");
+
+        let signature = self.signing_key.signature(signing_input.as_bytes())?;
+
+        Ok(jws::encode_compact(
+            &encoded_header,
+            &encoded_payload,
+            &signature.raw_representation(),
+        ))
     }
 }
 

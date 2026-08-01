@@ -1565,6 +1565,7 @@ async fn test_upload_image() {
         .upload_image(
             Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap(),
             vec![1, 2, 3],
+            None,
         )
         .await;
 

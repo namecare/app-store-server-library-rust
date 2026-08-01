@@ -115,7 +115,7 @@ let verifier = SignedDataVerifier::new(
     Environment::Sandbox, // Environment
     "app.superapp.apple".to_string(), // Bundle id
     Some(12345678), // App id
-);
+).unwrap();
 
 let payload = "signed-payload";
 let decoded_payload = verifier.verify_and_decode_notification(payload).unwrap();
