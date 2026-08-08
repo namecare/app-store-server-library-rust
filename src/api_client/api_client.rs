@@ -173,7 +173,13 @@ impl<T: Transport> ApiClient<T> {
         &self,
         request: Request<Vec<u8>>,
     ) -> Result<(), ApiClientError> {
-        let _ = self.make_request(request).await?;
+        let response = self.make_request(request).await?;
+
+        let status_code = response.status().as_u16();
+        if !(200..300).contains(&status_code) {
+            return Err(self.extract_error(&response));
+        }
+
         Ok(())
     }
 
