@@ -45,8 +45,3 @@ impl StringExt for &str {
         STANDARD.decode(self)
     }
 }
-
-// `base64_url_to_base64` and its test were removed with the `jsonwebtoken`
-// migration: `crate::jws` now owns base64url handling and covers it in
-// `tests/jws.rs` (`b64url_round_trips_without_padding`,
-// `b64url_decode_accepts_unpadded_input`).

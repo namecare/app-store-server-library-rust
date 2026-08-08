@@ -1,5 +1,5 @@
 use crate::api_client::error::{ApiClientError, ConfigurationError};
-use crate::api_client::transport::Transport;
+use crate::api_client::transport::{Transport, TransportError};
 use crate::crypto::jws;
 use crate::crypto::CryptoProvider;
 use crate::models::app_store_environment::Environment;
@@ -166,10 +166,7 @@ impl<T: Transport> ApiClient<T> {
         Res: for<'de> Deserialize<'de>,
     {
         let response = self.make_request(request).await?;
-        let body = response.into_body();
-        let json_result = serde_json::from_slice::<Res>(&body)
-            .map_err(|_| ApiClientError::new(500, None, Some("Failed to deserialize response JSON".to_string())))?;
-        Ok(json_result)
+        self.extract_response(&response)
     }
 
     pub(crate) async fn make_request_without_response_body(
@@ -180,16 +177,24 @@ impl<T: Transport> ApiClient<T> {
         Ok(())
     }
 
-    pub(crate) async fn make_request(&self, request: Request<Vec<u8>>) -> Result<Response<Vec<u8>>, ApiClientError> {
-        let response = self.transport.send(request).await?;
+    pub(crate) async fn make_request(&self, request: Request<Vec<u8>>) -> Result<Response<Vec<u8>>, TransportError> {
+        self.transport.send(request).await
+    }
 
+    pub(crate) fn extract_response<Res>(&self, response: &Response<Vec<u8>>) -> Result<Res, ApiClientError>  where
+        Res: for<'de> Deserialize<'de>
+    {
         let status_code = response.status().as_u16();
 
-        if (200..300).contains(&status_code) {
-            Ok(response)
-        } else {
-            Err(self.extract_error(&response))
+        if !(200..300).contains(&status_code) {
+            return Err(self.extract_error(&response))
         }
+
+        let body = response.body();
+        let json_result = serde_json::from_slice::<Res>(body)
+            .map_err(|_| ApiClientError::new(500, None, Some("Failed to deserialize response JSON".to_string())))?;
+
+        Ok(json_result)
     }
 
     pub(crate) fn extract_error(&self, response: &Response<Vec<u8>>) -> ApiClientError {
