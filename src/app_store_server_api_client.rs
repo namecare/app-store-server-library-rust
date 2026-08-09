@@ -32,7 +32,6 @@ use crate::models::transaction_info_response::TransactionInfoResponse;
 use crate::models::update_app_account_token_request::UpdateAppAccountTokenRequest;
 use crate::models::upload_message_request_body::UploadMessageRequestBody;
 use crate::models::image_size::ImageSize;
-use crate::utils::percent_encode_query_value;
 use http::Method;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -945,6 +944,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
         self.request::<PerformanceTestResultResponse, ()>(&path, Method::GET, None)
             .await
     }
+
+
 }
 
 /// Represents the version of the Get Transaction History endpoint to use.
@@ -1453,4 +1454,20 @@ impl ApiErrorCode {
             _ => Self::Unknown,
         }
     }
+}
+
+fn percent_encode_query_value(value: &str) -> String {
+    let mut encoded = String::with_capacity(value.len());
+    for byte in value.as_bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                encoded.push(*byte as char);
+            }
+            _ => {
+                encoded.push('%');
+                encoded.push_str(&format!("{:02X}", byte));
+            }
+        }
+    }
+    encoded
 }

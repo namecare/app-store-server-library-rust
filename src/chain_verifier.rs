@@ -1,8 +1,10 @@
-use crate::crypto::{CryptoError, CryptoProvider};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
+
+use x509_validator::{rfc5280::RFC5280Policy, store::CertificateStore, validator::ChainValidationResultOwned, Certificate, CertificateExt, Oid, PolicyEvaluationResult, PolicyFailureReason, ValidationPolicy};
+use x509_validator::unverified_chain::UnverifiedCertificateChain;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ChainVerifierError {
@@ -46,28 +48,65 @@ pub enum ChainVerificationFailureReason {
     RetryableVerificationFailure,
 }
 
-impl From<CryptoError> for ChainVerifierError {
-    fn from(e: CryptoError) -> Self {
-        match e {
-            CryptoError::VerificationError(m) if m.contains("expired") => {
-                ChainVerifierError::VerificationFailure(
-                    ChainVerificationFailureReason::CertificateExpired,
-                )
-            }
-            CryptoError::VerificationError(_) | CryptoError::KeyError(_) => {
-                ChainVerifierError::VerificationFailure(
-                    ChainVerificationFailureReason::InvalidCertificate,
-                )
-            }
-            CryptoError::SigningError(m) => ChainVerifierError::InternalError(m),
-        }
-    }
-}
-
 /// Apple's receipt-signing OID, expected on the leaf certificate.
 const APPLE_RECEIPT_SIGNER_OID: &str = "1.2.840.113635.100.6.11.1";
 /// Apple's WWDR OID, expected on the intermediate certificate.
 const APPLE_WWDR_INTERMEDIATE_OID: &str = "1.2.840.113635.100.6.2.1";
+/// leaf, intermediate, root.
+const EXPECTED_CHAIN_LENGTH: usize = 3;
+
+/// A [`ValidationPolicy`] mirroring Swift's `AppStoreOIDPolicy`: the chain must
+/// be exactly leaf/intermediate/root, the intermediate must carry Apple's
+/// WWDR OID, and the leaf must carry Apple's receipt-signing OID.
+struct AppStoreOidPolicy {
+    wwdr_oid: Oid<'static>,
+    receipt_signer_oid: Oid<'static>,
+}
+
+impl AppStoreOidPolicy {
+    fn new() -> Self {
+        Self {
+            wwdr_oid: APPLE_WWDR_INTERMEDIATE_OID.parse().expect("valid OID"),
+            receipt_signer_oid: APPLE_RECEIPT_SIGNER_OID.parse().expect("valid OID"),
+        }
+    }
+
+    fn certificate_has_oid(certificate: &Certificate, oid: &Oid<'static>) -> bool {
+        certificate
+            .tbs_certificate
+            .iter_extensions()
+            .any(|ext| &ext.oid == oid)
+    }
+}
+
+impl ValidationPolicy for AppStoreOidPolicy {
+    fn verifying_critical_extensions(&self) -> Vec<Oid<'static>> {
+        vec![]
+    }
+
+    fn chain_meets_policy_requirements(&mut self, chain: &UnverifiedCertificateChain) -> PolicyEvaluationResult {
+        if chain.len() != EXPECTED_CHAIN_LENGTH {
+            return Err(PolicyFailureReason::new("chain has unexpected length"));
+        }
+
+        let leaf = &chain[0];
+        let intermediate = &chain[1];
+
+        if !Self::certificate_has_oid(intermediate, &self.wwdr_oid) {
+            return Err(PolicyFailureReason::new(
+                "intermediate certificate does not contain WWDR OID",
+            ));
+        }
+
+        if !Self::certificate_has_oid(leaf, &self.receipt_signer_oid) {
+            return Err(PolicyFailureReason::new(
+                "leaf certificate does not contain Receipt Signing OID",
+            ));
+        }
+
+        Ok(())
+    }
+}
 
 /// There are unlikely to be more than a couple of keys at once.
 const MAXIMUM_CACHE_SIZE: usize = 32;
@@ -87,10 +126,10 @@ struct CacheValue {
 
 /// Verifies Apple's certificate chains.
 ///
-/// Holds the trusted roots and a cache of verified public keys. Certificate
-/// mechanics are delegated to [`CryptoProvider`]'s X.509 suite; this struct
-/// owns only Apple's policy — chain length, the two required OIDs, and
-/// caching.
+/// Holds the trusted roots and a cache of verified public keys. Chain
+/// building and RFC 5280 policy are delegated to the `x509-validator` crate;
+/// this struct owns only Apple's policy — chain length, the two required
+/// OIDs — plus caching.
 pub struct ChainVerifier {
     root_certificates: Vec<Vec<u8>>,
     verified_public_key_cache: Mutex<HashMap<CacheKey, CacheValue>>,
@@ -112,8 +151,9 @@ impl ChainVerifier {
     /// * `leaf` - DER-encoded leaf certificate
     /// * `intermediate` - DER-encoded intermediate certificate
     /// * `effective_date` - Optional Unix timestamp for validity checks
-    /// * `enable_online_checks` - Whether revocation checking is enabled. Also
-    ///   gates the cache, matching the official Apple libraries.
+    /// * `enable_online_checks` - Whether the verified public key is cached,
+    ///   matching the official Apple libraries. Revocation checking is not
+    ///   performed.
     pub fn verify(
         &self,
         leaf: &[u8],
@@ -138,8 +178,6 @@ impl ChainVerifier {
         enable_online_checks: bool,
         now: u64,
     ) -> Result<Vec<u8>, ChainVerifierError> {
-        // The cache exists to avoid repeated OCSP network calls, so it is
-        // consulted and populated only for online verification.
         if enable_online_checks {
             if let Some(cached) = self.cached_public_key(leaf, intermediate, now) {
                 return Ok(cached);
@@ -169,28 +207,48 @@ impl ChainVerifier {
         intermediate: &[u8],
         effective_date: Option<u64>,
     ) -> Result<Vec<u8>, ChainVerifierError> {
-        let provider = CryptoProvider::default_provider();
+        let leaf = parse_certificate(leaf)?;
+        let intermediate_der = intermediate.to_vec();
 
-        let chain = provider.x509.verify_chain(
-            leaf,
-            intermediate,
-            &self.root_certificates,
-            effective_date,
-        )?;
-
-        if !chain.has_extension(0, APPLE_RECEIPT_SIGNER_OID) {
-            return Err(ChainVerifierError::VerificationFailure(
-                ChainVerificationFailureReason::InvalidCertificate,
-            ));
+        let mut roots = CertificateStore::new();
+        for root_der in &self.root_certificates {
+            let root = parse_certificate(root_der)?;
+            roots.append(root);
         }
 
-        if !chain.has_extension(1, APPLE_WWDR_INTERMEDIATE_OID) {
-            return Err(ChainVerifierError::VerificationFailure(
-                ChainVerificationFailureReason::InvalidCertificate,
-            ));
-        }
+        let validation_time = effective_date
+            .map(|d| i64::try_from(d).unwrap_or(i64::MAX))
+            .unwrap_or_else(|| {
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_secs() as i64)
+                    .unwrap_or(0)
+            });
 
-        Ok(chain.leaf_spki_der())
+        let policy = x509_validator::policy! {
+            RFC5280Policy::new(validation_time);
+            AppStoreOidPolicy::new()
+        };
+
+        let mut validator = x509_validator::Validator::with_policy(roots, policy);
+
+        match validator.validate(&leaf, std::slice::from_ref(&intermediate_der)) {
+            ChainValidationResultOwned::ValidCertificate(chain) => Ok(leaf_spki_der(chain.leaf())),
+            ChainValidationResultOwned::CouldNotValidate(reasons) => {
+                let expired = reasons
+                    .iter()
+                    .any(|reason| reason.to_string().contains("expired"));
+                if expired {
+                    Err(ChainVerifierError::VerificationFailure(
+                        ChainVerificationFailureReason::CertificateExpired,
+                    ))
+                } else {
+                    Err(ChainVerifierError::VerificationFailure(
+                        ChainVerificationFailureReason::InvalidCertificate,
+                    ))
+                }
+            }
+        }
     }
 
     fn cached_public_key(&self, leaf: &[u8], intermediate: &[u8], now: u64) -> Option<Vec<u8>> {
@@ -230,4 +288,17 @@ impl ChainVerifier {
             cache.retain(|_, v| v.expiration_time > now);
         }
     }
+}
+
+fn parse_certificate(der: &[u8]) -> Result<Certificate<'_>, ChainVerifierError> {
+    Certificate::parse(der).map_err(|_| {
+        ChainVerifierError::VerificationFailure(ChainVerificationFailureReason::InvalidCertificate)
+    })
+}
+
+fn leaf_spki_der(leaf: &Certificate) -> Vec<u8> {
+    leaf.tbs_certificate
+        .subject_pki
+        .raw
+        .to_vec()
 }

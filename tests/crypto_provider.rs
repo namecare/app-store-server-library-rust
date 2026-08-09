@@ -1,21 +1,9 @@
 //! Tests for the crypto primitives exposed by `CryptoProvider`.
 //!
 //! These run against whichever backend feature is enabled, so the same
-//! assertions cover both `rust_crypto` and `aws_lc`.
+//! assertions cover `rust_crypto`, `aws_lc` and `ring` alike.
 
 use app_store_server_library::crypto::CryptoProvider;
-
-/// NIST FIPS 180-2 test vector: SHA-1("abc").
-const SHA1_ABC: [u8; 20] = [
-    0xa9, 0x99, 0x3e, 0x36, 0x47, 0x06, 0x81, 0x6a, 0xba, 0x3e, 0x25, 0x71, 0x78, 0x50, 0xc2,
-    0x6c, 0x9c, 0xd0, 0xd8, 0x9d,
-];
-
-#[test]
-fn sha1_matches_nist_vector() {
-    let provider = CryptoProvider::default_provider();
-    assert_eq!(provider.sha1_hasher.hash(b"abc"), SHA1_ABC);
-}
 
 #[test]
 fn load_p256_key_accepts_apple_key() {

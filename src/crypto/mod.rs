@@ -6,6 +6,9 @@ pub mod rust_crypto;
 #[cfg(feature = "aws_lc")]
 pub mod aws_lc;
 
+#[cfg(feature = "ring")]
+pub mod ring;
+
 #[cfg(feature = "receipt-utility")]
 pub mod asn1;
 
@@ -25,11 +28,6 @@ pub enum CryptoError {
 
     #[error("Verification error: {0}")]
     VerificationError(String),
-}
-
-/// SHA-1 hashing. Used only for OCSP `CertID`.
-pub trait Sha1Hasher: Send + Sync + Debug {
-    fn hash(&self, data: &[u8]) -> [u8; 20];
 }
 
 /// ECDSA P-256 signing and verification.
@@ -81,36 +79,6 @@ pub trait P256Signature: Send + Sync + Debug {
     fn der_representation(&self) -> Result<Vec<u8>, CryptoError>;
 }
 
-/// X.509 certificate chain verification.
-///
-/// Takes DER bytes and returns an opaque handle — no certificate types cross
-/// this boundary. Apple-specific policy (which OIDs, chain length) lives in
-/// `ChainVerifier`, not here.
-pub trait X509Suite: Send + Sync + Debug {
-    /// Verifies that `leaf` is signed by `intermediate`, and `intermediate` by
-    /// one of `roots`.
-    ///
-    /// When `effective_date` is `Some`, every certificate in the chain must be
-    /// within its validity window at that Unix timestamp.
-    fn verify_chain(
-        &self,
-        leaf: &[u8],
-        intermediate: &[u8],
-        roots: &[Vec<u8>],
-        effective_date: Option<u64>,
-    ) -> Result<Box<dyn VerifiedChain>, CryptoError>;
-}
-
-/// A successfully verified chain: leaf at index 0, intermediate at 1, root at 2.
-pub trait VerifiedChain: Send + Sync {
-    /// Whether the certificate at `index` carries an extension with `oid`.
-    /// Returns `false` for an out-of-range `index`.
-    fn has_extension(&self, index: usize, oid: &str) -> bool;
-
-    /// The leaf's DER-encoded SubjectPublicKeyInfo.
-    fn leaf_spki_der(&self) -> Vec<u8>;
-}
-
 /// Controls the cryptography used by this library.
 ///
 /// Individual fields can be overridden using struct-update syntax against a
@@ -125,12 +93,6 @@ pub trait VerifiedChain: Send + Sync {
 pub struct CryptoProvider {
     /// ECDSA P-256 signing and verification.
     pub p256_signing: &'static dyn P256SigningSuite,
-
-    /// X.509 certificate chain verification.
-    pub x509: &'static dyn X509Suite,
-
-    /// SHA-1. Used for OCSP `CertID`.
-    pub sha1_hasher: &'static dyn Sha1Hasher,
 }
 
 static PROCESS_DEFAULT: OnceLock<Arc<CryptoProvider>> = OnceLock::new();
@@ -171,6 +133,11 @@ impl CryptoProvider {
             return aws_lc::DEFAULT_PROVIDER;
         }
 
-        panic!("No crypto backend. Enable 'rust_crypto' or 'aws_lc' feature.");
+        #[cfg(feature = "ring")]
+        {
+            return ring::DEFAULT_PROVIDER;
+        }
+
+        panic!("No crypto backend. Enable 'rust_crypto', 'aws_lc' or 'ring' feature.");
     }
 }

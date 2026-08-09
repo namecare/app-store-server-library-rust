@@ -1,4 +1,4 @@
-#![cfg(feature = "rust_crypto")]
+#![cfg(any(feature = "rust_crypto", feature = "aws_lc", feature = "ring"))]
 
 mod common;
 
@@ -6,7 +6,6 @@ use app_store_server_library::chain_verifier::ChainVerificationFailureReason::{
     CertificateExpired, InvalidCertificate,
 };
 use app_store_server_library::chain_verifier::{ChainVerifier, ChainVerifierError};
-use app_store_server_library::utils::StringExt;
 use base64::engine::general_purpose::STANDARD;
 use base64::{DecodeError, Engine};
 use common::*;

@@ -1,4 +1,5 @@
-use base64::DecodeError;
+use base64::engine::general_purpose::STANDARD;
+use base64::{DecodeError, Engine};
 
 use crate::chain_verifier::{ChainVerificationFailureReason, ChainVerifier, ChainVerifierError};
 use crate::crypto::jws;
@@ -10,7 +11,6 @@ use crate::models::decoded_signed_data::DecodedSignedData;
 use crate::models::jws_renewal_info_decoded_payload::JWSRenewalInfoDecodedPayload;
 use crate::models::jws_transaction_decoded_payload::JWSTransactionDecodedPayload;
 use crate::models::response_body_v2_decoded_payload::ResponseBodyV2DecodedPayload;
-use crate::utils::StringExt;
 use serde::de::DeserializeOwned;
 
 #[derive(thiserror::Error, Debug)]
@@ -62,8 +62,8 @@ impl SignedDataVerifier {
     /// * `bundle_id` - The bundle ID associated with the application.
     /// * `app_apple_id` - An optional Apple ID associated with the application. Required when
     ///   `environment` is `Environment::Production`.
-    /// * `enable_online_checks` - Whether to enable revocation checking (OCSP) and check
-    ///   certificate expiration against the current date rather than the JWS's signed date.
+    /// * `enable_online_checks` - Whether to check certificate expiration against the
+    ///   current date rather than the JWS's signed date, and cache the verified public key.
     ///
     /// # Returns
     ///
@@ -341,7 +341,7 @@ impl SignedDataVerifier {
 
         let chain: Vec<Vec<u8>> = x5c
             .iter()
-            .map(|c| c.as_der_bytes())
+            .map(|c| STANDARD.decode(c))
             .collect::<Result<_, DecodeError>>()?;
 
         let decoded_body: T = jws::decode_payload(signed_obj)?;

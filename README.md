@@ -11,14 +11,13 @@ Specify `app-store-server-library` in your project's `Cargo.toml` file, under th
 
 ```toml
 [dependencies]
-app-store-server-library = { version = "6.0.0", features = ["receipt-utility", "api-client", "ocsp"] }
+app-store-server-library = { version = "6.0.0", features = ["receipt-utility", "api-client"] }
 ```
 
 ### Feature Flags
 
 - `api-client` - Enables the App Store Server/Advanced Commerce API client functionality
 - `receipt-utility` - Enables receipt processing and transaction ID extraction
-- `ocsp` - Enables OCSP (Online Certificate Status Protocol) verification
 
 Check [crates.io](https://crates.io/crates/app-store-server-library) for the latest version number.
 
@@ -120,22 +119,6 @@ let verifier = SignedDataVerifier::new(
 let payload = "signed-payload";
 let decoded_payload = verifier.verify_and_decode_notification(payload).unwrap();
 ```
-
-#### OCSP Verification
-
-When the `ocsp` feature is enabled, the library will automatically perform OCSP (Online Certificate Status Protocol) checks to verify that certificates haven't been revoked. This provides an additional layer of security by checking certificate validity in real-time with Apple's OCSP responders.
-
-To enable OCSP verification:
-
-```toml
-[dependencies]
-app-store-server-library = { version = "6.0.0", features = ["ocsp"] }
-```
-
-OCSP verification is performed automatically when verifying signed data.
-
-> Note: OCSP request is blocking, not async.   
-> Async signed data verification is coming soon.
 
 ### Receipt Usage
 ```rust

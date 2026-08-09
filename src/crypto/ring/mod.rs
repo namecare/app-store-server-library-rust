@@ -1,6 +1,7 @@
-//! AWS-LC backend implementation.
+//! ring backend implementation.
 
-use aws_lc_rs::signature::{EcdsaKeyPair, ECDSA_P256_SHA256_FIXED_SIGNING};
+use ring::rand::SystemRandom;
+use ring::signature::{EcdsaKeyPair, ECDSA_P256_SHA256_FIXED_SIGNING};
 
 use crate::crypto::{
     CryptoError, CryptoProvider, P256PrivateKey, P256PublicKey, P256Signature, P256SigningSuite,
@@ -8,16 +9,16 @@ use crate::crypto::{
 
 /// Marker type implementing every capability this backend provides.
 #[derive(Debug)]
-struct AwsLc;
+struct Ring;
 
 #[derive(Debug)]
-struct AwsLcP256PrivateKey {
+struct RingP256PrivateKey {
     key_pair: EcdsaKeyPair,
 }
 
-impl P256PrivateKey for AwsLcP256PrivateKey {
+impl P256PrivateKey for RingP256PrivateKey {
     fn signature(&self, message: &[u8]) -> Result<Box<dyn P256Signature>, CryptoError> {
-        let rng = aws_lc_rs::rand::SystemRandom::new();
+        let rng = SystemRandom::new();
         let sig = self
             .key_pair
             .sign(&rng, message)
@@ -29,25 +30,25 @@ impl P256PrivateKey for AwsLcP256PrivateKey {
             .try_into()
             .map_err(|_| CryptoError::SigningError("unexpected signature length".into()))?;
 
-        Ok(Box::new(AwsLcP256Signature { raw }))
+        Ok(Box::new(RingP256Signature { raw }))
     }
 }
 
 #[derive(Debug)]
-struct AwsLcP256PublicKey {
+struct RingP256PublicKey {
     spki_der: Vec<u8>,
 }
 
-impl P256PublicKey for AwsLcP256PublicKey {
+impl P256PublicKey for RingP256PublicKey {
     fn is_valid_signature(
         &self,
         signature: &dyn P256Signature,
         message: &[u8],
     ) -> Result<(), CryptoError> {
-        use aws_lc_rs::signature::{UnparsedPublicKey, ECDSA_P256_SHA256_FIXED};
+        use ring::signature::{UnparsedPublicKey, ECDSA_P256_SHA256_FIXED};
 
         // SPKI DER wraps the SEC1 point; the last 65 bytes are the uncompressed
-        // point aws-lc expects.
+        // point ring expects.
         if self.spki_der.len() < 65 {
             return Err(CryptoError::KeyError("SPKI too short".into()));
         }
@@ -60,38 +61,40 @@ impl P256PublicKey for AwsLcP256PublicKey {
 }
 
 #[derive(Debug)]
-struct AwsLcP256Signature {
+struct RingP256Signature {
     raw: [u8; 64],
 }
 
-impl P256Signature for AwsLcP256Signature {
+impl P256Signature for RingP256Signature {
     fn raw_representation(&self) -> [u8; 64] {
         self.raw
     }
 
     fn der_representation(&self) -> Result<Vec<u8>, CryptoError> {
-        ecdsa_raw_to_der(&self.raw)
-            .map_err(|e| CryptoError::SigningError(e.to_string()))
+        Ok(ecdsa_raw_to_der(&self.raw))
     }
 }
 
-impl P256SigningSuite for AwsLc {
+impl P256SigningSuite for Ring {
     fn private_key(&self, pem: &str) -> Result<Box<dyn P256PrivateKey>, CryptoError> {
         let der = decode_pem(pem).map_err(|e| CryptoError::KeyError(e.to_string()))?;
 
         // FIXED_SIGNING so `sign` yields r‖s directly — no conversion needed.
-        let key_pair = EcdsaKeyPair::from_pkcs8(&ECDSA_P256_SHA256_FIXED_SIGNING, &der)
-            .map_err(|e| CryptoError::KeyError(e.to_string()))?;
+        let key_pair =
+            EcdsaKeyPair::from_pkcs8(&ECDSA_P256_SHA256_FIXED_SIGNING, &der, &SystemRandom::new())
+                .map_err(|e| CryptoError::KeyError(e.to_string()))?;
 
-        Ok(Box::new(AwsLcP256PrivateKey { key_pair }))
+        Ok(Box::new(RingP256PrivateKey { key_pair }))
     }
 
     fn public_key(&self, spki_der: &[u8]) -> Result<Box<dyn P256PublicKey>, CryptoError> {
-        Ok(Box::new(AwsLcP256PublicKey { spki_der: spki_der.to_vec() }))
+        Ok(Box::new(RingP256PublicKey {
+            spki_der: spki_der.to_vec(),
+        }))
     }
 
     fn signature_from_raw(&self, rs: &[u8; 64]) -> Result<Box<dyn P256Signature>, CryptoError> {
-        Ok(Box::new(AwsLcP256Signature { raw: *rs }))
+        Ok(Box::new(RingP256Signature { raw: *rs }))
     }
 }
 
@@ -118,62 +121,51 @@ fn decode_pem(pem: &str) -> Result<Vec<u8>, &'static str> {
     // Concatenate base64 lines
     let b64: String = lines[start + 1..end].concat();
 
-    BASE64_STANDARD
-        .decode(&b64)
-        .map_err(|_| "invalid base64")
+    BASE64_STANDARD.decode(&b64).map_err(|_| "invalid base64")
 }
 
 /// Converts a fixed-width `r‖s` ECDSA signature to DER.
 ///
-/// Uses aws-lc's own `ECDSA_SIG` encoder rather than hand-written ASN.1.
-fn ecdsa_raw_to_der(rs: &[u8; 64]) -> Result<Vec<u8>, &'static str> {
-    use aws_lc_sys::{BN_bin2bn, BN_free, ECDSA_SIG_free, ECDSA_SIG_new, ECDSA_SIG_set0, ECDSA_SIG_to_bytes, OPENSSL_free};
-    use std::ptr::null_mut;
-    use std::slice;
+/// ring exposes no signature re-encoder, so the `SEQUENCE { INTEGER r,
+/// INTEGER s }` is written directly. Both integers are at most 32 bytes, so
+/// the SEQUENCE always fits the short-form length octet.
+fn ecdsa_raw_to_der(rs: &[u8; 64]) -> Vec<u8> {
+    let r = der_integer(&rs[..32]);
+    let s = der_integer(&rs[32..]);
 
-    unsafe {
-        let r = BN_bin2bn(rs[..32].as_ptr(), 32, null_mut());
-        if r.is_null() {
-            return Err("failed to parse r");
-        }
-        let s = BN_bin2bn(rs[32..].as_ptr(), 32, null_mut());
-        if s.is_null() {
-            BN_free(r);
-            return Err("failed to parse s");
-        }
+    let mut der = Vec::with_capacity(2 + r.len() + s.len());
+    der.push(0x30);
+    der.push((r.len() + s.len()) as u8);
+    der.extend_from_slice(&r);
+    der.extend_from_slice(&s);
+    der
+}
 
-        let sig = ECDSA_SIG_new();
-        if sig.is_null() {
-            BN_free(r);
-            BN_free(s);
-            return Err("failed to allocate ECDSA_SIG");
-        }
+/// Encodes one unsigned big-endian component as a DER INTEGER: leading zero
+/// bytes are stripped (DER requires the minimal encoding), and a single 0x00
+/// is prepended when the high bit is set so the value stays positive.
+fn der_integer(component: &[u8]) -> Vec<u8> {
+    let value: &[u8] = match component.iter().position(|&b| b != 0) {
+        Some(first) => &component[first..],
+        None => &[0],
+    };
 
-        // set0 takes ownership of r and s on success.
-        if ECDSA_SIG_set0(sig, r, s) != 1 {
-            BN_free(r);
-            BN_free(s);
-            ECDSA_SIG_free(sig);
-            return Err("failed to set ECDSA_SIG components");
-        }
+    let needs_pad = value[0] & 0x80 != 0;
+    let len = value.len() + usize::from(needs_pad);
 
-        let mut out: *mut u8 = null_mut();
-        let mut out_len: usize = 0;
-        let ok = ECDSA_SIG_to_bytes(&mut out, &mut out_len, sig);
-        ECDSA_SIG_free(sig);
-
-        if ok != 1 || out.is_null() {
-            return Err("failed to encode ECDSA_SIG");
-        }
-
-        let der = slice::from_raw_parts(out, out_len).to_vec();
-        OPENSSL_free(out as *mut _);
-        Ok(der)
+    let mut out = Vec::with_capacity(2 + len);
+    out.push(0x02);
+    out.push(len as u8);
+    if needs_pad {
+        out.push(0x00);
     }
+    out.extend_from_slice(value);
+    out
 }
 
 #[cfg(test)]
 mod signature_tests {
+    use super::ecdsa_raw_to_der;
     use crate::crypto::CryptoProvider;
 
     #[test]
@@ -219,8 +211,29 @@ mod signature_tests {
             "s not found in DER"
         );
     }
+
+    /// The hand-rolled encoder has to handle the two cases ring's absent
+    /// encoder would: a high bit that needs a 0x00 pad, and leading zeros
+    /// that DER requires stripped.
+    #[test]
+    fn der_integers_are_minimally_encoded_and_positive() {
+        let mut rs = [0u8; 64];
+        rs[0] = 0xFF; // r: high bit set, must be padded
+        rs[32 + 31] = 0x01; // s: 31 leading zeros, must be stripped to one byte
+
+        let der = ecdsa_raw_to_der(&rs);
+
+        // SEQUENCE { INTEGER 00 FF 00*31, INTEGER 01 }
+        assert_eq!(der[0], 0x30);
+        assert_eq!(der[1] as usize, der.len() - 2);
+        assert_eq!(der[2], 0x02);
+        assert_eq!(der[3], 33, "r must be padded to 33 bytes");
+        assert_eq!(der[4], 0x00, "pad byte keeps r positive");
+        assert_eq!(der[5], 0xFF);
+        assert_eq!(&der[der.len() - 3..], &[0x02, 0x01, 0x01], "s is one byte");
+    }
 }
 
 pub const DEFAULT_PROVIDER: CryptoProvider = CryptoProvider {
-    p256_signing: &AwsLc,
+    p256_signing: &Ring,
 };
