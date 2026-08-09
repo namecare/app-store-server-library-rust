@@ -9,57 +9,31 @@ use crate::crypto::{
     P256SigningSuite,
 };
 
-/// Marker type implementing every capability this backend provides.
 #[derive(Debug)]
 struct RustCrypto;
 
-#[derive(Debug)]
-struct RustCryptoP256PrivateKey {
-    key: SigningKey,
-}
-
-impl P256PrivateKey for RustCryptoP256PrivateKey {
-    fn signature(&self, message: &[u8]) -> Result<Box<dyn P256Signature>, CryptoError> {
-        let sig: p256::ecdsa::Signature = self.key.sign(message);
-        Ok(Box::new(RustCryptoP256Signature { sig }))
+impl P256PrivateKey for SigningKey {
+    fn signature(&self, message: &[u8]) -> Result<P256Signature, CryptoError> {
+        let sig: p256::ecdsa::Signature = self.sign(message);
+        let raw: [u8; 64] = sig.to_bytes().into();
+        let der = sig.to_der().to_bytes().to_vec();
+        Ok((raw, der))
     }
 }
 
-#[derive(Debug)]
-struct RustCryptoP256PublicKey {
-    key: p256::ecdsa::VerifyingKey,
-}
-
-impl P256PublicKey for RustCryptoP256PublicKey {
+impl P256PublicKey for p256::ecdsa::VerifyingKey {
     fn is_valid_signature(
         &self,
-        signature: &dyn P256Signature,
+        signature: &[u8; 64],
         message: &[u8],
     ) -> Result<(), CryptoError> {
         use signature::Verifier;
 
-        // Rebuild from the raw form so signatures from any backend are accepted.
-        let sig = p256::ecdsa::Signature::from_slice(&signature.raw_representation())
+        let sig = p256::ecdsa::Signature::from_slice(signature)
             .map_err(|e| CryptoError::VerificationError(e.to_string()))?;
 
-        self.key
-            .verify(message, &sig)
+        self.verify(message, &sig)
             .map_err(|e| CryptoError::VerificationError(e.to_string()))
-    }
-}
-
-#[derive(Debug)]
-struct RustCryptoP256Signature {
-    sig: p256::ecdsa::Signature,
-}
-
-impl P256Signature for RustCryptoP256Signature {
-    fn raw_representation(&self) -> [u8; 64] {
-        self.sig.to_bytes().into()
-    }
-
-    fn der_representation(&self) -> Result<Vec<u8>, CryptoError> {
-        Ok(self.sig.to_der().to_bytes().to_vec())
     }
 }
 
@@ -72,7 +46,7 @@ impl P256SigningSuite for RustCrypto {
         let key = SigningKey::from_pkcs8_der(der)
             .map_err(|e| CryptoError::KeyError(e.to_string()))?;
 
-        Ok(Box::new(RustCryptoP256PrivateKey { key }))
+        Ok(Box::new(key))
     }
 
     fn public_key(&self, spki_der: &[u8]) -> Result<Box<dyn P256PublicKey>, CryptoError> {
@@ -81,13 +55,7 @@ impl P256SigningSuite for RustCrypto {
         let key = p256::ecdsa::VerifyingKey::from_public_key_der(spki_der)
             .map_err(|e| CryptoError::KeyError(e.to_string()))?;
 
-        Ok(Box::new(RustCryptoP256PublicKey { key }))
-    }
-
-    fn signature_from_raw(&self, rs: &[u8; 64]) -> Result<Box<dyn P256Signature>, CryptoError> {
-        let sig = p256::ecdsa::Signature::from_slice(rs)
-            .map_err(|e| CryptoError::VerificationError(e.to_string()))?;
-        Ok(Box::new(RustCryptoP256Signature { sig }))
+        Ok(Box::new(key))
     }
 }
 

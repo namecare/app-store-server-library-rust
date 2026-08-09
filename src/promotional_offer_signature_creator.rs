@@ -64,8 +64,8 @@ impl PromotionalOfferSignatureCreator {
         // The backend's `sign` applies SHA-256 internally, so pass the raw
         // payload. Pre-hashing here would sign SHA256(SHA256(payload)) and
         // produce signatures Apple rejects.
-        let signature = self.key.signature(payload.as_bytes())?;
-        Ok(BASE64_STANDARD.encode(signature.der_representation()?))
+        let (_, der) = self.key.signature(payload.as_bytes())?;
+        Ok(BASE64_STANDARD.encode(der))
     }
 
     fn payload(

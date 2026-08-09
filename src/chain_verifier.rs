@@ -55,9 +55,6 @@ const APPLE_WWDR_INTERMEDIATE_OID: &str = "1.2.840.113635.100.6.2.1";
 /// leaf, intermediate, root.
 const EXPECTED_CHAIN_LENGTH: usize = 3;
 
-/// A [`ValidationPolicy`] mirroring Swift's `AppStoreOIDPolicy`: the chain must
-/// be exactly leaf/intermediate/root, the intermediate must carry Apple's
-/// WWDR OID, and the leaf must carry Apple's receipt-signing OID.
 struct AppStoreOidPolicy {
     wwdr_oid: Oid<'static>,
     receipt_signer_oid: Oid<'static>,
@@ -125,11 +122,6 @@ struct CacheValue {
 }
 
 /// Verifies Apple's certificate chains.
-///
-/// Holds the trusted roots and a cache of verified public keys. Chain
-/// building and RFC 5280 policy are delegated to the `x509-validator` crate;
-/// this struct owns only Apple's policy — chain length, the two required
-/// OIDs — plus caching.
 pub struct ChainVerifier {
     root_certificates: Vec<Vec<u8>>,
     verified_public_key_cache: Mutex<HashMap<CacheKey, CacheValue>>,
@@ -144,8 +136,7 @@ impl ChainVerifier {
         }
     }
 
-    /// Verifies the chain and returns the leaf's DER-encoded
-    /// SubjectPublicKeyInfo.
+    /// Verifies the chain and returns the leaf's DER-encoded SubjectPublicKeyInfo.
     ///
     /// # Arguments
     /// * `leaf` - DER-encoded leaf certificate

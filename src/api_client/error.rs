@@ -16,12 +16,6 @@ impl fmt::Display for ConfigurationError {
 
 impl std::error::Error for ConfigurationError {}
 
-/// The base error returned by [`crate::api_client::api_client::ApiClient`].
-///
-/// Carries the HTTP status code and, when the server returned a structured error
-/// payload, the raw (unmapped) error code and message. Concrete clients (e.g.
-/// `AppStoreServerApiClient`, `AdvancedCommerceApiClient`) wrap this and map
-/// `raw_code` into their own `ApiErrorCode` enum.
 #[derive(Debug, Clone)]
 pub struct ApiClientError {
     status: u16,

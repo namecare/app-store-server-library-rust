@@ -122,12 +122,12 @@ impl JWSSignatureCreator {
         let encoded_payload = jws::b64url_encode(&serde_json::to_vec(payload)?);
         let signing_input = format!("{encoded_header}.{encoded_payload}");
 
-        let signature = self.signing_key.signature(signing_input.as_bytes())?;
+        let (raw, _) = self.signing_key.signature(signing_input.as_bytes())?;
 
         Ok(jws::encode_compact(
             &encoded_header,
             &encoded_payload,
-            &signature.raw_representation(),
+            &raw,
         ))
     }
 }

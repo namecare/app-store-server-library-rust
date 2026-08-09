@@ -25,7 +25,6 @@ signature = { version = "2.2.0", optional = true }
 
 # Cryptography - AWS-LC backend (optional)
 aws-lc-rs = { version = "1.17.3", optional = true }
-aws-lc-sys = { version = "0.43.0", optional = true }
 
 # Cryptography - ring backend (optional)
 ring = { version = "0.17.14", optional = true }
@@ -38,6 +37,7 @@ serde_repr = "0.1.21"
 uuid = { version = "1.24.0", features = ["serde", "v4"] }
 chrono = { version = "0.4.45", features = ["serde"] }
 base64 = "0.23.0"
+asn1-rs = { version = "0.7.2", optional = true }
 
 # Networking
 reqwest = { version = "0.13.4", default-features = false, features = ["json", "http2", "blocking"], optional = true }
@@ -53,11 +53,11 @@ regex = { version = "1.13.1", optional = true }
 tokio = { version = "1.53.1", features = ["test-util", "macros"] }
 
 [features]
-default = ["rust_crypto"]
+default = ["aws_lc"]
 
 rust_crypto = ["dep:pem-rfc7468", "dep:p256", "dep:p384", "dep:rsa", "dep:sha2", "dep:signature", "x509-validator/rust_crypto"]
-aws_lc = ["dep:aws-lc-rs", "dep:aws-lc-sys", "x509-validator/aws_lc"]
-ring = ["dep:ring", "x509-validator/ring"]
+aws_lc = ["dep:aws-lc-rs", "dep:asn1-rs", "x509-validator/aws_lc"]
+ring = ["dep:ring", "dep:asn1-rs", "x509-validator/ring"]
 
 api-client = ["dep:http"]
 api-client-reqwest = ["api-client", "dep:reqwest", "reqwest-tls-rustls"]
@@ -65,7 +65,7 @@ api-client-reqwest-native-tls = ["api-client", "dep:reqwest", "reqwest-tls-nativ
 # reqwest TLS backend markers; the reqwest transport asserts one is set.
 reqwest-tls-rustls = ["reqwest/rustls"]
 reqwest-tls-native = ["reqwest/native-tls"]
-receipt-utility = ["dep:regex"]
+receipt-utility = ["dep:regex", "dep:asn1-rs"]
 
 [[test]]
 name = "app_store_server_api_client"

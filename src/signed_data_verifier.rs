@@ -42,8 +42,7 @@ pub enum SignedDataVerifierError {
 
 const EXPECTED_CHAIN_LENGTH: usize = 3;
 
-/// A verifier for signed data, commonly used for verifying and decoding
-/// signed Apple server notifications and transactions.
+///A verifier and decoder class designed to decode signed data from the App Store.
 pub struct SignedDataVerifier {
     environment: Environment,
     bundle_id: String,
@@ -92,11 +91,8 @@ impl SignedDataVerifier {
 }
 
 impl SignedDataVerifier {
-    /// Verifies and decodes a signed renewal info.
-    ///
-    /// This method takes a signed renewal info string, verifies its authenticity and
-    /// integrity, and returns the decoded payload as a `JWSRenewalInfoDecodedPayload`
-    /// if the verification is successful.
+    /// Verifies and decodes a signedRenewalInfo obtained from the App Store Server API, an App Store Server Notification, or from a device
+    /// See [JWSRenewalInfo](https://developer.apple.com/documentation/appstoreserverapi/jwsrenewalinfo)
     ///
     /// # Arguments
     ///
@@ -119,11 +115,8 @@ impl SignedDataVerifier {
         Ok(decoded_renewal_info)
     }
 
-    /// Verifies and decodes a signed transaction.
-    ///
-    /// This method takes a signed transaction string, verifies its authenticity and
-    /// integrity, and returns the decoded payload as a `JWSTransactionDecodedPayload`
-    /// if the verification is successful.
+    ///  Verifies and decodes a signedTransaction obtained from the App Store Server API, an App Store Server Notification, or from a device
+    ///  See [JWSTransaction](https://developer.apple.com/documentation/appstoreserverapi/jwstransaction)
     ///
     /// # Arguments
     ///
@@ -150,11 +143,8 @@ impl SignedDataVerifier {
         Ok(decoded_signed_tx)
     }
 
-    /// Verifies and decodes a signed notification.
-    ///
-    /// This method takes a signed notification string, verifies its authenticity and
-    /// integrity, and returns the decoded payload as a `ResponseBodyV2DecodedPayload`
-    /// if the verification is successful.
+    ///  Verifies and decodes an App Store Server Notification signedPayload
+    ///  See [signedPayload](https://developer.apple.com/documentation/appstoreservernotifications/signedpayload)
     ///
     /// # Arguments
     ///
@@ -237,11 +227,8 @@ impl SignedDataVerifier {
         Ok(())
     }
 
-    /// Verifies and decodes a signed app transaction.
-    ///
-    /// This method takes a signed app transaction string, verifies its authenticity and
-    /// integrity, and returns the decoded payload as an `AppTransaction`
-    /// if the verification is successful.
+    ///Verifies and decodes a signed AppTransaction
+    ///See [AppTransaction](https://developer.apple.com/documentation/storekit/apptransaction)
     ///
     /// # Arguments
     ///
@@ -276,11 +263,7 @@ impl SignedDataVerifier {
         Ok(decoded_app_transaction)
     }
 
-    /// Verifies and decodes a realtime request the App Store sends to your Get Retention Message endpoint.
-    ///
-    /// This method takes a signed realtime request string, verifies its authenticity and
-    /// integrity, and returns the decoded payload as a `DecodedRealtimeRequestBody`
-    /// if the verification is successful.
+    ///Verifies and decodes a realtime request the App Store sends to your Get Retention Message endpoint.
     ///
     /// # Arguments
     ///
@@ -372,14 +355,10 @@ impl SignedDataVerifier {
             .p256_signing
             .public_key(&spki)
             .map_err(|_| SignedDataVerifierError::VerificationFailure)?;
-        let signature = provider
-            .p256_signing
-            .signature_from_raw(&raw)
-            .map_err(|_| SignedDataVerifierError::VerificationFailure)?;
 
         let signing_input = jws::signing_input(signed_obj)?;
         public_key
-            .is_valid_signature(signature.as_ref(), signing_input.as_bytes())
+            .is_valid_signature(&raw, signing_input.as_bytes())
             .map_err(|_| SignedDataVerifierError::VerificationFailure)?;
 
         Ok(decoded_body)

@@ -1536,11 +1536,11 @@ fn create_signed_data_from_json(path: &str) -> String {
     let encoded_payload = jws::b64url_encode(&serde_json::to_vec(&json).expect("Expect payload JSON"));
     let signing_input = format!("{encoded_header}.{encoded_payload}");
 
-    let signature = key
+    let (raw, _) = key
         .signature(signing_input.as_bytes())
         .expect("Failed to sign payload");
 
-    jws::encode_compact(&encoded_header, &encoded_payload, &signature.raw_representation())
+    jws::encode_compact(&encoded_header, &encoded_payload, &raw)
 }
 
 #[test]

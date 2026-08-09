@@ -32,10 +32,7 @@ fn signature_is_der_encoded() {
 
     // Pass the RAW message: the backend applies SHA-256 internally. Pre-hashing
     // here would sign SHA256(SHA256(msg)) and produce signatures Apple rejects.
-    let signature = key.signature(b"message to sign").expect("signing should succeed");
-    let sig = signature
-        .der_representation()
-        .expect("DER conversion should succeed");
+    let (_, sig) = key.signature(b"message to sign").expect("signing should succeed");
 
     // DER SEQUENCE of two INTEGERs. Both backends must agree on this framing,
     // which is what `signature.derRepresentation` produces in the Swift library.
@@ -64,18 +61,10 @@ fn signature_raw_form_is_64_bytes_and_verifies() {
         .expect("key should load");
 
     let message = b"message to sign";
-    let signature = key.signature(message).expect("signing should succeed");
+    let (raw, _) = key.signature(message).expect("signing should succeed");
 
     // JWS (RFC 7515 3.1) requires the fixed-width r|s form, always 64 bytes.
-    let raw = signature.raw_representation();
     assert_eq!(raw.len(), 64);
-
-    // A signature rebuilt from the raw form must verify against the original
-    // message — this is the exact round trip the JWS verification path uses.
-    let rebuilt = provider
-        .p256_signing
-        .signature_from_raw(&raw)
-        .expect("raw signature should parse");
 
     // SPKI DER for testSigningKey.p8, derived with:
     //   openssl pkey -in testSigningKey.p8 -pubout -outform DER
@@ -97,6 +86,6 @@ fn signature_raw_form_is_64_bytes_and_verifies() {
         .expect("SPKI should parse");
 
     public_key
-        .is_valid_signature(rebuilt.as_ref(), message)
+        .is_valid_signature(&raw, message)
         .expect("signature must verify against the raw round trip");
 }

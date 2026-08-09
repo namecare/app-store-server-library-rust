@@ -97,14 +97,14 @@ impl<T: Transport> ApiClient<T> {
         );
         let signing_input = format!("{encoded_header}.{encoded_payload}");
 
-        let signature = key
+        let (raw, _) = key
             .signature(signing_input.as_bytes())
             .map_err(|_| signing_error())?;
 
         Ok(jws::encode_compact(
             &encoded_header,
             &encoded_payload,
-            &signature.raw_representation(),
+            &raw,
         ))
     }
 

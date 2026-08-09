@@ -19,9 +19,6 @@ pub enum JwsError {
 }
 
 /// The decoded JOSE header.
-///
-/// Decode-only: nothing in this library serialises a header, so there is no
-/// `Serialize` derive. Signing builds its header JSON directly.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct JwtHeader {
     #[serde(default)]
