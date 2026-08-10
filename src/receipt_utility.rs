@@ -131,7 +131,6 @@ where
         };
 
         if target_type_ids.contains(&attribute_type) {
-            // Matches Swift: the last matching attribute wins, rather than the first.
             if let Some(processed) = processor(&value) {
                 result = Some(processed);
             }

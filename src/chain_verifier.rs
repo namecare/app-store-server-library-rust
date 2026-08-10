@@ -3,8 +3,9 @@ use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
-use x509_validator::{rfc5280::RFC5280Policy, store::CertificateStore, validator::ChainValidationResultOwned, Certificate, CertificateExt, Oid, PolicyEvaluationResult, PolicyFailureReason, ValidationPolicy};
+use x509_validator::{rfc5280::RFC5280Policy, store::CertificateStore, validator::ChainValidationResult, Certificate, CertificateExt, Oid, PolicyEvaluationResult, PolicyFailureReason, ValidationPolicy};
 use x509_validator::unverified_chain::UnverifiedCertificateChain;
+use x509_validator::BaseValidator;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ChainVerifierError {
@@ -23,29 +24,11 @@ pub enum ChainVerificationFailureReason {
     #[error("InvalidAppIdentifier")]
     InvalidAppIdentifier,
 
-    #[error("InvalidIssuer")]
-    InvalidIssuer,
-
     #[error("InvalidCertificate")]
     InvalidCertificate,
 
     #[error("InvalidChainLength")]
     InvalidChainLength,
-
-    #[error("InvalidChain")]
-    InvalidChain,
-
-    #[error("InvalidEnvironment")]
-    InvalidEffectiveDate,
-
-    #[error("CertificateExpired")]
-    CertificateExpired,
-
-    #[error("CertificateRevoked")]
-    CertificateRevoked,
-
-    #[error("RetryableVerificationFailure")]
-    RetryableVerificationFailure,
 }
 
 /// Apple's receipt-signing OID, expected on the leaf certificate.
@@ -81,7 +64,7 @@ impl ValidationPolicy for AppStoreOidPolicy {
         vec![]
     }
 
-    fn chain_meets_policy_requirements(&mut self, chain: &UnverifiedCertificateChain) -> PolicyEvaluationResult {
+    fn chain_meets_policy_requirements(&self, chain: &UnverifiedCertificateChain) -> PolicyEvaluationResult {
         if chain.len() != EXPECTED_CHAIN_LENGTH {
             return Err(PolicyFailureReason::new("chain has unexpected length"));
         }
@@ -199,7 +182,7 @@ impl ChainVerifier {
         effective_date: Option<u64>,
     ) -> Result<Vec<u8>, ChainVerifierError> {
         let leaf = parse_certificate(leaf)?;
-        let intermediate_der = intermediate.to_vec();
+        let intermediate = parse_certificate(intermediate)?;
 
         let mut roots = CertificateStore::new();
         for root_der in &self.root_certificates {
@@ -221,23 +204,14 @@ impl ChainVerifier {
             AppStoreOidPolicy::new()
         };
 
-        let mut validator = x509_validator::Validator::with_policy(roots, policy);
+        let validator = x509_validator::Validator::with_policy(roots, policy);
 
-        match validator.validate(&leaf, std::slice::from_ref(&intermediate_der)) {
-            ChainValidationResultOwned::ValidCertificate(chain) => Ok(leaf_spki_der(chain.leaf())),
-            ChainValidationResultOwned::CouldNotValidate(reasons) => {
-                let expired = reasons
-                    .iter()
-                    .any(|reason| reason.to_string().contains("expired"));
-                if expired {
-                    Err(ChainVerifierError::VerificationFailure(
-                        ChainVerificationFailureReason::CertificateExpired,
-                    ))
-                } else {
-                    Err(ChainVerifierError::VerificationFailure(
-                        ChainVerificationFailureReason::InvalidCertificate,
-                    ))
-                }
+        match validator.validate(leaf, vec!(intermediate)) {
+            ChainValidationResult::ValidCertificate(chain) => Ok(leaf_spki_der(chain.leaf())),
+            ChainValidationResult::CouldNotValidate(_reasons) => {
+                Err(ChainVerifierError::VerificationFailure(
+                    ChainVerificationFailureReason::InvalidCertificate,
+                ))
             }
         }
     }

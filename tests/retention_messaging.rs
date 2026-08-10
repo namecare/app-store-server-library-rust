@@ -111,14 +111,14 @@ fn realtime_url_response_serializes_capital_url_key() {
 }
 
 #[test]
-fn realtime_url_response_parses_swift_fixture() {
+fn realtime_url_response_parses_fixture() {
     let parsed: RealtimeUrlResponse =
         serde_json::from_str(&fixture("getRealtimeUrlResponse.json")).unwrap();
     assert_eq!(parsed.realtime_url, "https://example.com/realtime");
 }
 
 #[test]
-fn performance_test_response_parses_swift_fixture() {
+fn performance_test_response_parses_fixture() {
     let parsed: PerformanceTestResponse =
         serde_json::from_str(&fixture("performanceTestResponse.json")).unwrap();
     assert_eq!(parsed.config.max_concurrent_requests, 10);
@@ -149,7 +149,7 @@ fn performance_test_status_round_trips_all_values() {
 }
 
 #[test]
-fn performance_test_result_response_parses_swift_fixture() {
+fn performance_test_result_response_parses_fixture() {
     let parsed: PerformanceTestResultResponse =
         serde_json::from_str(&fixture("performanceTestResultResponse.json")).unwrap();
     assert_eq!(parsed.config.max_concurrent_requests, 10);

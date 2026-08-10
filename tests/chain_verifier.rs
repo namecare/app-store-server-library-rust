@@ -2,9 +2,7 @@
 
 mod common;
 
-use app_store_server_library::chain_verifier::ChainVerificationFailureReason::{
-    CertificateExpired, InvalidCertificate,
-};
+use app_store_server_library::chain_verifier::ChainVerificationFailureReason::InvalidCertificate;
 use app_store_server_library::chain_verifier::{ChainVerifier, ChainVerifierError};
 use base64::engine::general_purpose::STANDARD;
 use base64::{DecodeError, Engine};
@@ -175,7 +173,7 @@ fn test_valid_expired_chain() -> Result<(), ChainVerifierError> {
 
     assert_eq!(
         public_key.expect_err("Expect error"),
-        ChainVerifierError::VerificationFailure(CertificateExpired)
+        ChainVerifierError::VerificationFailure(InvalidCertificate)
     );
     Ok(())
 }
