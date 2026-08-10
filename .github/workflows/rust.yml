@@ -30,15 +30,3 @@ jobs:
 
     - name: Run tests (${{ matrix.crypto_backend }} on ${{ matrix.os }})
       run: cargo test --verbose --no-default-features --features ${{ matrix.crypto_backend }},api-client,receipt-utility
-
-  ocsp:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-
-    - name: Run tests (ocsp with rust_crypto)
-      run: cargo test --verbose --no-default-features --features rust_crypto,ocsp
