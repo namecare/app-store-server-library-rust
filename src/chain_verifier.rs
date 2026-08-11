@@ -6,9 +6,8 @@ use thiserror::Error;
 use x509_validator::rfc5280::RFC5280Policy;
 use x509_validator::store::CertificateStore;
 use x509_validator::unverified_chain::UnverifiedCertificateChain;
-use x509_validator::validator::ChainValidationResult;
 use x509_validator::{
-    BaseValidator, Certificate, CertificateExt, Oid, PolicyEvaluationResult, PolicyFailureReason, ValidationPolicy,
+    Certificate, CertificateExt, Oid, PolicyEvaluationResult, PolicyFailureReason, ValidationPolicy,
 };
 
 #[derive(Error, Debug, PartialEq)]
@@ -220,9 +219,12 @@ impl ChainVerifier {
 
         let validator = x509_validator::Validator::with_policy(roots, policy);
 
-        match validator.validate(leaf, vec![intermediate]) {
-            ChainValidationResult::ValidCertificate(chain) => Ok(leaf_spki_der(chain.leaf())),
-            ChainValidationResult::CouldNotValidate(_reasons) => Err(ChainVerifierError::VerificationFailure(
+        let mut intermediates = CertificateStore::new();
+        intermediates.append(intermediate);
+
+        match validator.validate_with_diagnostics(&leaf, &intermediates, &mut |_| {}) {
+            Ok(chain) => Ok(leaf_spki_der(chain.leaf())),
+            Err(_reasons) => Err(ChainVerifierError::VerificationFailure(
                 ChainVerificationFailureReason::InvalidCertificate,
             )),
         }
