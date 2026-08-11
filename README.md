@@ -267,3 +267,21 @@ let signature: String = creator.create_signature(
 - [Apple App Store Server Java Library](https://github.com/apple/app-store-server-library-java)
 - [Apple App Store Server Node Library](https://github.com/apple/app-store-server-library-node)
 - [Apple App Store Server Swift Library](https://github.com/apple/app-store-server-library-swift)
+
+## Benchmarks
+
+Two crates, in [x509-validator-bench]:
+
+- [`measure`][bench-measure] — Regression benchmarks.
+- [`compare`][bench-compare] — Compare backends and parsers ([results][bench-results]).
+
+
+## License
+
+app-store-server-library is distributed under the following two licenses:
+
+- Apache License version 2.0.
+- MIT license.
+
+These are included as LICENSE-APACHE and LICENSE-MIT respectively.  
+You may use this software under the terms of any of these licenses, at your option.

@@ -1,55 +1,82 @@
 #!/usr/bin/env bash
-# Runs every available language arm and renders the comparison table.
-#
-# A missing toolchain skips its arm with a warning rather than failing the run:
-# a three-language table is useful, a hard failure is not. Skipped and failed
-# arms are named on stderr and in RESULTS.md — a silently absent column reads
-# as "we measured everything" when we did not.
-#
-# Deliberately NOT `set -e`: one arm falling over must not take the run with it.
+
 set -uo pipefail
 
 cd "$(dirname "$0")" || exit 1
-mkdir -p results
+mkdir -p results/raw
 SKIPPED=()
 
+export COMPARE_WARMUP=50
+export COMPARE_ITERATIONS=500
+
+# run_arm <name> <required-tool> <raw-artifact-extension> <command...>
+#
+# stdout is the raw artifact; stderr is kept next to it so a failed arm can be
+# diagnosed without re-running.
 run_arm() {
-  local name="$1" tool="$2"
-  shift 2
+  local name="$1" tool="$2" ext="$3"
+  shift 3
+  local raw="results/raw/$name.$ext"
   if ! command -v "$tool" >/dev/null 2>&1; then
     echo "warning: $tool not found - skipping the $name arm" >&2
     SKIPPED+=("$name (no $tool on PATH)")
-    rm -f "results/$name.jsonl"
+    rm -f "$raw"
     return
   fi
   echo "running $name arm..." >&2
-  if ! "$@" > "results/$name.jsonl" 2>"results/$name.err"; then
-    echo "warning: the $name arm failed - see results/$name.err" >&2
-    SKIPPED+=("$name (failed; stderr in results/$name.err)")
-    rm -f "results/$name.jsonl"
+  if ! "$@" > "$raw" 2>"results/raw/$name.err"; then
+    echo "warning: the $name arm failed - see results/raw/$name.err" >&2
+    SKIPPED+=("$name (failed; stderr in results/raw/$name.err)")
+    rm -f "$raw"
     return
   fi
-  rm -f "results/$name.err"
 }
 
-# The Rust arm is a plain `std::time::Instant` loop in src/bin/runner.rs, the
-# same shape as the other three, and it prints the JSONL contract directly —
-# so it needs no special handling and no output to parse.
+# Rust — Divan.
+run_arm rust cargo txt \
+  bash -c 'cd rust && exec cargo bench -q --bench compare -- \
+    --color never --sample-count "$COMPARE_ITERATIONS" --sample-size 1'
 
-run_arm rust cargo \
-  cargo run -p app-store-server-library-bench-compare --bin runner --release --quiet
+# Swift — `package-benchmark`
+if ! command -v swift >/dev/null 2>&1; then
+  echo "warning: swift not found - skipping the swift arm" >&2
+  SKIPPED+=("swift (no swift on PATH)")
+elif ! { [ -f /opt/homebrew/include/jemalloc/jemalloc.h ] || \
+         [ -f /usr/local/include/jemalloc/jemalloc.h ] || \
+         [ -f /usr/include/jemalloc/jemalloc.h ]; }; then
+  echo "warning: jemalloc not found - skipping the swift arm." >&2
+  echo "         package-benchmark requires it at build time; install with:" >&2
+  echo "           brew install jemalloc        (macOS)" >&2
+  echo "           apt-get install libjemalloc-dev   (Debian/Ubuntu)" >&2
+  SKIPPED+=("swift (jemalloc not installed; see run.sh)")
+else
+  echo "running swift arm..." >&2
+  mkdir -p results/raw/swift
+  if ! ( cd swift && exec swift package --disable-sandbox benchmark \
+           --format histogram --path ../results/raw/swift --no-progress ) \
+         > results/raw/swift.txt 2>results/raw/swift.err; then
+    echo "warning: the swift arm failed - see results/raw/swift.err" >&2
+    SKIPPED+=("swift (failed; stderr in results/raw/swift.err)")
+    rm -rf results/raw/swift results/raw/swift.txt
+  fi
+fi
 
-run_arm swift swift \
-  bash -c 'cd swift && swift build -c release >&2 && exec .build/release/runner'
+# Node — tinybench, emitting its own results as JSON including raw samples.
+run_arm node node json \
+  bash -c 'cd node && { [ -d node_modules ] || npm install --silent >&2; } && exec node runner.mjs'
 
-run_arm node node \
-  bash -c 'cd node && exec node runner.mjs'
+# Python — pytest-benchmark, via --benchmark-json. The report goes to a file
+# rather than stdout.
+run_arm python python3 txt \
+  bash -c 'cd python && { [ -d .venv ] || python3 -m venv .venv >&2; } && \
+    .venv/bin/pip install --quiet -r requirements.txt >&2 && \
+    exec .venv/bin/python -m pytest test_compare.py -q \
+      --benchmark-json=../results/raw/python.json'
 
-run_arm python python3 \
-  bash -c 'cd python && { [ -d .venv ] || python3 -m venv .venv >&2; } && .venv/bin/pip install --quiet -r requirements.txt >&2 && exec .venv/bin/python runner.py'
+printf '%s\n' "${SKIPPED[@]+"${SKIPPED[@]}"}" > results/raw/skipped.txt
 
-printf '%s\n' "${SKIPPED[@]+"${SKIPPED[@]}"}" > results/skipped.txt
-
+# Stage 4, a separate step: parses all four raw formats and renders the table.
+# Re-runnable on its own over saved output — `python3 render.py`.
 if command -v python3 >/dev/null 2>&1; then
   python3 render.py
 else

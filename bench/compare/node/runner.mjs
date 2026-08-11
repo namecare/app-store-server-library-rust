@@ -1,18 +1,36 @@
-// Node arm of the four-language App Store Server Library benchmark comparison.
+// Node arm of the four-language App Store Server Library benchmark comparison,
+// under tinybench.
 //
-// Emits one JSON object per line on stdout and nothing else:
-//   {"lib":"node","case":"verify_notification","iterations":500,"ns_per_op":41230.5}
+// Each arm of this suite runs its own language's idiomatic benchmark harness —
+// Divan in Rust, XCTest `measure` in Swift, tinybench here, pytest-benchmark in
+// Python. Stage 3 captures each harness's native output; Stage 4
+// (`render.py`) owns all four formats and normalises them into one table.
 //
-// `ns_per_op` is the MEDIAN of 500 individually-timed iterations, after 50
-// warmup runs. Median rather than mean because benchmark noise is
-// one-directional: an interrupt or a GC pause can only make a sample slower, so
-// the distribution has a hard floor and a long right tail, and a single outlier
-// moves the mean but not the median.
+// ## What Stage 4 reads
 //
-// Diagnostics (skipped cases, the anti-DCE sink) go to stderr.
+// This arm writes tinybench's own results to stdout as JSON, including the full
+// raw sample array per case. `render.py` takes the median from those samples,
+// the same way it does for Swift — so both arms report a median computed from
+// raw data rather than a harness-chosen summary statistic.
+//
+// tinybench reports latencies in MILLISECONDS; the JSON below converts to
+// nanoseconds so every arm's artifact speaks the same unit.
+//
+// ## Iteration count is pinned, not adaptive
+//
+// Every harness in this suite is adaptive by default and each needs a different
+// explicit opt-out. tinybench's is subtle: a task runs until BOTH its iteration
+// count AND its time budget are satisfied, so `iterations: 500` alone would
+// keep going past 500 for fast cases until 1000 ms had elapsed. Setting
+// `time: 0` and `warmupTime: 0` is what actually pins the window to exactly 500
+// samples after 50 warmup runs, matching the other three arms.
+//
+// `retainSamples: true` is required to see the raw array at all — tinybench
+// discards samples by default.
 
 import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
+import { Bench } from "tinybench";
 
 const require = createRequire(import.meta.url);
 const {
@@ -58,8 +76,8 @@ const inputs = {
 };
 
 // The receipt and signing cases are synchronous; they are wrapped in `async`
-// only so the timing loop is uniform. The extra await on an already-resolved
-// value is a real but tiny cost borne equally by those cases.
+// only so the loop is uniform. The extra await on an already-resolved value is
+// a real but tiny cost borne equally by those cases.
 const CASES = {
   verify_notification: () => verifier.verifyAndDecodeNotification(inputs.notification),
   verify_transaction: () => verifier.verifyAndDecodeTransaction(inputs.transaction),
@@ -76,47 +94,60 @@ const CASES = {
     ),
 };
 
-/** Standard median: sort, and average the two middle samples when n is even. */
-function median(samples) {
-  const sorted = [...samples].sort((a, b) => a - b);
-  const mid = sorted.length >> 1;
-  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
-}
-
-let sink = 0; // keeps the JIT from eliminating the work
-
+// A case that throws is skipped entirely rather than timed: a failing call is
+// fast, and a fast wrong number is worse than a missing one. This is what lets
+// `receipt_app` render honestly as "unsupported" — Node's DER-only ASN.1 parser
+// genuinely cannot read the BER app receipt — rather than as a fast timing.
+const supported = {};
 for (const [name, fn] of Object.entries(CASES)) {
-  // Run once first. A case that throws is skipped entirely rather than being
-  // timed: a failing call is fast, and a fast wrong number is worse than a
-  // missing one.
   try {
-    sink += (await fn()) ? 1 : 0;
+    await fn();
+    supported[name] = fn;
   } catch (e) {
     console.error(`case ${name} failed: ${e.message}; not reporting a figure for it`);
-    continue;
   }
-
-  for (let i = 0; i < WARMUP; i++) sink += (await fn()) ? 1 : 0;
-
-  // Time each iteration separately so the reported figure can be a median.
-  // hrtime's resolution is 41 ns against a smallest case of ~2.6 us, so
-  // per-iteration timing costs nothing in accuracy.
-  const samples = new Array(ITERATIONS);
-  for (let i = 0; i < ITERATIONS; i++) {
-    const start = process.hrtime.bigint();
-    sink += (await fn()) ? 1 : 0;
-    samples[i] = Number(process.hrtime.bigint() - start);
-  }
-  const nsPerOp = median(samples);
-
-  console.log(
-    JSON.stringify({
-      lib: "node",
-      case: name,
-      iterations: ITERATIONS,
-      ns_per_op: Number(nsPerOp.toFixed(1)),
-    }),
-  );
 }
 
-console.error(`sink=${sink}`);
+const bench = new Bench({
+  iterations: ITERATIONS,
+  warmupIterations: WARMUP,
+  // Both budgets must be zero or the counts above become minimums, not exact
+  // counts — see the note at the top of this file.
+  time: 0,
+  warmupTime: 0,
+  // tinybench discards raw samples unless asked; Stage 4 takes the median from
+  // them.
+  retainSamples: true,
+});
+
+for (const [name, fn] of Object.entries(supported)) bench.add(name, fn);
+
+await bench.run();
+
+// tinybench's own result objects, emitted as this arm's raw artifact. `result`
+// is a discriminated union in 6.x, so a task that did not reach `completed`
+// reports no figure rather than a wrong one.
+const output = {
+  lib: "node",
+  harness: `tinybench ${ITERATIONS}x${WARMUP}`,
+  cases: {},
+};
+
+for (const task of bench.tasks) {
+  const result = task.result;
+  if (!result || result.state !== "completed") {
+    console.error(`case ${task.name} did not complete; not reporting a figure for it`);
+    continue;
+  }
+  const msToNs = (ms) => ms * 1e6;
+  output.cases[task.name] = {
+    // Raw per-iteration samples, in nanoseconds, for Stage 4 to reduce.
+    samples_ns: (result.latency.samples ?? []).map(msToNs),
+    // tinybench's own p50, kept alongside as a cross-check on our median.
+    p50_ns: msToNs(result.latency.p50),
+    mean_ns: msToNs(result.latency.mean),
+    samples_count: result.latency.samplesCount ?? result.latency.samples?.length ?? 0,
+  };
+}
+
+console.log(JSON.stringify(output, null, 2));

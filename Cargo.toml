@@ -155,7 +155,7 @@ path = "tests/signed_data_verifier.rs"
 required-features = ["ring"]
 
 [workspace]
-members = ["bench/measure", "bench/compare"]
+members = ["bench/measure", "bench/compare/rust"]
 exclude = ["examples"]
 
 # The bench crates are not published and their lockfile entries should not

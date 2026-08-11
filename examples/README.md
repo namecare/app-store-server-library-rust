@@ -1,12 +1,9 @@
-# app-store-server-library examples
+# Apple App Store Server Rust Library Examples
 
 Two equivalent servers — one [Axum](https://github.com/tokio-rs/axum), one
 [Actix-web](https://actix.rs) — showing how to consume this library from a real
 HTTP service. Both expose the same endpoints, so they double as a side-by-side
 framework comparison on an identical task.
-
-This is a standalone package, excluded from the root workspace so that the web
-frameworks never enter the library's dependency graph.
 
 ## Running
 
@@ -72,13 +69,13 @@ yourself.
 repository's test suite. It exists so `assets/testNotification` verifies
 offline, and it accepts **nothing else**. Never run a real deployment with it.
 
-## A note on the demo key
+## Demo key
 
 With `PROMO_KEY_PATH` unset, offers are signed with `assets/testSigningKey.p8`,
 a test key from this repository. The signatures are structurally valid but the
 App Store will reject them. Supply your own key from App Store Connect.
 
-**Never commit a real `.p8` signing key to source control.** In production,
+>**Never commit a real `.p8` signing key to source control.** In production,
 load it from a secret store or an environment-provided path (`PROMO_KEY_PATH`
 already supports this) — never bundle it into the repository the way this
 example's test-only key is bundled.
@@ -90,24 +87,4 @@ cargo test --manifest-path examples/Cargo.toml
 ```
 
 The smoke tests boot each binary in `DEMO_MODE` and drive it over real HTTP.
-Because no Apple-signed payload ships in this repository, the accept-path test
-necessarily runs against the demo CA.
 
-## Framework differences
-
-Both servers share the same handler logic (`src/common`), so the endpoints
-they exercise from this library behave identically — `200` and `401` are the
-same on both. Axum's extractors and Actix's default JSON extractor disagree,
-though, on how to report malformed requests:
-
-| Request | Axum | Actix |
-|---|---|---|
-| missing `signedPayload` | 422 | 400 |
-| invalid JSON | 400 | 400 |
-| no Content-Type | 415 | 400 |
-| GET on a POST route | 405 | 404 |
-
-Valid, empty, and garbage payloads behave identically on both. These are
-idiomatic differences in each framework's extractor/router, not a library
-concern — it's why the smoke tests assert `is_client_error()` rather than an
-exact status code for malformed bodies.

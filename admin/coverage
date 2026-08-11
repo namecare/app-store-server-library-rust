@@ -1,25 +1,6 @@
 #!/bin/bash
 
 # Measures test coverage across every crypto backend.
-#
-# Passes through any extra arguments to the final report step, so CI can ask
-# for lcov while a local run gets the default summary:
-#
-#   admin/coverage                              # human-readable table
-#   admin/coverage --lcov --output-path out.info
-#   admin/coverage --html && open target/llvm-cov/html/index.html
-#
-# With REPORT_ONLY set, skips straight to the report and reuses the profile
-# data already on disk. That is how CI renders a second view of one
-# measurement; re-running this script plain would recompile and re-execute
-# every backend to arrive at the same numbers.
-#
-#   admin/coverage --json --output-path cov.json
-#   REPORT_ONLY=1 admin/coverage --summary-only
-#
-# Needs a nightly toolchain and the llvm-tools component:
-#
-#   rustup toolchain install nightly --component llvm-tools
 
 set -euo pipefail
 
@@ -34,11 +15,6 @@ if [ -n "${REPORT_ONLY:-}" ]; then
   exit
 fi
 
-# One run per backend, accumulated into a single report. A combined
-# `--all-features` run would compile every backend at once and never produce
-# the single-backend configuration a downstream user actually gets; worse for
-# coverage specifically, the backend-dispatch arms would all appear covered
-# because some *other* backend's run entered them.
 cargo llvm-cov clean --workspace
 
 for backend in aws_lc ring rust_crypto ; do
@@ -46,8 +22,6 @@ for backend in aws_lc ring rust_crypto ; do
     --no-default-features --features $backend,api-client-reqwest,receipt-utility --all-targets
 done
 
-# The backend-free configuration compiles but verifies nothing. It is part of
-# the public surface, so it belongs in the measurement.
 cargo llvm-cov --no-report --package app-store-server-library \
   --no-default-features --all-targets
 

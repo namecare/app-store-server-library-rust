@@ -1,0 +1,30 @@
+[package]
+name = "app-store-server-library-bench-compare"
+description = "Cross-language comparison benchmarks for app-store-server-library. Not published."
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+# Same backend pin as `measure`, so the Rust in the cross-language table is
+# the same Rust that CI tracks.
+app-store-server-library = { path = "../../..", default-features = false, features = [
+  "aws_lc",
+  "receipt-utility",
+] }
+uuid = { version = "1.24.0", features = ["v4"] }
+
+[dev-dependencies]
+# Each arm of this suite runs its language's idiomatic benchmark harness:
+# Divan here, XCTest `measure` in Swift, tinybench in Node, pytest-benchmark in
+# Python. Stage 3 captures each harness's native output; `render.py` (Stage 4)
+# owns all four formats and normalises them into one table.
+#
+# Divan reports a median natively and honours fixed sample counts, which is what
+# keeps this column comparable to its neighbours. It has no JSON export, so its
+# console table IS the raw artifact Stage 4 parses — see benches/compare.rs.
+divan = "0.1.21"
+
+[[bench]]
+name = "compare"
+harness = false

@@ -1,23 +1,31 @@
-"""Python arm of the cross-language comparison.
+"""Python arm of the cross-language comparison, under pytest-benchmark.
+
+Each arm of this suite runs its own language's idiomatic benchmark harness —
+Divan in Rust, XCTest ``measure`` in Swift, tinybench in Node, pytest-benchmark
+here. Stage 3 captures each harness's native output; Stage 4 (``render.py``)
+owns all four formats and normalises them into one table.
+
+What Stage 4 reads
+------------------
+``--benchmark-json`` writes pytest-benchmark's own report, which carries both a
+``median`` in its ``stats`` block and the full raw ``data`` array. Stage 4 takes
+the median from the raw samples, the same way it does for Swift and Node.
+
+Iteration count is pinned, not adaptive
+---------------------------------------
+Every harness in this suite is adaptive by default and each needs a different
+explicit opt-out. pytest-benchmark's is ``benchmark.pedantic()``: the ordinary
+``benchmark(fn)`` call auto-calibrates both round count and inner iterations,
+so only ``pedantic`` can pin exactly 50 warmup and 500 timed rounds to match
+the other three arms.
 
 Note this library is fully synchronous, unlike Node and Swift — there is no
 event loop in these numbers.
-
-Reports the MEDIAN of 500 individually-timed iterations after 50 warmup runs.
-Median rather than mean because benchmark noise is one-directional: an interrupt
-can only make a sample slower, so the distribution has a hard floor and a long
-right tail, and a single outlier moves the mean but not the median.
-
-Emits one JSON object per line on stdout and nothing else; diagnostics go to
-stderr. A case that raises on its single trial run is skipped entirely rather
-than reported, since a fast wrong number is worse than a missing one.
 """
-import json
 import pathlib
-import statistics
-import sys
-import time
 import uuid
+
+import pytest
 
 from appstoreserverlibrary.models.Environment import Environment
 from appstoreserverlibrary.promotional_offer import PromotionalOfferSignatureCreator
@@ -25,6 +33,9 @@ from appstoreserverlibrary.receipt_utility import ReceiptUtility
 from appstoreserverlibrary.signed_data_verifier import SignedDataVerifier
 
 WARMUP, ITERATIONS = 50, 500
+
+# `data/` is shared by all four arms: byte-identical inputs are what make a
+# ratio between two cells of the table mean anything.
 DATA = pathlib.Path(__file__).parent.parent / "data"
 
 
@@ -33,7 +44,8 @@ def text(rel):
 
 
 root_ca = (DATA / "certs/testCA.der").read_bytes()
-# enable_online_checks = False, second positional argument in this library.
+# enable_online_checks = False, second positional argument in this library, so
+# the chain is verified on every iteration rather than served from a cache.
 verifier = SignedDataVerifier([root_ca], False, Environment.SANDBOX, "com.example", 1234)
 
 # Apple's shared test fixtures carry no authorityKeyIdentifier/subjectKeyIdentifier
@@ -45,7 +57,7 @@ verifier = SignedDataVerifier([root_ca], False, Environment.SANDBOX, "com.exampl
 #
 # Clearing just that flag puts Python on equal footing with the other arms. Full chain
 # building, the ECDSA signature check and the Apple OID checks all still run on every
-# iteration — verified below to cost tens of microseconds, not the ~1us a no-op would.
+# iteration — verified to cost tens of microseconds, not the ~1us a no-op would.
 verifier._chain_verifier.enable_strict_checks = False
 receipts = ReceiptUtility()
 # signing_key is bytes here, not str.
@@ -70,25 +82,21 @@ CASES = {
         "6b9f1f4a-1a1e-4b0e-9b0e-1a1e4b0e9b0e", NONCE, 12345),
 }
 
-sink = 0
-for name, fn in CASES.items():
+
+@pytest.mark.parametrize("case", list(CASES), ids=list(CASES))
+def test_case(benchmark, case):
+    """Times one case, named so Stage 4 can recover the shared case name.
+
+    A case that raises on its trial run is skipped rather than reported: a
+    failing call is fast, and a fast wrong number is worse than a missing one.
+    """
+    fn = CASES[case]
     try:
-        sink += 1 if fn() is not None else 0
+        fn()
     except Exception as e:  # noqa: BLE001 — any failure means "do not report a figure"
-        print(f"case {name} failed: {e}; not reporting a figure for it", file=sys.stderr)
-        continue
-    for _ in range(WARMUP):
-        fn()
-    # Time each iteration separately and report the MEDIAN, matching every other
-    # arm. Timer resolution is 41 ns against a smallest case of ~2.6 us, so
-    # per-iteration timing costs nothing in accuracy and buys immunity to the
-    # single-outlier problem the mean has.
-    samples = []
-    for _ in range(ITERATIONS):
-        start = time.perf_counter_ns()
-        fn()
-        samples.append(time.perf_counter_ns() - start)
-    ns_per_op = statistics.median(samples)
-    print(json.dumps({"lib": "python", "case": name,
-                      "iterations": ITERATIONS, "ns_per_op": round(ns_per_op, 1)}))
-print(f"sink={sink}", file=sys.stderr)
+        pytest.skip(f"case {case} failed: {e}; not reporting a figure for it")
+
+    # `pedantic` rather than `benchmark(fn)`: it is the only way to pin the
+    # round count instead of letting pytest-benchmark auto-calibrate.
+    # rounds=500 timed samples of 1 iteration each, after 50 warmup rounds.
+    benchmark.pedantic(fn, rounds=ITERATIONS, iterations=1, warmup_rounds=WARMUP)

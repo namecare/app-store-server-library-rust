@@ -1,27 +1,16 @@
 #!/usr/bin/env python3
-"""Render the cross-language comparison table from the arms' JSONL output.
-
-Reads every ``results/*.jsonl`` plus ``results/skipped.txt``, writes
-``RESULTS.md`` and prints the same table to stdout.
-
-Two deliberate choices:
-
-* A case an arm did not report renders as ``unsupported`` with a footnote, never
-  as a blank or a zero. A blank cell reads as "slow"; the truth is usually "this
-  library cannot do this at all", which is a finding, not a gap.
-* The machine and date are not stamped automatically. These are wall-clock
-  numbers from one machine: they rank, they do not port, so a human fills the
-  line in with the box they actually ran on.
-"""
 
 from __future__ import annotations
 
 import json
 import os
+import re
+import statistics
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR = os.path.join(HERE, "results")
+RAW_DIR = os.path.join(RESULTS_DIR, "raw")
 OUT_PATH = os.path.join(HERE, "RESULTS.md")
 
 # Row order for the table.
@@ -34,8 +23,7 @@ CASES = [
     "sign_promotional_offer",
 ]
 
-# Column order. Rust is the baseline for the "vs Rust" ratios.
-BASELINE = "rust"
+# Column order. Arms not listed here are appended alphabetically.
 LIB_ORDER = ["rust", "swift", "node", "python"]
 LIB_LABEL = {
     "rust": "Rust",
@@ -55,40 +43,198 @@ KNOWN_UNSUPPORTED = {
 }
 
 
-def read_results():
-    """-> ({lib: {case: ns_per_op}}, {lib: {case: iterations}})"""
-    timings: dict[str, dict[str, float]] = {}
-    iters: dict[str, dict[str, int]] = {}
-    if not os.path.isdir(RESULTS_DIR):
-        return timings, iters
-    for fname in sorted(os.listdir(RESULTS_DIR)):
-        if not fname.endswith(".jsonl"):
+class PreReduced(float):
+    """A median a harness already computed, where raw samples are unusable.
+    """
+
+
+def _median(values: list[float]) -> float:
+    return statistics.median(values)
+
+
+def parse_rust(path: str) -> dict[str, float]:
+    """Divan's console table.
+
+    Looks like, with UTF-8 box drawing and no ANSI escapes under `--color never`:
+
+        compare                    fastest   │ slowest   │ median    │ mean      │ samples │ iters
+        ├─ receipt_app             2.665 µs  │ 64.58 µs  │ 2.791 µs  │ 2.933 µs  │ 500     │ 500
+        ╰─ verify_transaction      132.7 µs  │ 195.8 µs  │ 142.9 µs  │ 142.5 µs  │ 500     │ 500
+
+    Note there is NO separator between the name and `fastest`: they share the
+    first field, so a split on `│` yields six fields and `median` is at index 2.
+
+    Rows are keyed by name rather than position: Divan sorts its tree
+    alphabetically, not in the canonical case order.
+    """
+    out: dict[str, float] = {}
+    with open(path, "r", encoding="utf-8") as fh:
+        for line in fh:
+            if "│" not in line:
+                continue
+            columns = [c.strip() for c in line.split("│")]
+            # (name + fastest), slowest, median, mean, samples, iters
+            if len(columns) < 6:
+                continue
+            # The name runs up to the first run of 2+ spaces before `fastest`.
+            head = columns[0].lstrip("├╰│─ ").strip()
+            name = re.split(r"\s{2,}", head)[0].strip()
+            if name not in CASES:
+                continue
+            ns = _parse_duration(columns[2])
+            if ns is not None:
+                out[name] = PreReduced(ns)
+    return out
+
+
+def _parse_duration(cell: str) -> float | None:
+    """"142.9 µs" -> 142900.0. Divan auto-scales the unit per row."""
+    parts = cell.split()
+    if len(parts) != 2:
+        return None
+    try:
+        value = float(parts[0])
+    except ValueError:
+        return None
+    scale = {"ns": 1.0, "µs": 1e3, "us": 1e3, "ms": 1e6, "s": 1e9}.get(parts[1])
+    return value * scale if scale else None
+
+
+def parse_swift(directory: str) -> dict[str, float]:
+    """`package-benchmark`'s `--format histogram` export.
+
+    One file per case, named
+    ``Current_run.Bench.<case>.wallClock.histogram.txt``, holding an
+    HDR histogram as ``value percentile totalCount 1/(1-percentile)`` rows:
+
+        Value     Percentile TotalCount 1/(1-Percentile)
+        19167.000 0.000000000000          1           1.00
+        24255.000 0.500000000000        252           2.00
+
+    Values are in NANOSECONDS at full precision, which is why this format is
+    used rather than `histogramSamples`. That one exports the raw per-iteration
+    samples, but rounds them to whole display units — verified: every sample in
+    a `histogramSamples` export of these same cases was a whole number of
+    microseconds, with a minimum gap between distinct values of exactly 1.000 µs.
+    For an ~24 µs case that is 4% granularity, the same limitation that made
+    XCTest `measure {}` unusable here.
+
+    So Swift is the one arm besides Rust whose median comes pre-reduced: the
+    p50 row of the histogram. It is a true nanosecond-resolution p50 over all
+    500 samples, just not something this module computes itself.
+    """
+    out: dict[str, float] = {}
+    if not os.path.isdir(directory):
+        return out
+    for fname in sorted(os.listdir(directory)):
+        if not fname.endswith(".histogram.txt"):
             continue
-        path = os.path.join(RESULTS_DIR, fname)
-        with open(path, "r", encoding="utf-8") as fh:
+        parts = fname.split(".")
+        # Current_run . <target> . <case> . wallClock . histogram . txt
+        if len(parts) < 3:
+            continue
+        name = parts[2]
+        if name not in CASES:
+            continue
+        p50 = None
+        with open(os.path.join(directory, fname), "r", encoding="utf-8") as fh:
             for line in fh:
-                line = line.strip()
-                if not line:
+                fields = line.split()
+                if len(fields) < 2:
                     continue
                 try:
-                    row = json.loads(line)
-                except json.JSONDecodeError:
-                    print(f"warning: unparsable line in {fname}: {line!r}",
-                          file=sys.stderr)
-                    continue
-                lib = row.get("lib")
-                case = row.get("case")
-                ns = row.get("ns_per_op")
-                if lib is None or case is None or ns is None:
-                    continue
-                timings.setdefault(lib, {})[case] = float(ns)
-                if row.get("iterations") is not None:
-                    iters.setdefault(lib, {})[case] = int(row["iterations"])
-    return timings, iters
+                    value, percentile = float(fields[0]), float(fields[1])
+                except ValueError:
+                    continue  # header and the trailing #[Mean = ...] lines
+                # The first row at or past the median. HDR histograms emit many
+                # rows, so this takes the earliest one rather than the last.
+                if percentile >= 0.5:
+                    p50 = value
+                    break
+        if p50 is not None:
+            out[name] = PreReduced(p50)
+    return out
+
+
+def parse_node(path: str) -> dict[str, list[float]]:
+    """tinybench results, written as JSON by node/runner.mjs already in ns."""
+    out: dict[str, list[float]] = {}
+    with open(path, "r", encoding="utf-8") as fh:
+        payload = json.load(fh)
+    for name, entry in payload.get("cases", {}).items():
+        if name not in CASES:
+            continue
+        samples = entry.get("samples_ns") or []
+        if samples:
+            out[name] = [float(s) for s in samples]
+        elif entry.get("p50_ns") is not None:
+            out[name] = PreReduced(float(entry["p50_ns"]))
+    return out
+
+
+def parse_python(path: str) -> dict[str, list[float]]:
+    """pytest-benchmark's --benchmark-json report.
+
+    Case names come back as `test_case[verify_notification]`; `stats.data` holds
+    the raw per-round samples, in seconds.
+    """
+    out: dict[str, list[float]] = {}
+    with open(path, "r", encoding="utf-8") as fh:
+        payload = json.load(fh)
+    for entry in payload.get("benchmarks", []):
+        name = entry.get("param") or entry.get("name", "")
+        if name.startswith("test_case["):
+            name = name[len("test_case["):].rstrip("]")
+        if name not in CASES:
+            continue
+        data = entry.get("stats", {}).get("data") or []
+        if data:
+            out[name] = [float(s) * 1e9 for s in data]
+        elif entry.get("stats", {}).get("median") is not None:
+            out[name] = PreReduced(float(entry["stats"]["median"]) * 1e9)
+    return out
+
+
+# Each arm's raw artifact and the parser that understands it. Swift's is a
+# DIRECTORY — package-benchmark's histogram export writes one file per case —
+# while the other three are single files.
+PARSERS = {
+    "rust": ("rust.txt", parse_rust),
+    "swift": ("swift", parse_swift),
+    "node": ("node.json", parse_node),
+    "python": ("python.json", parse_python),
+}
+
+
+def read_results():
+    """-> ({lib: {case: ns_per_op}}, {lib: {case: sample_count}})
+    """
+    timings: dict[str, dict[str, float]] = {}
+    counts: dict[str, dict[str, int]] = {}
+    if not os.path.isdir(RAW_DIR):
+        print(f"warning: no {RAW_DIR}; run ./run.sh first", file=sys.stderr)
+        return timings, counts
+
+    for lib, (fname, parser) in PARSERS.items():
+        path = os.path.join(RAW_DIR, fname)
+        if not os.path.exists(path):
+            continue
+        try:
+            parsed = parser(path)
+        except Exception as e:  # noqa: BLE001 — a bad artifact must not kill the render
+            print(f"warning: could not parse {fname}: {e}", file=sys.stderr)
+            continue
+        for case, value in parsed.items():
+            if isinstance(value, PreReduced):
+                timings.setdefault(lib, {})[case] = float(value)
+            else:
+                timings.setdefault(lib, {})[case] = _median(value)
+                counts.setdefault(lib, {})[case] = len(value)
+    return timings, counts
 
 
 def read_skipped() -> list[str]:
-    path = os.path.join(RESULTS_DIR, "skipped.txt")
+    path = os.path.join(RAW_DIR, "skipped.txt")
     if not os.path.exists(path):
         return []
     with open(path, "r", encoding="utf-8") as fh:
@@ -108,40 +254,23 @@ def build_table(timings, footnote_ids):
     libs = [lib for lib in LIB_ORDER if lib in timings]
     libs += [lib for lib in sorted(timings) if lib not in LIB_ORDER]
 
-    # No Rust arm means no baseline, so the ratio columns are dropped rather
-    # than rendered as a column of dashes under a header promising a comparison
-    # that was never made.
-    have_baseline = BASELINE in timings
-
-    header = ["Case"]
-    align = ["---"]
-    for lib in libs:
-        header.append(LIB_LABEL.get(lib, lib))
-        align.append("---:")
-        if have_baseline and lib != BASELINE:
-            header.append("vs Rust")
-            align.append("---:")
+    header = ["Case"] + [LIB_LABEL.get(lib, lib) for lib in libs]
+    align = ["---"] + ["---:"] * len(libs)
 
     lines = ["| " + " | ".join(header) + " |",
              "| " + " | ".join(align) + " |"]
 
     for case in CASES:
-        base = timings.get(BASELINE, {}).get(case)
         cells = [f"`{case}`"]
         for lib in libs:
             ns = timings.get(lib, {}).get(case)
             if ns is None:
-                marker = footnote_ids[(lib, case)]
-                cells.append(f"unsupported[^{marker}]")
-                if have_baseline and lib != BASELINE:
-                    cells.append("&mdash;")
-                continue
-            cells.append(format_ns(ns))
-            if have_baseline and lib != BASELINE:
-                cells.append(f"{ns / base:.1f}×" if base else "&mdash;")
+                cells.append(f"unsupported[^{footnote_ids[(lib, case)]}]")
+            else:
+                cells.append(format_ns(ns))
         lines.append("| " + " | ".join(cells) + " |")
 
-    return lines, libs, have_baseline
+    return lines, libs
 
 
 def main() -> int:
@@ -171,21 +300,7 @@ def main() -> int:
             footnotes.append((next_id, reason))
             next_id += 1
 
-    table, libs, have_baseline = build_table(timings, footnote_ids)
-
-    iteration_counts = sorted({n for per in iters.values() for n in per.values()})
-    if len(iteration_counts) == 1:
-        iter_note = (f"Every figure is the **median** of {iteration_counts[0]} samples "
-                     f"per case (after warmup).")
-    elif iteration_counts:
-        iter_note = ("Every figure is the **median** of that arm's samples per case "
-                     "(after warmup); sample counts: "
-                     + ", ".join(str(n) for n in iteration_counts) + ".")
-    else:
-        iter_note = "Every figure is the **median** of that arm's samples per case."
-    iter_note += (" Median rather than mean because benchmark noise only ever makes a "
-                  "sample slower, so one outlier moves the mean and not the median — "
-                  "see [README.md](README.md#why-median).")
+    table, libs = build_table(timings, footnote_ids)
 
     doc: list[str] = []
     doc.append("# Cross-language comparison results")
@@ -193,17 +308,6 @@ def main() -> int:
     doc.append("Generated by `bench/compare/run.sh`. Regenerate with `./run.sh`, "
                "or re-render existing results with `python3 render.py`.")
     doc.append("")
-    doc.append("**Machine / date: _______________________________________** "
-               "(fill in by hand — wall-clock numbers rank on one machine and do "
-               "not port between machines, so an auto-stamp would be a lie the "
-               "moment the file is copied.)")
-    doc.append("")
-    doc.append(iter_note)
-    doc.append("")
-    if not have_baseline:
-        doc.append("> The Rust arm did not run, so there is no baseline and the "
-                   "`vs Rust` ratio columns are omitted.")
-        doc.append("")
     doc.extend(table)
     doc.append("")
 
@@ -225,16 +329,6 @@ def main() -> int:
     ran = ", ".join(LIB_LABEL.get(lib, lib) for lib in libs) if libs else "none"
     doc.append(f"Arms that reported results: {ran}.")
     doc.append("")
-    doc.append("## Reading this table")
-    doc.append("")
-    doc.append("These numbers are not a like-for-like algorithm comparison. Swift's "
-               "verify methods are `async` and its `ChainVerifier` is an `actor`; "
-               "Node's return promises; Rust's and Python's are plain synchronous "
-               "calls. The Swift and Node figures therefore carry executor, "
-               "promise-scheduling and actor-hop overhead that Rust and Python never "
-               "pay. Each arm also sits on different crypto: aws-lc-rs, swift-crypto, "
-               "Node's OpenSSL bindings, Python's `cryptography`. See "
-               "[README.md](README.md) for the full caveats.")
     doc.append("")
 
     text = "\n".join(doc)

@@ -1,6 +1,6 @@
 //! The cases every language arm runs, over byte-identical inputs.
 //!
-//! Each case is a single function, so `src/bin/runner.rs` measures exactly one
+//! Each case is a single function, so `benches/compare.rs` measures exactly one
 //! definition of the work rather than a hand-copied variant of it.
 
 use app_store_server_library::models::app_store_environment::Environment;
@@ -42,13 +42,24 @@ pub const CASES: &[&str] = &[
     "sign_promotional_offer",
 ];
 
+/// The fixtures every language arm reads, resolved from `CARGO_MANIFEST_DIR`
+/// rather than the cwd so the binary produces the same numbers wherever it is
+/// launched from — the same policy the Swift arm applies with `#filePath`.
+///
+/// `data/` sits one level up, at `bench/compare/data/`, because it is shared:
+/// all four arms measure byte-identical inputs, which is what makes a ratio
+/// between two cells of the table mean anything.
+fn data_path(relative: &str) -> String {
+    format!("{}/../data/{}", env!("CARGO_MANIFEST_DIR"), relative)
+}
+
 fn data(relative: &str) -> String {
-    let path = format!("{}/data/{}", env!("CARGO_MANIFEST_DIR"), relative);
+    let path = data_path(relative);
     std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {path}: {e}"))
 }
 
 fn root_ca() -> Vec<u8> {
-    let path = format!("{}/data/certs/testCA.der", env!("CARGO_MANIFEST_DIR"));
+    let path = data_path("certs/testCA.der");
     std::fs::read(&path).unwrap_or_else(|e| panic!("read {path}: {e}"))
 }
 
