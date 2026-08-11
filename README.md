@@ -29,7 +29,7 @@ The backend is also forwarded to the `x509-validator` dependency used for certif
 #### API client
 
 - `api-client` - Enables the App Store Server / Advanced Commerce / Retention Messaging API clients. Bring your own HTTP client by implementing the `Transport` trait.
-- `api-client-reqwest` - `api-client` plus the built-in `reqwest` transport, using **rustls** for TLS.
+- `api-client-reqwest` - `api-client` plus the `reqwest` transport, using **rustls** for TLS.
 - `api-client-reqwest-native-tls` - Same, but using the platform's **native-tls**.
 
 > The reqwest transport requires a TLS backend; enabling `reqwest` without one is a compile error rather than a runtime connection failure.

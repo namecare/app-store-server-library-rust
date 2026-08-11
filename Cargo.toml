@@ -76,3 +76,12 @@ required-features = ["api-client"]
 name = "advanced_commerce_api_client"
 path = "tests/advanced_commerce_api_client.rs"
 required-features = ["api-client"]
+
+[workspace]
+members = ["bench/measure", "bench/compare"]
+exclude = ["examples"]
+
+# The bench crates are not published and their lockfile entries should not
+# constrain the library's. Resolver 2 keeps their dev-dependency features
+# from unifying into the library's build.
+resolver = "2"

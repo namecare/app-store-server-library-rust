@@ -30,3 +30,26 @@ jobs:
 
     - name: Run tests (${{ matrix.crypto_backend }} on ${{ matrix.os }})
       run: cargo test --verbose --no-default-features --features ${{ matrix.crypto_backend }},api-client,receipt-utility
+
+  examples:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+
+    - name: Check examples
+      run: cargo check --manifest-path examples/Cargo.toml --all-targets
+
+    - name: Clippy examples
+      run: cargo clippy --manifest-path examples/Cargo.toml --all-targets -- -D warnings
+
+    - name: Build example binaries
+      run: cargo build --manifest-path examples/Cargo.toml --bins
+
+    - name: Test examples
+      run: cargo test --manifest-path examples/Cargo.toml
