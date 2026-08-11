@@ -86,8 +86,12 @@ pub fn signing_key() -> String {
 }
 
 pub fn signer() -> PromotionalOfferSignatureCreator {
-    PromotionalOfferSignatureCreator::new(&signing_key(), "L256SYR32L".to_string(), "com.test.app".to_string())
-        .expect("valid signing key")
+    PromotionalOfferSignatureCreator::new(
+        &signing_key(),
+        "L256SYR32L".to_string(),
+        "com.test.app".to_string(),
+    )
+    .expect("valid signing key")
 }
 
 pub fn run_case(
@@ -97,11 +101,15 @@ pub fn run_case(
     signer: &PromotionalOfferSignatureCreator,
 ) -> bool {
     match case {
-        "verify_notification" => verifier.verify_and_decode_notification(&inputs.notification).is_ok(),
+        "verify_notification" => verifier
+            .verify_and_decode_notification(&inputs.notification)
+            .is_ok(),
         "verify_transaction" => verifier
             .verify_and_decode_signed_transaction(&inputs.transaction)
             .is_ok(),
-        "verify_renewal_info" => verifier.verify_and_decode_renewal_info(&inputs.renewal_info).is_ok(),
+        "verify_renewal_info" => verifier
+            .verify_and_decode_renewal_info(&inputs.renewal_info)
+            .is_ok(),
         "receipt_app" => extract_transaction_id_from_app_receipt(&inputs.receipt).is_ok(),
         "receipt_app_legacy" => extract_transaction_id_from_app_receipt(&inputs.receipt_legacy).is_ok(),
         "sign_promotional_offer" => {

@@ -38,11 +38,7 @@ impl PromotionalOfferSignatureCreator {
             .p256_signing
             .private_key(private_key)?;
 
-        Ok(Self {
-            key,
-            key_id,
-            bundle_id,
-        })
+        Ok(Self { key, key_id, bundle_id })
     }
 
     pub fn create_signature(
@@ -130,7 +126,9 @@ mod tests {
         let sig_b64 = creator
             .create_signature("product1", "offer1", "user123", &nonce, 1234567890)
             .unwrap();
-        let sig_der = BASE64_STANDARD.decode(&sig_b64).unwrap();
+        let sig_der = BASE64_STANDARD
+            .decode(&sig_b64)
+            .unwrap();
 
         // Rebuild the exact payload the creator signed.
         let payload = creator.payload("product1", "offer1", "user123", &nonce, 1234567890);
@@ -141,6 +139,8 @@ mod tests {
 
         // Verifying against the RAW payload proves exactly one SHA-256 was
         // applied. If the creator pre-hashed, this fails.
-        assert!(verifying_key.verify(payload.as_bytes(), &signature).is_ok());
+        assert!(verifying_key
+            .verify(payload.as_bytes(), &signature)
+            .is_ok());
     }
 }

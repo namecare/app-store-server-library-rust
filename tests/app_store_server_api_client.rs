@@ -1,22 +1,25 @@
 #![allow(deprecated)]
 
 mod common;
+use std::collections::HashMap;
+use std::fs;
+
+use app_store_server_library::api_client::error::ConfigurationError;
 use app_store_server_library::app_store_server_api_client::{
     ApiErrorCode, AppStoreServerApiClient, GetTransactionHistoryVersion,
 };
-use app_store_server_library::api_client::error::ConfigurationError;
 use app_store_server_library::models::account_tenure::AccountTenure;
+use app_store_server_library::models::app_store_environment::Environment;
 use app_store_server_library::models::bullet_point::BulletPoint;
-use app_store_server_library::models::header_position::HeaderPosition;
 use app_store_server_library::models::consumption_request::ConsumptionRequest;
 use app_store_server_library::models::consumption_request_v1::ConsumptionRequestV1;
 use app_store_server_library::models::consumption_status::ConsumptionStatus;
 use app_store_server_library::models::default_configuration_request::DefaultConfigurationRequest;
 use app_store_server_library::models::delivery_status::DeliveryStatus;
 use app_store_server_library::models::delivery_status_v1::DeliveryStatusV1;
-use app_store_server_library::models::app_store_environment::Environment;
 use app_store_server_library::models::extend_reason_code::ExtendReasonCode;
 use app_store_server_library::models::extend_renewal_date_request::ExtendRenewalDateRequest;
+use app_store_server_library::models::header_position::HeaderPosition;
 use app_store_server_library::models::image_size::ImageSize;
 use app_store_server_library::models::image_state::ImageState;
 use app_store_server_library::models::in_app_ownership_type::InAppOwnershipType;
@@ -41,12 +44,10 @@ use app_store_server_library::models::send_attempt_result::SendAttemptResult;
 use app_store_server_library::models::status::Status;
 use app_store_server_library::models::subscription_group_identifier_item::SubscriptionGroupIdentifierItem;
 use app_store_server_library::models::subtype::Subtype;
+use app_store_server_library::models::transaction_history_request::{Order, ProductType, TransactionHistoryRequest};
+use app_store_server_library::models::update_app_account_token_request::UpdateAppAccountTokenRequest;
 use app_store_server_library::models::upload_message_image::UploadMessageImage;
 use app_store_server_library::models::upload_message_request_body::UploadMessageRequestBody;
-use app_store_server_library::models::transaction_history_request::{
-    Order, ProductType, TransactionHistoryRequest,
-};
-use app_store_server_library::models::update_app_account_token_request::UpdateAppAccountTokenRequest;
 use app_store_server_library::models::user_status::UserStatus;
 use base64::prelude::BASE64_STANDARD_NO_PAD;
 use base64::Engine;
@@ -54,8 +55,6 @@ use chrono::DateTime;
 use common::transport_mock::{MockTransport, RequestVerifier};
 use http::{Method, StatusCode};
 use serde_json::Value;
-use std::collections::HashMap;
-use std::fs;
 use uuid::Uuid;
 
 #[tokio::test]
@@ -200,7 +199,7 @@ async fn test_extend_subscription_renewal_date() {
             .unwrap()
             .as_str()
     );
-    assert_eq!(true, response.success.unwrap());
+    assert!(response.success.unwrap());
     assert_eq!(
         1698148900,
         response
@@ -300,7 +299,7 @@ async fn test_get_refund_history() {
         response.signed_transactions
     );
     assert_eq!("revision_output", response.revision);
-    assert_eq!(true, response.has_more);
+    assert!(response.has_more);
 }
 
 #[tokio::test]
@@ -333,7 +332,7 @@ async fn test_get_status_of_subscription_renewal_date_extensions() {
             .unwrap()
             .as_str()
     );
-    assert_eq!(true, response.complete.unwrap());
+    assert!(response.complete.unwrap());
     assert_eq!(
         1698148900,
         response
@@ -422,12 +421,9 @@ async fn test_get_notification_history() {
                     .as_str()
                     .unwrap()
             );
-            assert_eq!(
-                true,
-                decoded_json["onlyFailures"]
-                    .as_bool()
-                    .unwrap()
-            );
+            assert!(decoded_json["onlyFailures"]
+                .as_bool()
+                .unwrap());
         })),
     );
 
@@ -451,7 +447,7 @@ async fn test_get_notification_history() {
         "57715481-805a-4283-8499-1c19b5d6b20a",
         response.pagination_token.unwrap()
     );
-    assert_eq!(true, response.has_more.unwrap());
+    assert!(response.has_more.unwrap());
 
     let expected_notification_history = vec![
         NotificationHistoryResponseItem {
@@ -733,7 +729,10 @@ async fn test_app_transaction_info_app_transaction_does_not_exist() {
     assert_eq!(404, err.status());
     assert_eq!(ApiErrorCode::AppTransactionDoesNotExist, err.api_error());
     assert_eq!(Some(4040019), err.raw_code());
-    assert_eq!(Some("No AppTransaction exists for the customer."), err.message());
+    assert_eq!(
+        Some("No AppTransaction exists for the customer."),
+        err.message()
+    );
 }
 
 #[tokio::test]
@@ -814,12 +813,9 @@ async fn test_send_consumption_data() {
                     .unwrap()
             );
             let decoded_json: HashMap<String, Value> = serde_json::from_slice(body).unwrap();
-            assert_eq!(
-                true,
-                decoded_json["customerConsented"]
-                    .as_bool()
-                    .unwrap()
-            );
+            assert!(decoded_json["customerConsented"]
+                .as_bool()
+                .unwrap());
             assert_eq!(
                 1,
                 decoded_json["consumptionStatus"]
@@ -832,12 +828,9 @@ async fn test_send_consumption_data() {
                     .as_i64()
                     .unwrap()
             );
-            assert_eq!(
-                false,
-                decoded_json["sampleContentProvided"]
-                    .as_bool()
-                    .unwrap()
-            );
+            assert!(!decoded_json["sampleContentProvided"]
+                .as_bool()
+                .unwrap());
             assert_eq!(
                 3,
                 decoded_json["deliveryStatus"]
@@ -908,7 +901,7 @@ async fn test_send_consumption_data() {
         refund_preference: RefundPreferenceV1::NoPreference.into(),
     };
 
-    let _ = client
+    client
         .send_consumption_data("49571273", &consumption_request)
         .await
         .unwrap();
@@ -934,18 +927,12 @@ async fn test_send_consumption_information() {
                     .unwrap()
             );
             let decoded_json: HashMap<String, Value> = serde_json::from_slice(body).unwrap();
-            assert_eq!(
-                true,
-                decoded_json["customerConsented"]
-                    .as_bool()
-                    .unwrap()
-            );
-            assert_eq!(
-                false,
-                decoded_json["sampleContentProvided"]
-                    .as_bool()
-                    .unwrap()
-            );
+            assert!(decoded_json["customerConsented"]
+                .as_bool()
+                .unwrap());
+            assert!(!decoded_json["sampleContentProvided"]
+                .as_bool()
+                .unwrap());
             assert_eq!(
                 "DELIVERED",
                 decoded_json["deliveryStatus"]
@@ -975,7 +962,7 @@ async fn test_send_consumption_information() {
         refund_preference: Some(RefundPreference::GrantFull),
     };
 
-    let _ = client
+    client
         .send_consumption_information("49571273", &consumption_request)
         .await
         .unwrap();
@@ -1001,30 +988,20 @@ async fn test_send_consumption_information_with_minimal_fields() {
                     .unwrap()
             );
             let decoded_json: HashMap<String, Value> = serde_json::from_slice(body).unwrap();
-            assert_eq!(
-                true,
-                decoded_json["customerConsented"]
-                    .as_bool()
-                    .unwrap()
-            );
-            assert_eq!(
-                false,
-                decoded_json["sampleContentProvided"]
-                    .as_bool()
-                    .unwrap()
-            );
+            assert!(decoded_json["customerConsented"]
+                .as_bool()
+                .unwrap());
+            assert!(!decoded_json["sampleContentProvided"]
+                .as_bool()
+                .unwrap());
             assert_eq!(
                 "UNDELIVERED_QUALITY_ISSUE",
                 decoded_json["deliveryStatus"]
                     .as_str()
                     .unwrap()
             );
-            assert!(decoded_json
-                .get("consumptionPercentage")
-                .is_none());
-            assert!(decoded_json
-                .get("refundPreference")
-                .is_none());
+            assert!(!decoded_json.contains_key("consumptionPercentage"));
+            assert!(!decoded_json.contains_key("refundPreference"));
         })),
     );
 
@@ -1036,7 +1013,7 @@ async fn test_send_consumption_information_with_minimal_fields() {
         refund_preference: None,
     };
 
-    let _ = client
+    client
         .send_consumption_information("49571273", &consumption_request)
         .await
         .unwrap();
@@ -1067,7 +1044,7 @@ async fn test_set_app_account_token() {
     let token = Uuid::parse_str("7389a31a-fb6d-4569-a2a6-db7d85d84813").unwrap();
     let request = UpdateAppAccountTokenRequest::new(token);
 
-    let _ = client
+    client
         .set_app_account_token("49571273", &request)
         .await
         .unwrap();
@@ -1089,14 +1066,11 @@ async fn test_invalid_app_account_token_uuid_error() {
 
     match result {
         Ok(_) => {
-            assert!(false, "Unexpected response type");
+            panic!("Unexpected response type");
         }
         Err(error) => {
             assert_eq!(400, error.status());
-            assert_eq!(
-                ApiErrorCode::InvalidAppAccountTokenUUID,
-                error.api_error()
-            );
+            assert_eq!(ApiErrorCode::InvalidAppAccountTokenUUID, error.api_error());
             assert_eq!(Some(4000183), error.raw_code());
             assert_eq!(
                 "Invalid request. The app account token field must be a valid UUID.",
@@ -1122,7 +1096,7 @@ async fn test_family_transaction_not_supported_error() {
 
     match result {
         Ok(_) => {
-            assert!(false, "Unexpected response type");
+            panic!("Unexpected response type");
         }
         Err(error) => {
             assert_eq!(400, error.status());
@@ -1155,7 +1129,7 @@ async fn test_transaction_id_not_original_transaction_id_error() {
 
     match result {
         Ok(_) => {
-            assert!(false, "Unexpected response type");
+            panic!("Unexpected response type");
         }
         Err(error) => {
             assert_eq!(400, error.status());
@@ -1229,7 +1203,7 @@ async fn test_api_error() {
 
     match result {
         Ok(_) => {
-            assert!(false, "Unexpected response type");
+            panic!("Unexpected response type");
         }
         Err(error) => {
             assert_eq!(500, error.status());
@@ -1253,7 +1227,7 @@ async fn test_api_too_many_requests() {
 
     match result {
         Ok(_) => {
-            assert!(false, "Unexpected response type");
+            panic!("Unexpected response type");
         }
         Err(error) => {
             assert_eq!(429, error.status());
@@ -1277,7 +1251,7 @@ async fn test_api_unknown_error() {
 
     match result {
         Ok(_) => {
-            assert!(false, "Unexpected response type");
+            panic!("Unexpected response type");
         }
         Err(error) => {
             assert_eq!(400, error.status());
@@ -1311,7 +1285,7 @@ async fn test_decoding_with_malformed_json() {
         .await;
     match result {
         Ok(_) => {
-            assert!(false, "Unexpected response type");
+            panic!("Unexpected response type");
         }
         Err(error) => {
             assert_eq!(500, error.status());
@@ -1344,12 +1318,9 @@ async fn test_send_consumption_data_with_null_app_account_token() {
                     .unwrap()
             );
             let decoded_json: HashMap<String, Value> = serde_json::from_slice(body).unwrap();
-            assert_eq!(
-                true,
-                decoded_json["customerConsented"]
-                    .as_bool()
-                    .unwrap()
-            );
+            assert!(decoded_json["customerConsented"]
+                .as_bool()
+                .unwrap());
             assert_eq!(
                 1,
                 decoded_json["consumptionStatus"]
@@ -1362,12 +1333,9 @@ async fn test_send_consumption_data_with_null_app_account_token() {
                     .as_i64()
                     .unwrap()
             );
-            assert_eq!(
-                false,
-                decoded_json["sampleContentProvided"]
-                    .as_bool()
-                    .unwrap()
-            );
+            assert!(!decoded_json["sampleContentProvided"]
+                .as_bool()
+                .unwrap());
             assert_eq!(
                 3,
                 decoded_json["deliveryStatus"]
@@ -1428,10 +1396,10 @@ async fn test_send_consumption_data_with_null_app_account_token() {
                 .into(),
         lifetime_dollars_purchased: LifetimeDollarsPurchased::TwoThousandDollarsOrGreater.into(),
         user_status: UserStatus::LimitedAccess.into(),
-        refund_preference: None.into(),
+        refund_preference: None,
     };
 
-    let _ = client
+    client
         .send_consumption_data("49571273", &consumption_request)
         .await
         .unwrap();
@@ -1463,8 +1431,8 @@ async fn test_get_notification_history_with_microsecond_values() {
     );
 
     let notification_history_request = NotificationHistoryRequest {
-        start_date: DateTime::from_timestamp(1698148900, 900_000).into(), // 900_000 nanoseconds = 0.9 milliseconds
-        end_date: DateTime::from_timestamp(1698148950, 1_000_000).into(), // 1_000_000 nanoseconds = 1 millisecond
+        start_date: DateTime::from_timestamp(1698148900, 900_000), // 900_000 nanoseconds = 0.9 milliseconds
+        end_date: DateTime::from_timestamp(1698148950, 1_000_000), // 1_000_000 nanoseconds = 1 millisecond
         notification_type: NotificationTypeV2::Subscribed.into(),
         notification_subtype: Subtype::InitialBuy.into(),
         transaction_id: Some("999733843".to_string()),
@@ -1556,7 +1524,7 @@ async fn test_upload_image() {
                     .to_str()
                     .unwrap()
             );
-            assert!(body.len() > 0);
+            assert!(!body.is_empty());
             assert_eq!(&vec![1, 2, 3], body);
         })),
     );
@@ -1662,15 +1630,14 @@ async fn test_upload_message() {
         })),
     );
 
-    let upload_message_request_body =
-        UploadMessageRequestBody::new(
-            "Header text".to_string(),
-            "Body text".to_string(),
-            None,
-            None,
-            None,
-        )
-        .unwrap();
+    let upload_message_request_body = UploadMessageRequestBody::new(
+        "Header text".to_string(),
+        "Body text".to_string(),
+        None,
+        None,
+        None,
+    )
+    .unwrap();
     let result = client
         .upload_message(
             Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap(),
@@ -1915,24 +1882,41 @@ async fn test_upload_message_with_bullet_points() {
             assert_eq!("Body text", decoded_json["body"].as_str().unwrap());
             assert_eq!(
                 "ABOVE_IMAGE",
-                decoded_json["headerPosition"].as_str().unwrap()
+                decoded_json["headerPosition"]
+                    .as_str()
+                    .unwrap()
             );
-            let image = decoded_json["image"].as_object().unwrap();
+            let image = decoded_json["image"]
+                .as_object()
+                .unwrap();
             assert_eq!(
                 "b2c3d4e5-f6a7-8901-b2c3-d4e5f6a78901",
-                image["imageIdentifier"].as_str().unwrap()
+                image["imageIdentifier"]
+                    .as_str()
+                    .unwrap()
             );
             assert_eq!("Alt text", image["altText"].as_str().unwrap());
-            let bullet_points = decoded_json["bulletPoints"].as_array().unwrap();
+            let bullet_points = decoded_json["bulletPoints"]
+                .as_array()
+                .unwrap();
             assert_eq!(1, bullet_points.len());
-            assert_eq!("Bullet text", bullet_points[0]["text"].as_str().unwrap());
+            assert_eq!(
+                "Bullet text",
+                bullet_points[0]["text"]
+                    .as_str()
+                    .unwrap()
+            );
             assert_eq!(
                 "c3d4e5f6-a7b8-9012-c3d4-e5f6a7b89012",
-                bullet_points[0]["imageIdentifier"].as_str().unwrap()
+                bullet_points[0]["imageIdentifier"]
+                    .as_str()
+                    .unwrap()
             );
             assert_eq!(
                 "Bullet alt text",
-                bullet_points[0]["altText"].as_str().unwrap()
+                bullet_points[0]["altText"]
+                    .as_str()
+                    .unwrap()
             );
         })),
     );
@@ -1980,13 +1964,14 @@ async fn test_configure_realtime_url() {
             let decoded_json: HashMap<String, Value> = serde_json::from_slice(body).unwrap();
             assert_eq!(
                 "https://example.com/realtime",
-                decoded_json["realtimeURL"].as_str().unwrap()
+                decoded_json["realtimeURL"]
+                    .as_str()
+                    .unwrap()
             );
         })),
     );
 
-    let realtime_url_request =
-        RealtimeUrlRequest::new("https://example.com/realtime".to_string()).unwrap();
+    let realtime_url_request = RealtimeUrlRequest::new("https://example.com/realtime".to_string()).unwrap();
     let result = client
         .configure_realtime_url(&realtime_url_request)
         .await;
@@ -2044,7 +2029,9 @@ async fn test_initiate_performance_test() {
             let decoded_json: HashMap<String, Value> = serde_json::from_slice(body).unwrap();
             assert_eq!(
                 "70000500092808",
-                decoded_json["originalTransactionId"].as_str().unwrap()
+                decoded_json["originalTransactionId"]
+                    .as_str()
+                    .unwrap()
             );
         })),
     );
@@ -2083,9 +2070,7 @@ async fn test_get_performance_test_results() {
     );
 
     let response = client
-        .get_performance_test_results(
-            Uuid::parse_str("c4b87a1d-2e3f-4a5b-9c6d-7e8f9a0b1c2d").unwrap(),
-        )
+        .get_performance_test_results(Uuid::parse_str("c4b87a1d-2e3f-4a5b-9c6d-7e8f9a0b1c2d").unwrap())
         .await
         .unwrap();
 
@@ -2105,11 +2090,15 @@ async fn test_get_performance_test_results() {
     assert_eq!(400, response.response_times.p99);
     assert_eq!(
         Some(&1),
-        response.failures.get(&SendAttemptResult::TimedOut)
+        response
+            .failures
+            .get(&SendAttemptResult::TimedOut)
     );
     assert_eq!(
         Some(&1),
-        response.failures.get(&SendAttemptResult::NoResponse)
+        response
+            .failures
+            .get(&SendAttemptResult::NoResponse)
     );
 }
 

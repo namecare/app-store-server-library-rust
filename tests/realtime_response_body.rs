@@ -463,7 +463,9 @@ fn test_realtime_response_body_with_advanced_commerce_info() {
 
     let json_data = serde_json::to_value(&response_body).unwrap();
 
-    assert!(json_data.get("advancedCommerceInfo").is_some());
+    assert!(json_data
+        .get("advancedCommerceInfo")
+        .is_some());
     let ac_info_dict = json_data["advancedCommerceInfo"]
         .as_object()
         .unwrap();
@@ -480,8 +482,12 @@ fn test_realtime_response_body_with_advanced_commerce_info() {
             .unwrap()
     );
     assert!(json_data.get("message").is_none());
-    assert!(json_data.get("alternateProduct").is_none());
-    assert!(json_data.get("promotionalOffer").is_none());
+    assert!(json_data
+        .get("alternateProduct")
+        .is_none());
+    assert!(json_data
+        .get("promotionalOffer")
+        .is_none());
 
     let json_str = serde_json::to_string(&response_body).unwrap();
     let deserialized: RealtimeResponseBody = serde_json::from_str(&json_str).unwrap();
@@ -489,7 +495,9 @@ fn test_realtime_response_body_with_advanced_commerce_info() {
     assert!(deserialized.message.is_none());
     assert!(deserialized.alternate_product.is_none());
     assert!(deserialized.promotional_offer.is_none());
-    assert!(deserialized.advanced_commerce_info.is_some());
+    assert!(deserialized
+        .advanced_commerce_info
+        .is_some());
     assert_eq!(
         message_id,
         deserialized

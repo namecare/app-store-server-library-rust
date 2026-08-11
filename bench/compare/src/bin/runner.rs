@@ -11,8 +11,9 @@
 //! Statistical depth is `bench/measure`'s job; that suite uses criterion and is
 //! the one that tracks change over time.
 
-use app_store_server_library_bench_compare as compare;
 use std::time::Instant;
+
+use app_store_server_library_bench_compare as compare;
 
 const WARMUP: usize = 50;
 const ITERATIONS: usize = 500;
@@ -29,7 +30,7 @@ const ITERATIONS: usize = 500;
 fn median(samples: &mut [u128]) -> f64 {
     samples.sort_unstable();
     let n = samples.len();
-    if n % 2 == 0 {
+    if n.is_multiple_of(2) {
         (samples[n / 2 - 1] as f64 + samples[n / 2] as f64) / 2.0
     } else {
         samples[n / 2] as f64
@@ -68,8 +69,6 @@ fn main() {
         }
 
         let ns_per_op = median(&mut samples);
-        println!(
-            r#"{{"lib":"rust","case":"{case}","iterations":{ITERATIONS},"ns_per_op":{ns_per_op:.1}}}"#
-        );
+        println!(r#"{{"lib":"rust","case":"{case}","iterations":{ITERATIONS},"ns_per_op":{ns_per_op:.1}}}"#);
     }
 }

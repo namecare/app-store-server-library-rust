@@ -1,4 +1,5 @@
 use std::fmt;
+
 use uuid::Uuid;
 
 /// Validation errors for Advanced Commerce API
@@ -246,7 +247,7 @@ pub fn validate_sku(sku: &str) -> Result<String, ValidationError> {
 /// * `Ok(i32)` - The validated period count
 /// * `Err(ValidationError)` - If validation fails
 pub fn validate_period_count(period_count: i32) -> Result<i32, ValidationError> {
-    if period_count < 1 || period_count > MAXIMUM_PERIOD_COUNT {
+    if !(1..=MAXIMUM_PERIOD_COUNT).contains(&period_count) {
         return Err(ValidationError::InvalidPeriodCount(period_count));
     }
     Ok(period_count)
@@ -373,7 +374,10 @@ mod tests {
     #[test]
     fn test_validate_period_count_accepts_boundaries() {
         assert_eq!(validate_period_count(1).unwrap(), 1);
-        assert_eq!(validate_period_count(MAXIMUM_PERIOD_COUNT).unwrap(), MAXIMUM_PERIOD_COUNT);
+        assert_eq!(
+            validate_period_count(MAXIMUM_PERIOD_COUNT).unwrap(),
+            MAXIMUM_PERIOD_COUNT
+        );
         assert_eq!(validate_period_count(6).unwrap(), 6);
     }
 

@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
+
 use crate::models::advanced_commerce_effective::AdvancedCommerceEffective;
 use crate::models::advanced_commerce_period::AdvancedCommercePeriod;
-use serde::{Deserialize, Serialize};
 
 /// A period change for Advanced Commerce subscription modifications.
 ///

@@ -1,8 +1,9 @@
+use serde::{Deserialize, Serialize};
+
 use crate::models::advanced_commerce_info::AdvancedCommerceInfo;
 use crate::models::alternate_product::AlternateProduct;
 use crate::models::message::Message;
 use crate::models::promotional_offer::PromotionalOffer;
-use serde::{Deserialize, Serialize};
 
 /// A response you provide to choose, in real time, a retention message the system displays to the customer.
 ///

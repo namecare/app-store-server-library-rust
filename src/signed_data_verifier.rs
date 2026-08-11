@@ -1,9 +1,9 @@
 use base64::engine::general_purpose::STANDARD;
 use base64::{DecodeError, Engine};
+use serde::de::DeserializeOwned;
 
 use crate::chain_verifier::{ChainVerificationFailureReason, ChainVerifier, ChainVerifierError};
-use crate::crypto::jws;
-use crate::crypto::CryptoProvider;
+use crate::crypto::{jws, CryptoProvider};
 use crate::models::app_store_environment::Environment;
 use crate::models::app_transaction::AppTransaction;
 use crate::models::decoded_realtime_request_body::DecodedRealtimeRequestBody;
@@ -11,7 +11,6 @@ use crate::models::decoded_signed_data::DecodedSignedData;
 use crate::models::jws_renewal_info_decoded_payload::JWSRenewalInfoDecodedPayload;
 use crate::models::jws_transaction_decoded_payload::JWSTransactionDecodedPayload;
 use crate::models::response_body_v2_decoded_payload::ResponseBodyV2DecodedPayload;
-use serde::de::DeserializeOwned;
 
 #[derive(thiserror::Error, Debug)]
 pub enum SignedDataVerifierError {
@@ -108,7 +107,11 @@ impl SignedDataVerifier {
     ) -> Result<JWSRenewalInfoDecodedPayload, SignedDataVerifierError> {
         let decoded_renewal_info: JWSRenewalInfoDecodedPayload = self.decode_signed_object(signed_renewal_info)?;
 
-        if decoded_renewal_info.environment.as_ref() != Some(&self.environment) {
+        if decoded_renewal_info
+            .environment
+            .as_ref()
+            != Some(&self.environment)
+        {
             return Err(SignedDataVerifierError::InvalidEnvironment);
         }
 
@@ -166,19 +169,17 @@ impl SignedDataVerifier {
 
         if let Some(data) = &decoded_signed_notification.data {
             bundle_id = data.bundle_id.clone();
-            app_apple_id = data.app_apple_id.clone();
+            app_apple_id = data.app_apple_id;
             environment = data.environment.clone();
         } else if let Some(summary) = &decoded_signed_notification.summary {
             bundle_id = summary.bundle_id.clone();
-            app_apple_id = summary.app_apple_id.clone();
+            app_apple_id = summary.app_apple_id;
             environment = summary.environment.clone();
         } else if let Some(external_purchase_token) = &decoded_signed_notification.external_purchase_token {
             bundle_id = external_purchase_token
                 .bundle_id
                 .clone();
-            app_apple_id = external_purchase_token
-                .app_apple_id
-                .clone();
+            app_apple_id = external_purchase_token.app_apple_id;
 
             if let Some(external_purchase_id) = &external_purchase_token.external_purchase_id {
                 if external_purchase_id.starts_with("SANDBOX") {
@@ -191,7 +192,7 @@ impl SignedDataVerifier {
             }
         } else if let Some(app_data) = &decoded_signed_notification.app_data {
             bundle_id = app_data.bundle_id.clone();
-            app_apple_id = app_data.app_apple_id.clone();
+            app_apple_id = app_data.app_apple_id;
             environment = app_data.environment.clone();
         } else {
             bundle_id = None;
@@ -316,9 +317,7 @@ impl SignedDataVerifier {
 
         if x5c.len() != EXPECTED_CHAIN_LENGTH {
             return Err(SignedDataVerifierError::InternalChainVerifierError(
-                ChainVerifierError::VerificationFailure(
-                    ChainVerificationFailureReason::InvalidChainLength,
-                ),
+                ChainVerifierError::VerificationFailure(ChainVerificationFailureReason::InvalidChainLength),
             ));
         }
 

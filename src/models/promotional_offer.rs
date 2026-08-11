@@ -1,6 +1,7 @@
-use crate::models::promotional_offer_signature_v1::PromotionalOfferSignatureV1;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use crate::models::promotional_offer_signature_v1::PromotionalOfferSignatureV1;
 
 /// A promotional offer and message you provide in a real-time response to your Get Retention Message endpoint.
 ///

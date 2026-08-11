@@ -1,8 +1,9 @@
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
 use crate::models::advanced_commerce_request_info::AdvancedCommerceRequestInfo;
 use crate::models::advanced_commerce_subscription_change_metadata_descriptors::AdvancedCommerceSubscriptionChangeMetadataDescriptors;
 use crate::models::advanced_commerce_subscription_change_metadata_item::AdvancedCommerceSubscriptionChangeMetadataItem;
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 /// The request data your app provides to change the metadata of an auto-renewable subscription.
 ///

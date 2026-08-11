@@ -1,5 +1,6 @@
-use crate::models::app_store_environment::Environment;
 use serde::{Deserialize, Serialize};
+
+use crate::models::app_store_environment::Environment;
 
 /// A response that contains the customer’s transaction history for an app.
 ///

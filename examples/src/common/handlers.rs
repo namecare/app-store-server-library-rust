@@ -3,16 +3,18 @@
 //! Both example servers call straight into these functions, so the only thing
 //! that differs between the Axum and Actix binaries is the adapter code.
 
-use crate::common::certs::load_roots;
-use crate::common::config::Config;
-use crate::common::error::AppError;
+use std::sync::Arc;
+
 use app_store_server_library::models::notification_type_v2::NotificationTypeV2;
 use app_store_server_library::models::response_body_v2_decoded_payload::ResponseBodyV2DecodedPayload;
 use app_store_server_library::models::subtype::Subtype;
 use app_store_server_library::promotional_offer_signature_creator::PromotionalOfferSignatureCreator;
 use app_store_server_library::signed_data_verifier::SignedDataVerifier;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+
+use crate::common::certs::load_roots;
+use crate::common::config::Config;
+use crate::common::error::AppError;
 
 /// Long-lived state shared by every request.
 pub struct AppState {
@@ -87,12 +89,11 @@ pub struct PromotionalOfferResponse {
 /// Returning `Ok` is what makes the server answer 200. Apple retries any
 /// non-2xx response, so a real integration must not return 200 until the
 /// notification has actually been handled durably.
-pub fn handle_notification(
-    state: &AppState,
-    body: &NotificationRequest,
-) -> Result<NotificationResponse, AppError> {
+pub fn handle_notification(state: &AppState, body: &NotificationRequest) -> Result<NotificationResponse, AppError> {
     if body.signed_payload.trim().is_empty() {
-        return Err(AppError::BadRequest("signedPayload must not be empty".into()));
+        return Err(AppError::BadRequest(
+            "signedPayload must not be empty".into(),
+        ));
     }
 
     let payload = state
@@ -122,13 +123,22 @@ fn dispatch(payload: &ResponseBodyV2DecodedPayload) {
         Subscribed => println!("[notify] new subscription for {}", bundle_id),
         DidRenew => println!("[notify] subscription renewed for {}", bundle_id),
         DidChangeRenewalStatus => {
-            println!("[notify] auto-renew toggled for {} ({:?})", bundle_id, payload.subtype)
+            println!(
+                "[notify] auto-renew toggled for {} ({:?})",
+                bundle_id, payload.subtype
+            )
         }
         DidFailToRenew => println!("[notify] renewal failed for {} - billing retry", bundle_id),
         Expired => println!("[notify] subscription expired for {}", bundle_id),
-        Revoke => println!("[notify] access revoked for {} - remove entitlement", bundle_id),
+        Revoke => println!(
+            "[notify] access revoked for {} - remove entitlement",
+            bundle_id
+        ),
         Test => println!("[notify] test notification received - endpoint is reachable"),
-        other => println!("[notify] unhandled notification type {:?} for {}", other, bundle_id),
+        other => println!(
+            "[notify] unhandled notification type {:?} for {}",
+            other, bundle_id
+        ),
     }
 }
 
@@ -171,9 +181,10 @@ pub fn handle_promotional_offer(
 
 #[cfg(test)]
 mod tests {
+    use app_store_server_library::models::app_store_environment::Environment;
+
     use super::*;
     use crate::common::certs::RootSource;
-    use app_store_server_library::models::app_store_environment::Environment;
 
     /// A config matching the bundled fixture: demo CA, com.example, sandbox.
     fn demo_config() -> Config {
@@ -191,12 +202,17 @@ mod tests {
     #[test]
     fn valid_fixture_notification_is_decoded() {
         let state = state(&demo_config()).unwrap();
-        let signed_payload = include_str!("../../assets/testNotification").trim().to_string();
+        let signed_payload = include_str!("../../assets/testNotification")
+            .trim()
+            .to_string();
 
         let response = handle_notification(&state, &NotificationRequest { signed_payload }).unwrap();
 
         assert_eq!(response.notification_type, NotificationTypeV2::Test);
-        assert_eq!(response.notification_uuid, "9ad56bd2-0bc6-42e0-af24-fd996d87a1e6");
+        assert_eq!(
+            response.notification_uuid,
+            "9ad56bd2-0bc6-42e0-af24-fd996d87a1e6"
+        );
     }
 
     #[test]
@@ -205,7 +221,9 @@ mod tests {
 
         let error = handle_notification(
             &state,
-            &NotificationRequest { signed_payload: "not-a-jws".to_string() },
+            &NotificationRequest {
+                signed_payload: "not-a-jws".to_string(),
+            },
         )
         .unwrap_err();
 
@@ -218,7 +236,9 @@ mod tests {
 
         let error = handle_notification(
             &state,
-            &NotificationRequest { signed_payload: String::new() },
+            &NotificationRequest {
+                signed_payload: String::new(),
+            },
         )
         .unwrap_err();
 
@@ -245,7 +265,9 @@ mod tests {
         )
         .unwrap();
 
-        assert!(STANDARD.decode(&response.signature).is_ok());
+        assert!(STANDARD
+            .decode(&response.signature)
+            .is_ok());
         assert_eq!(response.nonce, nonce.to_string());
         assert_eq!(response.timestamp, 1_700_000_000);
         assert_eq!(response.key_identifier, "DEMOKEYID");

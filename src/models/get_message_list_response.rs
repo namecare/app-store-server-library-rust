@@ -1,5 +1,6 @@
-use crate::models::get_message_list_response_item::GetMessageListResponseItem;
 use serde::{Deserialize, Serialize};
+
+use crate::models::get_message_list_response_item::GetMessageListResponseItem;
 
 /// A response that contains status information for all messages.
 ///

@@ -16,19 +16,25 @@ fn verify_cases_actually_verify() {
 
     let notification = bench::fixture("mock_signed_data/testNotification");
     assert!(
-        verifier.verify_and_decode_notification(&notification).is_ok(),
+        verifier
+            .verify_and_decode_notification(&notification)
+            .is_ok(),
         "verify/notification must succeed, or it benchmarks the error path"
     );
 
     let transaction = bench::fixture("mock_signed_data/transactionInfo");
     assert!(
-        verifier.verify_and_decode_signed_transaction(&transaction).is_ok(),
+        verifier
+            .verify_and_decode_signed_transaction(&transaction)
+            .is_ok(),
         "verify/transaction must succeed"
     );
 
     let renewal_info = bench::fixture("mock_signed_data/renewalInfo");
     assert!(
-        verifier.verify_and_decode_renewal_info(&renewal_info).is_ok(),
+        verifier
+            .verify_and_decode_renewal_info(&renewal_info)
+            .is_ok(),
         "verify/renewal_info must succeed"
     );
 }
@@ -42,13 +48,19 @@ fn decode_cases_succeed_under_xcode() {
     );
 
     let transaction = bench::fixture("xcode/xcode-signed-transaction");
-    assert!(verifier.verify_and_decode_signed_transaction(&transaction).is_ok());
+    assert!(verifier
+        .verify_and_decode_signed_transaction(&transaction)
+        .is_ok());
 
     let renewal_info = bench::fixture("xcode/xcode-signed-renewal-info");
-    assert!(verifier.verify_and_decode_renewal_info(&renewal_info).is_ok());
+    assert!(verifier
+        .verify_and_decode_renewal_info(&renewal_info)
+        .is_ok());
 
     let app_transaction = bench::fixture("xcode/xcode-signed-app-transaction");
-    assert!(verifier.verify_and_decode_app_transaction(&app_transaction).is_ok());
+    assert!(verifier
+        .verify_and_decode_app_transaction(&app_transaction)
+        .is_ok());
 }
 
 /// The `decode/` group must NOT be doing chain verification — that is the
@@ -68,7 +80,9 @@ fn decode_group_skips_verification() {
 
     let transaction = bench::fixture("xcode/xcode-signed-transaction");
     assert!(
-        verifier.verify_and_decode_signed_transaction(&transaction).is_ok(),
+        verifier
+            .verify_and_decode_signed_transaction(&transaction)
+            .is_ok(),
         "Xcode environment must bypass chain verification; if this fails, the \
          decode/ group is doing real crypto and is misnamed"
     );
@@ -80,7 +94,9 @@ fn chain_cases_validate() {
     let verifier = ChainVerifier::new(vec![root]);
     let t: u64 = 1700000000;
     assert!(
-        verifier.verify_at(&leaf, &intermediate, Some(t), false, t).is_ok(),
+        verifier
+            .verify_at(&leaf, &intermediate, Some(t), false, t)
+            .is_ok(),
         "chain/verify_test_chain must validate"
     );
 
@@ -112,7 +128,11 @@ fn cache_engages_when_online_checks_enabled() {
     verifier
         .verify_at(&leaf, &intermediate, Some(t), true, t)
         .expect("first verification succeeds");
-    assert_eq!(verifier.cache_len(), 1, "online checks must populate the cache");
+    assert_eq!(
+        verifier.cache_len(),
+        1,
+        "online checks must populate the cache"
+    );
 }
 
 /// The converse: with online checks off — the setting every other benchmark
@@ -182,7 +202,10 @@ fn sign_cases_produce_signatures() {
             12345,
         )
         .expect("signing succeeds");
-    assert!(!signature.is_empty(), "sign/promotional_offer_v1 must produce output");
+    assert!(
+        !signature.is_empty(),
+        "sign/promotional_offer_v1 must produce output"
+    );
 }
 
 /// The whole suite's numbers describe whichever backend the library actually

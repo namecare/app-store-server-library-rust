@@ -1,7 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::models::advanced_commerce_effective::AdvancedCommerceEffective;
 use crate::models::advanced_commerce_offer::AdvancedCommerceOffer;
 use crate::models::advanced_commerce_reason::AdvancedCommerceReason;
-use serde::{Deserialize, Serialize};
 
 /// The data your app provides to change an item of an auto-renewable subscription.
 ///

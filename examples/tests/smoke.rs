@@ -47,7 +47,9 @@ async fn start(bin: &str, port: u16) -> Server {
 }
 
 fn fixture() -> String {
-    include_str!("../assets/testNotification").trim().to_string()
+    include_str!("../assets/testNotification")
+        .trim()
+        .to_string()
 }
 
 async fn assert_endpoints(port: u16) {

@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::models::advanced_commerce_descriptors::AdvancedCommerceDescriptors;
 use crate::models::advanced_commerce_in_app_request::AdvancedCommerceInAppRequest;
 use crate::models::advanced_commerce_in_app_request_operation::AdvancedCommerceInAppRequestOperation;
@@ -6,7 +8,6 @@ use crate::models::advanced_commerce_period::AdvancedCommercePeriod;
 use crate::models::advanced_commerce_request_info::AdvancedCommerceRequestInfo;
 use crate::models::advanced_commerce_subscription_create_item::AdvancedCommerceSubscriptionCreateItem;
 use crate::models::helper_validation_utils::{validate_items, ValidationError};
-use serde::{Deserialize, Serialize};
 
 /// The metadata your app provides when a customer purchases an auto-renewable subscription.
 ///

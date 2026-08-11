@@ -82,11 +82,7 @@ pub fn b64url_decode(data: &str) -> Result<Vec<u8>, JwsError> {
 
 /// Assembles a compact JWS from already-encoded header and payload segments
 /// plus a raw signature.
-pub fn encode_compact(
-    encoded_header: &str,
-    encoded_payload: &str,
-    signature: &[u8],
-) -> String {
+pub fn encode_compact(encoded_header: &str, encoded_payload: &str, signature: &[u8]) -> String {
     format!(
         "{encoded_header}.{encoded_payload}.{}",
         b64url_encode(signature)
@@ -104,10 +100,7 @@ mod tests {
     fn decodes_header_alg_and_x5c() {
         let header = decode_header(SAMPLE).expect("valid header");
         assert_eq!(header.alg.as_deref(), Some("ES256"));
-        assert_eq!(
-            header.x5c,
-            Some(vec!["aaa".to_string(), "bbb".to_string()])
-        );
+        assert_eq!(header.x5c, Some(vec!["aaa".to_string(), "bbb".to_string()]));
     }
 
     #[test]

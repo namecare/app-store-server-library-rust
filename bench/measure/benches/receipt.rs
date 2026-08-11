@@ -4,12 +4,13 @@
 //! (src/receipt_utility.rs). That is a real per-call cost and a fixable one;
 //! benching it separately is what would make a fix visible.
 
+use std::hint::black_box;
+
 use app_store_server_library::receipt_utility::{
     extract_transaction_id_from_app_receipt, extract_transaction_id_from_transaction_receipt,
 };
 use app_store_server_library_bench_measure as bench;
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
 
 fn receipt(c: &mut Criterion) {
     app_store_server_library_bench_measure::assert_pinned_backend();
@@ -17,7 +18,12 @@ fn receipt(c: &mut Criterion) {
     // PKCS#7 BER walk over a receipt containing one in-app transaction.
     let with_transaction = bench::fixture("xcode/xcode-app-receipt-with-transaction");
     c.bench_function("receipt/app_receipt", |b| {
-        b.iter(|| black_box(extract_transaction_id_from_app_receipt(black_box(&with_transaction))).is_ok())
+        b.iter(|| {
+            black_box(extract_transaction_id_from_app_receipt(black_box(
+                &with_transaction,
+            )))
+            .is_ok()
+        })
     });
 
     // The largest committed receipt (7 KB) — the BER-parsing worst case.
@@ -36,7 +42,12 @@ fn receipt(c: &mut Criterion) {
     // Regex over a decoded plist, including two Regex compilations per call.
     let transaction = bench::fixture("mock_signed_data/legacyTransaction");
     c.bench_function("receipt/transaction_receipt", |b| {
-        b.iter(|| black_box(extract_transaction_id_from_transaction_receipt(black_box(&transaction))).is_ok())
+        b.iter(|| {
+            black_box(extract_transaction_id_from_transaction_receipt(black_box(
+                &transaction,
+            )))
+            .is_ok()
+        })
     });
 }
 

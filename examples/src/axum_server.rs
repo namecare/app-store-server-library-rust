@@ -7,16 +7,17 @@
 //! cargo run --manifest-path examples/Cargo.toml --bin axum_server
 //! ```
 
+use std::sync::Arc;
+
+use app_store_server_library_examples::common::config;
 use app_store_server_library_examples::common::error::AppError;
 use app_store_server_library_examples::common::handlers::{
-    handle_notification, handle_promotional_offer, state, AppState, NotificationRequest,
-    NotificationResponse, PromotionalOfferRequest, PromotionalOfferResponse,
+    handle_notification, handle_promotional_offer, state, AppState, NotificationRequest, NotificationResponse,
+    PromotionalOfferRequest, PromotionalOfferResponse,
 };
 use axum::extract::State;
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use std::sync::Arc;
-use app_store_server_library_examples::common::config;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

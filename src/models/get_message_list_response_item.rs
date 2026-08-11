@@ -1,6 +1,7 @@
-use crate::models::message_state::MessageState;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use crate::models::message_state::MessageState;
 
 /// A message identifier and status information for a message.
 ///

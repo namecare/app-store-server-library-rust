@@ -5,10 +5,11 @@
 //! invisible end to end. `split` allocates a `Vec<&str>` and `signing_input`
 //! allocates a `String` on every verify.
 
+use std::hint::black_box;
+
 use app_store_server_library::crypto::jws;
 use app_store_server_library_bench_measure as bench;
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
 
 fn jws_helpers(c: &mut Criterion) {
     app_store_server_library_bench_measure::assert_pinned_backend();

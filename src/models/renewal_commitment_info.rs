@@ -1,9 +1,10 @@
-use crate::models::auto_renew_status::AutoRenewStatus;
-use crate::models::renewal_billing_plan_type::RenewalBillingPlanType;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
+
+use crate::models::auto_renew_status::AutoRenewStatus;
+use crate::models::renewal_billing_plan_type::RenewalBillingPlanType;
 
 /// Information about a subscription renewal commitment.
 ///

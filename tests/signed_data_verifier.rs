@@ -1,5 +1,6 @@
-use app_store_server_library::crypto::jws;
-use app_store_server_library::crypto::CryptoProvider;
+use std::fs;
+
+use app_store_server_library::crypto::{jws, CryptoProvider};
 use app_store_server_library::models::advanced_commerce_period::AdvancedCommercePeriod;
 use app_store_server_library::models::advanced_commerce_price_increase_info_status::AdvancedCommercePriceIncreaseInfoStatus;
 use app_store_server_library::models::advanced_commerce_refund_reason::AdvancedCommerceRefundReason;
@@ -28,7 +29,6 @@ use app_store_server_library::models::transaction_reason::TransactionReason;
 use app_store_server_library::signed_data_verifier::{SignedDataVerifier, SignedDataVerifierError};
 use common::StringExt;
 use serde_json::{Map, Value};
-use std::fs;
 
 mod common;
 
@@ -196,7 +196,7 @@ fn test_external_purchase_token_notification_decoding() {
 }
 
 #[test]
-fn test_external_purchase_token_sanbox_notification_decoding() {
+fn test_external_purchase_token_sandbox_notification_decoding() {
     let signed_notification =
         create_signed_data_from_json("tests/resources/models/signedExternalPurchaseTokenSandboxNotification.json");
     let signed_data_verifier = get_signed_data_verifier(Environment::LocalTesting, "com.example", Some(55555));
@@ -310,7 +310,7 @@ fn get_signed_data_verifier(
     bundle_id: &str,
     app_apple_id: Option<i64>,
 ) -> SignedDataVerifier {
-    let verifier = SignedDataVerifier::new(
+    SignedDataVerifier::new(
         vec![ROOT_CA_BASE64_ENCODED
             .as_der_bytes()
             .unwrap()],
@@ -319,9 +319,7 @@ fn get_signed_data_verifier(
         app_apple_id.or(Some(1234)),
         false,
     )
-    .expect("valid config");
-
-    verifier
+    .expect("valid config")
 }
 
 #[test]
@@ -613,7 +611,12 @@ fn test_decoded_payloads_transaction_decoding() {
                 .expect("Expect descriptors");
             assert_eq!("Premium Plan", descriptors.description);
             assert_eq!("Premium", descriptors.display_name);
-            assert_eq!(1500, ac_info.estimated_tax.expect("Expect estimated_tax"));
+            assert_eq!(
+                1500,
+                ac_info
+                    .estimated_tax
+                    .expect("Expect estimated_tax")
+            );
             assert_eq!(
                 AdvancedCommercePeriod::P1M,
                 ac_info.period.expect("Expect period")
@@ -1511,7 +1514,10 @@ fn test_xcode_signed_app_transaction_with_production_environment() {
     let encoded_app_transaction =
         fs::read_to_string("tests/resources/xcode/xcode-signed-app-transaction").expect("Failed to read file");
 
-    if let Err(_) = verifier.verify_and_decode_app_transaction(&encoded_app_transaction) {
+    if verifier
+        .verify_and_decode_app_transaction(&encoded_app_transaction)
+        .is_err()
+    {
         return;
     }
     panic!("Expected VerificationException, but no exception was raised");
@@ -1875,8 +1881,7 @@ fn test_app_data() {
 
 #[test]
 fn test_jws_transaction_decoded_payload_with_commitment_info() {
-    let fixture = fs::read_to_string("tests/resources/models/signedTransaction.json")
-        .expect("Failed to read fixture");
+    let fixture = fs::read_to_string("tests/resources/models/signedTransaction.json").expect("Failed to read fixture");
     let payload: JWSTransactionDecodedPayload =
         serde_json::from_str(&fixture).expect("Expect JWSTransactionDecodedPayload");
 
@@ -1888,13 +1893,14 @@ fn test_jws_transaction_decoded_payload_with_commitment_info() {
     assert_eq!(commitment.billing_period_number, Some(3));
     assert_eq!(commitment.total_billing_periods, Some(12));
     assert_eq!(commitment.commitment_price, Some(119880));
-    assert!(commitment.commitment_expires_date.is_some());
+    assert!(commitment
+        .commitment_expires_date
+        .is_some());
 }
 
 #[test]
 fn test_jws_renewal_info_decoded_payload_with_commitment_info() {
-    let fixture = fs::read_to_string("tests/resources/models/signedRenewalInfo.json")
-        .expect("Failed to read fixture");
+    let fixture = fs::read_to_string("tests/resources/models/signedRenewalInfo.json").expect("Failed to read fixture");
     let payload: JWSRenewalInfoDecodedPayload =
         serde_json::from_str(&fixture).expect("Expect JWSRenewalInfoDecodedPayload");
 
@@ -1915,7 +1921,9 @@ fn test_jws_renewal_info_decoded_payload_with_commitment_info() {
         Some(RenewalBillingPlanType::Monthly)
     );
     assert_eq!(commitment.commitment_renewal_price, Some(9990));
-    assert!(commitment.commitment_renewal_date.is_some());
+    assert!(commitment
+        .commitment_renewal_date
+        .is_some());
 }
 
 #[test]
@@ -1952,7 +1960,10 @@ fn test_backward_compatibility_notification_without_commitment_fields() {
         .verify_and_decode_notification(&signed_notification)
         .expect("Expected notification to verify and decode successfully");
 
-    assert_eq!(NotificationTypeV2::Subscribed, notification.notification_type);
+    assert_eq!(
+        NotificationTypeV2::Subscribed,
+        notification.notification_type
+    );
     assert_eq!(
         "002e14d5-51f5-4503-b5a8-c3a1af68eb20",
         notification.notification_uuid

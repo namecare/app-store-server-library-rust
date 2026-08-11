@@ -33,11 +33,7 @@ impl BulletPoint {
     ///
     /// Returns `BulletPointValidationError::TextTooLong` if `text` exceeds 66 characters.
     /// Returns `BulletPointValidationError::AltTextTooLong` if `alt_text` exceeds 150 characters.
-    pub fn new(
-        text: String,
-        image_identifier: Uuid,
-        alt_text: String,
-    ) -> Result<Self, BulletPointValidationError> {
+    pub fn new(text: String, image_identifier: Uuid, alt_text: String) -> Result<Self, BulletPointValidationError> {
         if text.chars().count() > MAXIMUM_TEXT_LENGTH {
             return Err(BulletPointValidationError::TextTooLong);
         }

@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
+
 use crate::models::app_store_environment::Environment;
 use crate::models::subscription_group_identifier_item::SubscriptionGroupIdentifierItem;
-use serde::{Deserialize, Serialize};
 
 /// The response that contains status information for all of a customer’s auto-renewable subscriptions in your app.
 ///

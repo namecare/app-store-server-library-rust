@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::models::advanced_commerce_in_app_request::AdvancedCommerceInAppRequest;
 use crate::models::advanced_commerce_in_app_request_operation::AdvancedCommerceInAppRequestOperation;
 use crate::models::advanced_commerce_in_app_request_version::AdvancedCommerceInAppRequestVersion;
@@ -8,7 +10,6 @@ use crate::models::advanced_commerce_subscription_modify_descriptors::AdvancedCo
 use crate::models::advanced_commerce_subscription_modify_period_change::AdvancedCommerceSubscriptionModifyPeriodChange;
 use crate::models::advanced_commerce_subscription_modify_remove_item::AdvancedCommerceSubscriptionModifyRemoveItem;
 use crate::models::helper_validation_utils::{validate_items, ValidationError};
-use serde::{Deserialize, Serialize};
 
 /// The metadata your app provides to modify an auto-renewable subscription.
 ///
@@ -89,11 +90,7 @@ pub struct AdvancedCommerceSubscriptionModifyInAppRequest {
 }
 
 impl AdvancedCommerceSubscriptionModifyInAppRequest {
-    pub fn new(
-        request_info: AdvancedCommerceRequestInfo,
-        transaction_id: String,
-        retain_billing_cycle: bool,
-    ) -> Self {
+    pub fn new(request_info: AdvancedCommerceRequestInfo, transaction_id: String, retain_billing_cycle: bool) -> Self {
         Self {
             operation: default_operation(),
             version: default_version(),
@@ -111,7 +108,10 @@ impl AdvancedCommerceSubscriptionModifyInAppRequest {
         }
     }
 
-    pub fn with_add_items(mut self, add_items: Vec<AdvancedCommerceSubscriptionModifyAddItem>) -> Result<Self, ValidationError> {
+    pub fn with_add_items(
+        mut self,
+        add_items: Vec<AdvancedCommerceSubscriptionModifyAddItem>,
+    ) -> Result<Self, ValidationError> {
         self.add_items = Some(validate_items(add_items)?);
         Ok(self)
     }

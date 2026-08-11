@@ -4,10 +4,7 @@ use p256::ecdsa::signature::Signer;
 use p256::ecdsa::SigningKey;
 use p256::pkcs8::DecodePrivateKey;
 
-use crate::crypto::{
-    CryptoError, CryptoProvider, P256PrivateKey, P256PublicKey, P256Signature,
-    P256SigningSuite,
-};
+use crate::crypto::{CryptoError, CryptoProvider, P256PrivateKey, P256PublicKey, P256Signature, P256SigningSuite};
 
 #[derive(Debug)]
 struct RustCrypto;
@@ -22,15 +19,11 @@ impl P256PrivateKey for SigningKey {
 }
 
 impl P256PublicKey for p256::ecdsa::VerifyingKey {
-    fn is_valid_signature(
-        &self,
-        signature: &[u8; 64],
-        message: &[u8],
-    ) -> Result<(), CryptoError> {
+    fn is_valid_signature(&self, signature: &[u8; 64], message: &[u8]) -> Result<(), CryptoError> {
         use signature::Verifier;
 
-        let sig = p256::ecdsa::Signature::from_slice(signature)
-            .map_err(|e| CryptoError::VerificationError(e.to_string()))?;
+        let sig =
+            p256::ecdsa::Signature::from_slice(signature).map_err(|e| CryptoError::VerificationError(e.to_string()))?;
 
         self.verify(message, &sig)
             .map_err(|e| CryptoError::VerificationError(e.to_string()))
@@ -40,11 +33,10 @@ impl P256PublicKey for p256::ecdsa::VerifyingKey {
 impl P256SigningSuite for RustCrypto {
     fn private_key(&self, pem: &str) -> Result<Box<dyn P256PrivateKey>, CryptoError> {
         let mut buf = [0u8; 2048];
-        let (_, der) = pem_rfc7468::decode(pem.as_bytes(), &mut buf)
-            .map_err(|e| CryptoError::KeyError(e.to_string()))?;
+        let (_, der) =
+            pem_rfc7468::decode(pem.as_bytes(), &mut buf).map_err(|e| CryptoError::KeyError(e.to_string()))?;
 
-        let key = SigningKey::from_pkcs8_der(der)
-            .map_err(|e| CryptoError::KeyError(e.to_string()))?;
+        let key = SigningKey::from_pkcs8_der(der).map_err(|e| CryptoError::KeyError(e.to_string()))?;
 
         Ok(Box::new(key))
     }

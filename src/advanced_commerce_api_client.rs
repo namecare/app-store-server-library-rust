@@ -1,3 +1,9 @@
+use std::fmt;
+
+use http::Method;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+
 use crate::api_client::api_client::ApiClient;
 use crate::api_client::error::{ApiClientError, ConfigurationError};
 use crate::api_client::transport::Transport;
@@ -14,10 +20,6 @@ use crate::models::advanced_commerce_subscription_price_change_response::Advance
 use crate::models::advanced_commerce_subscription_revoke_request::AdvancedCommerceSubscriptionRevokeRequest;
 use crate::models::advanced_commerce_subscription_revoke_response::AdvancedCommerceSubscriptionRevokeResponse;
 use crate::models::app_store_environment::Environment;
-use http::Method;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
-use std::fmt;
 
 /// The error returned by [`AdvancedCommerceApiClient`].
 #[derive(Debug, Clone)]
@@ -58,7 +60,10 @@ impl fmt::Display for AdvancedCommerceApiClientError {
 
 impl From<ApiClientError> for AdvancedCommerceApiClientError {
     fn from(inner: ApiClientError) -> Self {
-        let api_error = inner.raw_code().map(ApiErrorCode::from_code).unwrap_or(ApiErrorCode::Unknown);
+        let api_error = inner
+            .raw_code()
+            .map(ApiErrorCode::from_code)
+            .unwrap_or(ApiErrorCode::Unknown);
         Self { inner, api_error }
     }
 }
@@ -91,7 +96,14 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
         transport: T,
     ) -> Result<Self, ConfigurationError> {
         Ok(Self {
-            inner: ApiClient::new(signing_key, key_id, issuer_id, bundle_id, environment, transport)?,
+            inner: ApiClient::new(
+                signing_key,
+                key_id,
+                issuer_id,
+                bundle_id,
+                environment,
+                transport,
+            )?,
         })
     }
 
@@ -105,8 +117,13 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
         Res: DeserializeOwned,
         B: Serialize,
     {
-        let req = self.inner.build_request(path, method, body)?;
-        self.inner.make_request_with_response_body(req).await.map_err(Into::into)
+        let req = self
+            .inner
+            .build_request(path, method, body)?;
+        self.inner
+            .make_request_with_response_body(req)
+            .await
+            .map_err(Into::into)
     }
 
     /// Turn off automatic renewal to cancel a customer's auto-renewable subscription.
@@ -130,9 +147,16 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
         transaction_id: &str,
         subscription_cancel_request: &AdvancedCommerceSubscriptionCancelRequest,
     ) -> Result<AdvancedCommerceSubscriptionCancelResponse, AdvancedCommerceApiClientError> {
-        let path = format!("/advancedCommerce/v1/subscription/cancel/{}", transaction_id);
-        self.request(path.as_str(), Method::POST, Some(subscription_cancel_request))
-            .await
+        let path = format!(
+            "/advancedCommerce/v1/subscription/cancel/{}",
+            transaction_id
+        );
+        self.request(
+            path.as_str(),
+            Method::POST,
+            Some(subscription_cancel_request),
+        )
+        .await
     }
 
     /// Update the SKU, display name, and description associated with a subscription,
@@ -143,8 +167,8 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
     /// # Arguments
     ///
     /// * `transaction_id` - The transaction identifier of the auto-renewable subscription to get changes to its metadata.
-    ///                       Use the subscription's original transaction ID or any subsequent transaction ID
-    ///                       of a transaction related to the subscription.
+    ///   Use the subscription's original transaction ID or any subsequent transaction ID
+    ///   of a transaction related to the subscription.
     /// * `subscription_change_metadata_request` - The request body that contains the metadata changes.
     ///
     /// # Returns
@@ -159,7 +183,10 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
         transaction_id: &str,
         subscription_change_metadata_request: &AdvancedCommerceSubscriptionChangeMetadataRequest,
     ) -> Result<AdvancedCommerceSubscriptionChangeMetadataResponse, AdvancedCommerceApiClientError> {
-        let path = format!("/advancedCommerce/v1/subscription/changeMetadata/{}", transaction_id);
+        let path = format!(
+            "/advancedCommerce/v1/subscription/changeMetadata/{}",
+            transaction_id
+        );
         self.request(
             path.as_str(),
             Method::POST,
@@ -176,8 +203,8 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
     /// # Arguments
     ///
     /// * `transaction_id` - A transaction identifier of the auto-renewable subscription that is subject to the price change.
-    ///                       Use the subscription's original transaction ID or any subsequent transaction ID
-    ///                       of a transaction related to the subscription.
+    ///   Use the subscription's original transaction ID or any subsequent transaction ID
+    ///   of a transaction related to the subscription.
     /// * `subscription_price_change_request` - The request body that contains the details of the price change.
     ///
     /// # Returns
@@ -192,9 +219,16 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
         transaction_id: &str,
         subscription_price_change_request: &AdvancedCommerceSubscriptionPriceChangeRequest,
     ) -> Result<AdvancedCommerceSubscriptionPriceChangeResponse, AdvancedCommerceApiClientError> {
-        let path = format!("/advancedCommerce/v1/subscription/changePrice/{}", transaction_id);
-        self.request(path.as_str(), Method::POST, Some(subscription_price_change_request))
-            .await
+        let path = format!(
+            "/advancedCommerce/v1/subscription/changePrice/{}",
+            transaction_id
+        );
+        self.request(
+            path.as_str(),
+            Method::POST,
+            Some(subscription_price_change_request),
+        )
+        .await
     }
 
     /// Migrate a subscription that a customer purchased through In-App Purchase
@@ -205,8 +239,8 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
     /// # Arguments
     ///
     /// * `transaction_id` - The transaction identifier of the auto-renewable subscription to migrate.
-    ///                       Use the subscription's original transaction ID or any subsequent transaction ID
-    ///                       of a transaction related to the subscription.
+    ///   Use the subscription's original transaction ID or any subsequent transaction ID
+    ///   of a transaction related to the subscription.
     /// * `subscription_migrate_request` - The request body that contains the details for the migration.
     ///
     /// # Returns
@@ -221,9 +255,16 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
         transaction_id: &str,
         subscription_migrate_request: &AdvancedCommerceSubscriptionMigrateRequest,
     ) -> Result<AdvancedCommerceSubscriptionMigrateResponse, AdvancedCommerceApiClientError> {
-        let path = format!("/advancedCommerce/v1/subscription/migrate/{}", transaction_id);
-        self.request(path.as_str(), Method::POST, Some(subscription_migrate_request))
-            .await
+        let path = format!(
+            "/advancedCommerce/v1/subscription/migrate/{}",
+            transaction_id
+        );
+        self.request(
+            path.as_str(),
+            Method::POST,
+            Some(subscription_migrate_request),
+        )
+        .await
     }
 
     /// Request a refund for a one-time charge or subscription transaction.
@@ -247,7 +288,10 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
         transaction_id: &str,
         request_refund_request: &AdvancedCommerceRequestRefundRequest,
     ) -> Result<AdvancedCommerceRequestRefundResponse, AdvancedCommerceApiClientError> {
-        let path = format!("/advancedCommerce/v1/transaction/requestRefund/{}", transaction_id);
+        let path = format!(
+            "/advancedCommerce/v1/transaction/requestRefund/{}",
+            transaction_id
+        );
         self.request(path.as_str(), Method::POST, Some(request_refund_request))
             .await
     }
@@ -260,8 +304,8 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
     /// # Arguments
     ///
     /// * `transaction_id` - The transaction identifier of the auto-renewable subscription to revoke.
-    ///                       Use the subscription's original transaction ID or any subsequent transaction ID
-    ///                       of a transaction related to the subscription.
+    ///   Use the subscription's original transaction ID or any subsequent transaction ID
+    ///   of a transaction related to the subscription.
     /// * `subscription_revoke_request` - The request body for revoking the subscription.
     ///
     /// # Returns
@@ -276,9 +320,16 @@ impl<T: Transport> AdvancedCommerceApiClient<T> {
         transaction_id: &str,
         subscription_revoke_request: &AdvancedCommerceSubscriptionRevokeRequest,
     ) -> Result<AdvancedCommerceSubscriptionRevokeResponse, AdvancedCommerceApiClientError> {
-        let path = format!("/advancedCommerce/v1/subscription/revoke/{}", transaction_id);
-        self.request(path.as_str(), Method::POST, Some(subscription_revoke_request))
-            .await
+        let path = format!(
+            "/advancedCommerce/v1/subscription/revoke/{}",
+            transaction_id
+        );
+        self.request(
+            path.as_str(),
+            Method::POST,
+            Some(subscription_revoke_request),
+        )
+        .await
     }
 }
 

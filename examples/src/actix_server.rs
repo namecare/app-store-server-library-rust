@@ -7,14 +7,14 @@
 //! cargo run --manifest-path examples/Cargo.toml --bin actix_server
 //! ```
 
+use std::sync::Arc;
+
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use app_store_server_library_examples::common::config;
 use app_store_server_library_examples::common::error::AppError;
 use app_store_server_library_examples::common::handlers::{
-    handle_notification, handle_promotional_offer, state, AppState, NotificationRequest,
-    PromotionalOfferRequest,
+    handle_notification, handle_promotional_offer, state, AppState, NotificationRequest, PromotionalOfferRequest,
 };
-use std::sync::Arc;
 
 // `std::io::Error::other` (the fix clippy::io_other_error wants) was
 // stabilized in Rust 1.74, but this crate's MSRV is 1.65.0. The
@@ -23,11 +23,10 @@ use std::sync::Arc;
 #[allow(clippy::io_other_error)]
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let config = config::from_env()
-        .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))?;
+    let config = config::from_env().map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))?;
     let port = config.port;
-    let app_state = state(&config)
-        .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error.to_string()))?;
+    let app_state =
+        state(&config).map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error.to_string()))?;
 
     println!("[actix] listening on http://0.0.0.0:{}", port);
     println!("[actix]   POST /notifications");

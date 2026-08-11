@@ -1,7 +1,8 @@
-use crate::models::image_size::ImageSize;
-use crate::models::image_state::ImageState;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use crate::models::image_size::ImageSize;
+use crate::models::image_state::ImageState;
 
 /// An image identifier and state information for an image.
 ///

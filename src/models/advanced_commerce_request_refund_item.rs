@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
+
 use crate::models::advanced_commerce_refund_reason::AdvancedCommerceRefundReason;
 use crate::models::advanced_commerce_refund_type::AdvancedCommerceRefundType;
-use serde::{Deserialize, Serialize};
 
 /// The data your app provides to request a refund for an item.
 ///

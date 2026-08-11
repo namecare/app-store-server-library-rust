@@ -1,5 +1,6 @@
-use crate::api_client::transport::TransportError;
 use std::fmt;
+
+use crate::api_client::transport::TransportError;
 
 #[derive(Debug)]
 pub enum ConfigurationError {
@@ -87,18 +88,12 @@ impl From<http::Error> for ApiClientError {
 impl From<TransportError> for ApiClientError {
     fn from(err: TransportError) -> Self {
         match err {
-            TransportError::Serialization(e) => {
-                Self::new(400, None, Some(format!("Serialization error: {}", e)))
-            }
+            TransportError::Serialization(e) => Self::new(400, None, Some(format!("Serialization error: {}", e))),
             TransportError::InvalidMethod => Self::new(400, None, Some("Invalid HTTP method".to_string())),
-            TransportError::InvalidStatusCode(e) => {
-                Self::new(500, None, Some(format!("Invalid status code: {}", e)))
-            }
+            TransportError::InvalidStatusCode(e) => Self::new(500, None, Some(format!("Invalid status code: {}", e))),
             TransportError::RequestFailed(msg) => Self::new(500, None, Some(format!("Request failed: {}", msg))),
             TransportError::NetworkError(msg) => Self::new(503, None, Some(format!("Network error: {}", msg))),
-            TransportError::InvalidResponse(msg) => {
-                Self::new(502, None, Some(format!("Invalid response: {}", msg)))
-            }
+            TransportError::InvalidResponse(msg) => Self::new(502, None, Some(format!("Invalid response: {}", msg))),
             TransportError::Timeout => Self::new(504, None, Some("Request timeout".to_string())),
             TransportError::Other(msg) => Self::new(500, None, Some(format!("Unexpected error: {}", msg))),
         }

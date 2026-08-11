@@ -1,13 +1,11 @@
+use chrono::Utc;
+use http::{Method, Request, Response};
+use serde::{Deserialize, Serialize};
+
 use crate::api_client::error::{ApiClientError, ConfigurationError};
 use crate::api_client::transport::{Transport, TransportError};
-use crate::crypto::jws;
-use crate::crypto::CryptoProvider;
+use crate::crypto::{jws, CryptoProvider};
 use crate::models::app_store_environment::Environment;
-
-use chrono::Utc;
-use http::Method;
-use http::{Request, Response};
-use serde::{Deserialize, Serialize};
 
 pub struct ApiClient<T: Transport> {
     base_url: String,
@@ -78,34 +76,23 @@ impl<T: Transport> ApiClient<T> {
             exp: future_time.timestamp(),
         };
 
-        let signing_error = || {
-            ApiClientError::new(500, None, Some("Failed to sign request token".to_string()))
-        };
+        let signing_error = || ApiClientError::new(500, None, Some("Failed to sign request token".to_string()));
 
-        let pem = std::str::from_utf8(self.signing_key.as_slice())
-            .map_err(|_| signing_error())?;
+        let pem = std::str::from_utf8(self.signing_key.as_slice()).map_err(|_| signing_error())?;
         let key = CryptoProvider::default_provider()
             .p256_signing
             .private_key(pem)
             .map_err(|_| signing_error())?;
 
-        let encoded_header = jws::b64url_encode(
-            &serde_json::to_vec(&header).map_err(|_| signing_error())?,
-        );
-        let encoded_payload = jws::b64url_encode(
-            &serde_json::to_vec(&claims).map_err(|_| signing_error())?,
-        );
+        let encoded_header = jws::b64url_encode(&serde_json::to_vec(&header).map_err(|_| signing_error())?);
+        let encoded_payload = jws::b64url_encode(&serde_json::to_vec(&claims).map_err(|_| signing_error())?);
         let signing_input = format!("{encoded_header}.{encoded_payload}");
 
         let (raw, _) = key
             .signature(signing_input.as_bytes())
             .map_err(|_| signing_error())?;
 
-        Ok(jws::encode_compact(
-            &encoded_header,
-            &encoded_payload,
-            &raw,
-        ))
+        Ok(jws::encode_compact(&encoded_header, &encoded_payload, &raw))
     }
 
     pub(crate) fn build_request<B: serde::Serialize>(
@@ -115,8 +102,13 @@ impl<T: Transport> ApiClient<T> {
         body: Option<&B>,
     ) -> Result<Request<Vec<u8>>, ApiClientError> {
         let (body_bytes, content_type) = if let Some(body_data) = body {
-            let serialized = serde_json::to_vec(body_data)
-                .map_err(|_| ApiClientError::new(400, None, Some("Failed to serialize request body".to_string())))?;
+            let serialized = serde_json::to_vec(body_data).map_err(|_| {
+                ApiClientError::new(
+                    400,
+                    None,
+                    Some("Failed to serialize request body".to_string()),
+                )
+            })?;
             (serialized, Some("application/json"))
         } else {
             (Vec::new(), None)
@@ -148,14 +140,19 @@ impl<T: Transport> ApiClient<T> {
             .method(method)
             .uri(url)
             .header("User-Agent", "app-store-server-library/rust/4.3.0")
-            .header("Authorization", format!("Bearer {}", self.generate_token()?))
+            .header(
+                "Authorization",
+                format!("Bearer {}", self.generate_token()?),
+            )
             .header("Accept", "application/json");
 
         if let Some(ct) = content_type {
             request_builder = request_builder.header("Content-Type", ct);
         }
 
-        request_builder.body(body).map_err(|e| e.into())
+        request_builder
+            .body(body)
+            .map_err(|e| e.into())
     }
 
     pub(crate) async fn make_request_with_response_body<Res>(
@@ -187,18 +184,24 @@ impl<T: Transport> ApiClient<T> {
         self.transport.send(request).await
     }
 
-    pub(crate) fn extract_response<Res>(&self, response: &Response<Vec<u8>>) -> Result<Res, ApiClientError>  where
-        Res: for<'de> Deserialize<'de>
+    pub(crate) fn extract_response<Res>(&self, response: &Response<Vec<u8>>) -> Result<Res, ApiClientError>
+    where
+        Res: for<'de> Deserialize<'de>,
     {
         let status_code = response.status().as_u16();
 
         if !(200..300).contains(&status_code) {
-            return Err(self.extract_error(&response))
+            return Err(self.extract_error(response));
         }
 
         let body = response.body();
-        let json_result = serde_json::from_slice::<Res>(body)
-            .map_err(|_| ApiClientError::new(500, None, Some("Failed to deserialize response JSON".to_string())))?;
+        let json_result = serde_json::from_slice::<Res>(body).map_err(|_| {
+            ApiClientError::new(
+                500,
+                None,
+                Some("Failed to deserialize response JSON".to_string()),
+            )
+        })?;
 
         Ok(json_result)
     }
@@ -216,12 +219,16 @@ impl<T: Transport> ApiClient<T> {
 
         serde_json::from_slice::<ErrorPayload>(response.body())
             .ok()
-            .and_then(|payload| match (payload.error_code, payload.error_message) {
-                (Some(error_code), Some(error_message)) => {
-                    Some(ApiClientError::new(status_code, Some(error_code), Some(error_message)))
-                }
-                _ => None,
-            })
+            .and_then(
+                |payload| match (payload.error_code, payload.error_message) {
+                    (Some(error_code), Some(error_message)) => Some(ApiClientError::new(
+                        status_code,
+                        Some(error_code),
+                        Some(error_message),
+                    )),
+                    _ => None,
+                },
+            )
             .unwrap_or_else(|| ApiClientError::new(status_code, None, None))
     }
 }

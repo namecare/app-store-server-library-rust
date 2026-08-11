@@ -1,7 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::models::bullet_point::BulletPoint;
 use crate::models::header_position::HeaderPosition;
 use crate::models::upload_message_image::UploadMessageImage;
-use serde::{Deserialize, Serialize};
 
 const MAXIMUM_HEADER_LENGTH: usize = 66;
 const MAXIMUM_BODY_LENGTH: usize = 144;

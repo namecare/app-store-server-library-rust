@@ -1,7 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::models::advanced_commerce_descriptors::AdvancedCommerceDescriptors;
 use crate::models::advanced_commerce_period::AdvancedCommercePeriod;
 use crate::models::advanced_commerce_renewal_item::AdvancedCommerceRenewalItem;
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]

@@ -1,11 +1,12 @@
-use crate::models::app_store_environment::Environment;
-use crate::models::decoded_signed_data::DecodedSignedData;
-use crate::models::purchase_platform::PurchasePlatform;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
 use uuid::Uuid;
+
+use crate::models::app_store_environment::Environment;
+use crate::models::decoded_signed_data::DecodedSignedData;
+use crate::models::purchase_platform::PurchasePlatform;
 
 /// Information that represents the customer’s purchase of the app, cryptographically signed by the App Store.
 ///

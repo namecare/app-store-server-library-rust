@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
+
 use crate::models::advanced_commerce_offer_period::AdvancedCommerceOfferPeriod;
 use crate::models::advanced_commerce_offer_reason::AdvancedCommerceOfferReason;
-use serde::{Deserialize, Serialize};
 
 /// A discount offer for an auto-renewable subscription.
 ///
@@ -29,7 +30,12 @@ pub struct AdvancedCommerceOffer {
 }
 
 impl AdvancedCommerceOffer {
-    pub fn new(period: AdvancedCommerceOfferPeriod, period_count: i32, price: i64, reason: AdvancedCommerceOfferReason) -> Self {
+    pub fn new(
+        period: AdvancedCommerceOfferPeriod,
+        period_count: i32,
+        price: i64,
+        reason: AdvancedCommerceOfferReason,
+    ) -> Self {
         Self {
             period,
             period_count,

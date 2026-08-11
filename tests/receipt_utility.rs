@@ -1,9 +1,10 @@
 #![cfg(feature = "receipt-utility")]
 
+use std::fs;
+
 use app_store_server_library::receipt_utility::{
     extract_transaction_id_from_app_receipt, extract_transaction_id_from_transaction_receipt,
 };
-use std::fs;
 
 const APP_RECEIPT_EXPECTED_TRANSACTION_ID: &str = "0";
 const TRANSACTION_RECEIPT_EXPECTED_TRANSACTION_ID: &str = "33993399";

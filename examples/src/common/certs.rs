@@ -4,9 +4,10 @@
 //! embedded below. `DEMO_MODE` swaps in the repository's self-signed test CA so
 //! the bundled `testNotification` fixture verifies offline.
 
+use std::path::{Path, PathBuf};
+
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
-use std::path::{Path, PathBuf};
 
 /// Apple's four public root certificates, base64-encoded DER.
 ///
@@ -89,7 +90,11 @@ pub fn load_roots(source: &RootSource) -> std::io::Result<Vec<Vec<u8>>> {
         }
         RootSource::Directory(dir) => {
             let roots = roots_from_dir(dir)?;
-            println!("[certs] loaded {} root certificate(s) from {}", roots.len(), dir.display());
+            println!(
+                "[certs] loaded {} root certificate(s) from {}",
+                roots.len(),
+                dir.display()
+            );
             Ok(roots)
         }
     }

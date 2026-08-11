@@ -1,4 +1,7 @@
 mod common;
+use std::collections::HashMap;
+use std::fs;
+
 use app_store_server_library::advanced_commerce_api_client::AdvancedCommerceApiClient;
 use app_store_server_library::api_client::error::ConfigurationError;
 use app_store_server_library::models::advanced_commerce_refund_reason::AdvancedCommerceRefundReason;
@@ -17,8 +20,6 @@ use app_store_server_library::models::app_store_environment::Environment;
 use common::transport_mock::{MockTransport, RequestVerifier};
 use http::{Method, StatusCode};
 use serde_json::Value;
-use std::collections::HashMap;
-use std::fs;
 use uuid::Uuid;
 
 #[tokio::test]
@@ -38,7 +39,8 @@ async fn test_cancel_subscription() {
         })),
     );
 
-    let request = AdvancedCommerceSubscriptionCancelRequest::new(Uuid::new_v4()).with_storefront("test_storefront".to_string());
+    let request =
+        AdvancedCommerceSubscriptionCancelRequest::new(Uuid::new_v4()).with_storefront("test_storefront".to_string());
 
     let response = client
         .cancel_subscription("test_transaction_id", &request)

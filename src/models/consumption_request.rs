@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
+
 use crate::models::delivery_status::DeliveryStatus;
 use crate::models::refund_preference::RefundPreference;
-use serde::{Deserialize, Serialize};
 
 /// The request body containing consumption information.
 ///

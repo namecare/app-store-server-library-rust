@@ -1,7 +1,8 @@
-use crate::models::consumption_request_reason::ConsumptionRequestReason;
-use crate::models::app_store_environment::Environment;
-use crate::models::status::Status;
 use serde::{Deserialize, Serialize};
+
+use crate::models::app_store_environment::Environment;
+use crate::models::consumption_request_reason::ConsumptionRequestReason;
+use crate::models::status::Status;
 
 /// The app metadata and the signed renewal and transaction information.
 ///

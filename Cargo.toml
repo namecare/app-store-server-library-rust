@@ -10,6 +10,10 @@ readme = "README.md"
 documentation = "https://docs.rs/app-store-server-library"
 keywords = ["apple", "appstore", "appstore-server-api", "appstore-receipt", "advanced-commerce"]
 edition = "2021"
+# Kept in step with the MSRV job in .github/workflows/build_test.yml. The
+# crate's own source builds on less; the floor comes from `time` (reached
+# transitively via asn1-rs), which requires 1.88.
+rust-version = "1.88"
 
 [dependencies]
 
@@ -20,7 +24,7 @@ p256 = { version = "0.13.2", features = ["ecdsa", "pkcs8"], optional = true }
 p384 = { version = "0.13.1", features = ["ecdsa"], optional = true }
 rsa = { version = "0.9.10", optional = true }
 sha2 = { version = "0.10.9", features = ["oid"], optional = true }
-pem-rfc7468 = {  version = "1.0.0", optional = true }
+pem-rfc7468 = { version = "1.0.0", optional = true }
 signature = { version = "2.2.0", optional = true }
 
 # Cryptography - AWS-LC backend (optional)
@@ -40,7 +44,11 @@ base64 = "0.23.0"
 asn1-rs = { version = "0.7.2", optional = true }
 
 # Networking
-reqwest = { version = "0.13.4", default-features = false, features = ["json", "http2", "blocking"], optional = true }
+reqwest = { version = "0.13.4", default-features = false, features = [
+  "json",
+  "http2",
+  "blocking",
+], optional = true }
 http = { version = "1.5.0", optional = true }
 
 # Utils
@@ -55,7 +63,15 @@ tokio = { version = "1.53.1", features = ["test-util", "macros"] }
 [features]
 default = []
 
-rust_crypto = ["dep:pem-rfc7468", "dep:p256", "dep:p384", "dep:rsa", "dep:sha2", "dep:signature", "x509-validator/rust_crypto"]
+rust_crypto = [
+  "dep:pem-rfc7468",
+  "dep:p256",
+  "dep:p384",
+  "dep:rsa",
+  "dep:sha2",
+  "dep:signature",
+  "x509-validator/rust_crypto",
+]
 aws_lc = ["dep:aws-lc-rs", "dep:asn1-rs", "x509-validator/aws_lc"]
 ring = ["dep:ring", "dep:asn1-rs", "x509-validator/ring"]
 
@@ -76,6 +92,70 @@ required-features = ["api-client"]
 name = "advanced_commerce_api_client"
 path = "tests/advanced_commerce_api_client.rs"
 required-features = ["api-client"]
+
+# These reach `CryptoProvider::default_provider()`, which panics when no
+# backend is enabled, so they are meaningless in the backend-free build.
+# Cargo has no "any of these features" form, so each file is declared once
+# per backend; with no backend every copy is skipped, which is the intent.
+[[test]]
+name = "crypto_provider_rust_crypto"
+path = "tests/crypto_provider.rs"
+required-features = ["rust_crypto"]
+
+[[test]]
+name = "crypto_provider_aws_lc"
+path = "tests/crypto_provider.rs"
+required-features = ["aws_lc"]
+
+[[test]]
+name = "crypto_provider_ring"
+path = "tests/crypto_provider.rs"
+required-features = ["ring"]
+
+[[test]]
+name = "jws_signature_creator_rust_crypto"
+path = "tests/jws_signature_creator.rs"
+required-features = ["rust_crypto"]
+
+[[test]]
+name = "jws_signature_creator_aws_lc"
+path = "tests/jws_signature_creator.rs"
+required-features = ["aws_lc"]
+
+[[test]]
+name = "jws_signature_creator_ring"
+path = "tests/jws_signature_creator.rs"
+required-features = ["ring"]
+
+[[test]]
+name = "promotional_offer_signature_creator_rust_crypto"
+path = "tests/promotional_offer_signature_creator.rs"
+required-features = ["rust_crypto"]
+
+[[test]]
+name = "promotional_offer_signature_creator_aws_lc"
+path = "tests/promotional_offer_signature_creator.rs"
+required-features = ["aws_lc"]
+
+[[test]]
+name = "promotional_offer_signature_creator_ring"
+path = "tests/promotional_offer_signature_creator.rs"
+required-features = ["ring"]
+
+[[test]]
+name = "signed_data_verifier_rust_crypto"
+path = "tests/signed_data_verifier.rs"
+required-features = ["rust_crypto"]
+
+[[test]]
+name = "signed_data_verifier_aws_lc"
+path = "tests/signed_data_verifier.rs"
+required-features = ["aws_lc"]
+
+[[test]]
+name = "signed_data_verifier_ring"
+path = "tests/signed_data_verifier.rs"
+required-features = ["ring"]
 
 [workspace]
 members = ["bench/measure", "bench/compare"]

@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
+
 use crate::models::advanced_commerce_offer::AdvancedCommerceOffer;
 use crate::models::advanced_commerce_price_increase_info::AdvancedCommercePriceIncreaseInfo;
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]

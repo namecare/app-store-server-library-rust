@@ -1,8 +1,9 @@
+use std::borrow::Cow;
+
 use asn1_rs::{Any, BerParser, Class, FromBer, Integer, SequenceIterator, Tag};
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use regex::Regex;
-use std::borrow::Cow;
 
 // ASN.1 Type IDs for receipt attributes
 const IN_APP_TYPE_ID: i64 = 17;
@@ -141,7 +142,11 @@ where
 }
 
 fn extract_transaction_id_from_app_receipt_inner(app_receipt_content: &[u8]) -> Option<String> {
-    find_attribute_in_set(app_receipt_content, &[IN_APP_TYPE_ID], extract_transaction_id_from_in_app_receipt)
+    find_attribute_in_set(
+        app_receipt_content,
+        &[IN_APP_TYPE_ID],
+        extract_transaction_id_from_in_app_receipt,
+    )
 }
 
 fn extract_transaction_id_from_in_app_receipt(in_app_receipt_content: &[u8]) -> Option<String> {

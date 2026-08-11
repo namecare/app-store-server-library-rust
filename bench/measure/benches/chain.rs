@@ -4,10 +4,11 @@
 //! `verify_at` rather than `verify`, so "now" is pinned and the numbers do not
 //! drift with the wall clock or expire with the fixtures.
 
+use std::hint::black_box;
+
 use app_store_server_library::chain_verifier::ChainVerifier;
 use app_store_server_library_bench_measure as bench;
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
 
 fn chain(c: &mut Criterion) {
     app_store_server_library_bench_measure::assert_pinned_backend();
@@ -50,7 +51,13 @@ fn chain(c: &mut Criterion) {
     // lookup keyed on the certificate bytes, which is exactly the point —
     // it measures what a caching caller actually pays on a repeat call.
     let cached_verifier = ChainVerifier::new(vec![bench::root_ca_der()]);
-    let _ = cached_verifier.verify_at(&leaf, &intermediate, Some(test_chain_time), true, test_chain_time);
+    let _ = cached_verifier.verify_at(
+        &leaf,
+        &intermediate,
+        Some(test_chain_time),
+        true,
+        test_chain_time,
+    );
     c.bench_function("chain/verify_cached", |b| {
         b.iter(|| {
             black_box(cached_verifier.verify_at(

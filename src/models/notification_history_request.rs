@@ -1,9 +1,10 @@
-use crate::models::notification_type_v2::NotificationTypeV2;
-use crate::models::subtype::Subtype;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
+
+use crate::models::notification_type_v2::NotificationTypeV2;
+use crate::models::subtype::Subtype;
 
 /// The request body for notification history.
 ///

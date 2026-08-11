@@ -1,5 +1,6 @@
-use crate::models::helper_validation_utils::{validate_sku, ValidationError};
 use serde::{Deserialize, Serialize};
+
+use crate::models::helper_validation_utils::{validate_sku, ValidationError};
 
 /// An item for Advanced Commerce subscription price changes.
 ///
@@ -28,11 +29,7 @@ pub struct AdvancedCommerceSubscriptionPriceChangeItem {
 
 impl AdvancedCommerceSubscriptionPriceChangeItem {
     /// Creates a new `AdvancedCommerceSubscriptionPriceChangeItem`, validating the SKU and each dependent SKU.
-    pub fn new(
-        sku: String,
-        price: i64,
-        dependent_skus: Option<Vec<String>>,
-    ) -> Result<Self, ValidationError> {
+    pub fn new(sku: String, price: i64, dependent_skus: Option<Vec<String>>) -> Result<Self, ValidationError> {
         let sku = validate_sku(&sku)?;
         if let Some(ref skus) = dependent_skus {
             for dependent_sku in skus {

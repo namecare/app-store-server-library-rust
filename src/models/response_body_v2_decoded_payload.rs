@@ -1,13 +1,14 @@
-use crate::models::app_data::AppData;
-use crate::models::decoded_signed_data::DecodedSignedData;
-use crate::models::notification_data::Data;
-use crate::models::external_purchase_token::ExternalPurchaseToken;
-use crate::models::notification_type_v2::NotificationTypeV2;
-use crate::models::subtype::Subtype;
-use crate::models::summary::Summary;
 use ::chrono::{DateTime, Utc};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
+
+use crate::models::app_data::AppData;
+use crate::models::decoded_signed_data::DecodedSignedData;
+use crate::models::external_purchase_token::ExternalPurchaseToken;
+use crate::models::notification_data::Data;
+use crate::models::notification_type_v2::NotificationTypeV2;
+use crate::models::subtype::Subtype;
+use crate::models::summary::Summary;
 
 /// A decoded payload containing the version 2 notification data.
 ///

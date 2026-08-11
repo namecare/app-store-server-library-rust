@@ -1,8 +1,6 @@
-use app_store_server_library::models::billing_plan_type::BillingPlanType;
 use app_store_server_library::models::alternate_product::AlternateProduct;
-use app_store_server_library::models::bullet_point::{
-    BulletPoint, BulletPointValidationError,
-};
+use app_store_server_library::models::billing_plan_type::BillingPlanType;
+use app_store_server_library::models::bullet_point::{BulletPoint, BulletPointValidationError};
 use app_store_server_library::models::get_image_list_response::GetImageListResponse;
 use app_store_server_library::models::header_position::HeaderPosition;
 use app_store_server_library::models::image_size::ImageSize;
@@ -112,15 +110,13 @@ fn realtime_url_response_serializes_capital_url_key() {
 
 #[test]
 fn realtime_url_response_parses_fixture() {
-    let parsed: RealtimeUrlResponse =
-        serde_json::from_str(&fixture("getRealtimeUrlResponse.json")).unwrap();
+    let parsed: RealtimeUrlResponse = serde_json::from_str(&fixture("getRealtimeUrlResponse.json")).unwrap();
     assert_eq!(parsed.realtime_url, "https://example.com/realtime");
 }
 
 #[test]
 fn performance_test_response_parses_fixture() {
-    let parsed: PerformanceTestResponse =
-        serde_json::from_str(&fixture("performanceTestResponse.json")).unwrap();
+    let parsed: PerformanceTestResponse = serde_json::from_str(&fixture("performanceTestResponse.json")).unwrap();
     assert_eq!(parsed.config.max_concurrent_requests, 10);
     assert_eq!(parsed.config.total_requests, 100);
     assert_eq!(parsed.config.total_duration, 60000);
@@ -167,8 +163,7 @@ fn performance_test_result_response_parses_fixture() {
 
 #[test]
 fn image_list_response_parses_image_size_from_fixture() {
-    let parsed: GetImageListResponse =
-        serde_json::from_str(&fixture("getImageListResponse.json")).unwrap();
+    let parsed: GetImageListResponse = serde_json::from_str(&fixture("getImageListResponse.json")).unwrap();
     let items = parsed
         .image_identifiers
         .as_ref()

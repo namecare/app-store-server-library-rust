@@ -1,8 +1,9 @@
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
 use crate::models::advanced_commerce_request_info::AdvancedCommerceRequestInfo;
 use crate::models::advanced_commerce_subscription_price_change_item::AdvancedCommerceSubscriptionPriceChangeItem;
 use crate::models::helper_validation_utils::{validate_items, ValidationError};
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 /// The metadata your app provides to change the price of an auto-renewable subscription.
 ///

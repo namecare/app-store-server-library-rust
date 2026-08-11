@@ -6,10 +6,11 @@
 //! returns from before any crypto — that cost is worth tracking, but it is
 //! parsing, not verification, and the group name says so.
 
+use std::hint::black_box;
+
 use app_store_server_library::models::app_store_environment::Environment;
 use app_store_server_library_bench_measure as bench;
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
 
 fn verify(c: &mut Criterion) {
     app_store_server_library_bench_measure::assert_pinned_backend();

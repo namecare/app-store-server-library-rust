@@ -1,6 +1,7 @@
-use crate::models::billing_plan_type::BillingPlanType;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use crate::models::billing_plan_type::BillingPlanType;
 
 /// A switch-plan message and product ID you provide in a real-time response to your Get Retention Message endpoint.
 ///

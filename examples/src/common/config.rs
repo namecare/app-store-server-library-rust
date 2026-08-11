@@ -3,9 +3,11 @@
 //! Every setting has a default that matches the bundled `testNotification`
 //! fixture, so `cargo run` works with no setup.
 
-use crate::common::certs::RootSource;
-use app_store_server_library::models::app_store_environment::Environment;
 use std::path::PathBuf;
+
+use app_store_server_library::models::app_store_environment::Environment;
+
+use crate::common::certs::RootSource;
 
 /// The bundled demo signing key, used when `PROMO_KEY_PATH` is unset.
 const DEMO_SIGNING_KEY_PEM: &str = include_str!("../../assets/testSigningKey.p8");
@@ -58,9 +60,10 @@ pub fn from_env() -> Result<Config, ConfigError> {
     let bundle_id = var_or("BUNDLE_ID", "com.example");
 
     let app_apple_id = match std::env::var("APP_APPLE_ID") {
-        Ok(raw) => Some(raw.parse::<i64>().map_err(|_| {
-            ConfigError::Invalid("APP_APPLE_ID must be an integer".into())
-        })?),
+        Ok(raw) => Some(
+            raw.parse::<i64>()
+                .map_err(|_| ConfigError::Invalid("APP_APPLE_ID must be an integer".into()))?,
+        ),
         Err(_) => {
             println!(
                 "[config] WARNING: APP_APPLE_ID unset - verifying notifications against the \
@@ -71,7 +74,10 @@ pub fn from_env() -> Result<Config, ConfigError> {
         }
     };
 
-    let environment = match var_or("ENVIRONMENT", "sandbox").to_lowercase().as_str() {
+    let environment = match var_or("ENVIRONMENT", "sandbox")
+        .to_lowercase()
+        .as_str()
+    {
         "sandbox" => Environment::Sandbox,
         "production" => Environment::Production,
         other => {
@@ -118,8 +124,9 @@ pub fn from_env() -> Result<Config, ConfigError> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::sync::Mutex;
+
+    use super::*;
 
     static ENV_LOCK: Mutex<()> = Mutex::new(());
 

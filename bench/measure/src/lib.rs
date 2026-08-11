@@ -46,7 +46,11 @@ pub fn root_ca_der() -> Vec<u8> {
 
 /// `(leaf, intermediate, root)` for the synthetic test chain.
 pub fn test_chain() -> (Vec<u8>, Vec<u8>, Vec<u8>) {
-    (der(LEAF_CERT_BASE64), der(INTERMEDIATE_CA_BASE64), der(ROOT_CA_BASE64))
+    (
+        der(LEAF_CERT_BASE64),
+        der(INTERMEDIATE_CA_BASE64),
+        der(ROOT_CA_BASE64),
+    )
 }
 
 /// `(leaf, intermediate, root)` for the real, publicly-issued Apple chain.
@@ -61,7 +65,11 @@ pub fn real_apple_chain() -> (Vec<u8>, Vec<u8>, Vec<u8>) {
 
 /// Reads a fixture from the library's `tests/resources` tree.
 pub fn fixture(name: &str) -> String {
-    let path = format!("{}/../../tests/resources/{}", env!("CARGO_MANIFEST_DIR"), name);
+    let path = format!(
+        "{}/../../tests/resources/{}",
+        env!("CARGO_MANIFEST_DIR"),
+        name
+    );
     std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("read fixture {path}: {e}"))
 }
 

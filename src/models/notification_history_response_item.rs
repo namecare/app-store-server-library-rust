@@ -1,5 +1,6 @@
-use crate::models::send_attempt_item::SendAttemptItem;
 use serde::{Deserialize, Serialize};
+
+use crate::models::send_attempt_item::SendAttemptItem;
 
 /// The App Store server notification history record, including the signed notification payload and the result of the server’s first send attempt.
 ///

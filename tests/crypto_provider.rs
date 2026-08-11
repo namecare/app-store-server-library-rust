@@ -9,7 +9,10 @@ use app_store_server_library::crypto::CryptoProvider;
 fn load_p256_key_accepts_apple_key() {
     let pem = include_str!("resources/certs/testSigningKey.p8");
     let provider = CryptoProvider::default_provider();
-    assert!(provider.p256_signing.private_key(pem).is_ok());
+    assert!(provider
+        .p256_signing
+        .private_key(pem)
+        .is_ok());
 }
 
 #[test]
@@ -32,7 +35,9 @@ fn signature_is_der_encoded() {
 
     // Pass the RAW message: the backend applies SHA-256 internally. Pre-hashing
     // here would sign SHA256(SHA256(msg)) and produce signatures Apple rejects.
-    let (_, sig) = key.signature(b"message to sign").expect("signing should succeed");
+    let (_, sig) = key
+        .signature(b"message to sign")
+        .expect("signing should succeed");
 
     // DER SEQUENCE of two INTEGERs. Both backends must agree on this framing,
     // which is what `signature.derRepresentation` produces in the Swift library.
@@ -61,7 +66,9 @@ fn signature_raw_form_is_64_bytes_and_verifies() {
         .expect("key should load");
 
     let message = b"message to sign";
-    let (raw, _) = key.signature(message).expect("signing should succeed");
+    let (raw, _) = key
+        .signature(message)
+        .expect("signing should succeed");
 
     // JWS (RFC 7515 3.1) requires the fixed-width r|s form, always 64 bytes.
     assert_eq!(raw.len(), 64);

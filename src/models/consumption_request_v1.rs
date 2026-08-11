@@ -1,3 +1,6 @@
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
 use crate::models::account_tenure::AccountTenure;
 use crate::models::consumption_status::ConsumptionStatus;
 use crate::models::delivery_status_v1::DeliveryStatusV1;
@@ -8,8 +11,6 @@ use crate::models::play_time::PlayTime;
 use crate::models::refund_preference_v1::RefundPreferenceV1;
 use crate::models::serde_ext::{de_string_as_optional_uuid, ser_optional_uuid_as_string};
 use crate::models::user_status::UserStatus;
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 /// The request body containing consumption information.
 ///

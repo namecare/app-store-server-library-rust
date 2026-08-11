@@ -1,8 +1,9 @@
-use crate::models::token_type::TokenType;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::formats::Flexible;
 use serde_with::TimestampMilliSeconds;
+
+use crate::models::token_type::TokenType;
 
 /// The payload data that contains an external purchase token.
 ///

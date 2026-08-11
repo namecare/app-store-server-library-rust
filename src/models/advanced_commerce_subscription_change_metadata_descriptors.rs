@@ -1,5 +1,6 @@
-use crate::models::advanced_commerce_effective::AdvancedCommerceEffective;
 use serde::{Deserialize, Serialize};
+
+use crate::models::advanced_commerce_effective::AdvancedCommerceEffective;
 
 /// AdvancedCommerceDescriptors for the metadata changes of a subscription.
 ///

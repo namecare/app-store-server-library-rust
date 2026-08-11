@@ -1,12 +1,12 @@
-use crate::crypto::jws;
-use crate::crypto::{CryptoError, CryptoProvider, P256PrivateKey};
-use crate::models::advanced_commerce_in_app_request::AdvancedCommerceInAppRequest;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
+
+use crate::crypto::{jws, CryptoError, CryptoProvider, P256PrivateKey};
+use crate::models::advanced_commerce_in_app_request::AdvancedCommerceInAppRequest;
 
 #[derive(Error, Debug)]
 pub enum JWSSignatureCreatorError {
@@ -122,13 +122,11 @@ impl JWSSignatureCreator {
         let encoded_payload = jws::b64url_encode(&serde_json::to_vec(payload)?);
         let signing_input = format!("{encoded_header}.{encoded_payload}");
 
-        let (raw, _) = self.signing_key.signature(signing_input.as_bytes())?;
+        let (raw, _) = self
+            .signing_key
+            .signature(signing_input.as_bytes())?;
 
-        Ok(jws::encode_compact(
-            &encoded_header,
-            &encoded_payload,
-            &raw,
-        ))
+        Ok(jws::encode_compact(&encoded_header, &encoded_payload, &raw))
     }
 }
 

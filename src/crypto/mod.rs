@@ -38,7 +38,9 @@ pub(crate) fn decode_pem(pem: &str) -> Result<Vec<u8>, &'static str> {
     // Concatenate base64 lines
     let b64: String = lines[start + 1..end].concat();
 
-    BASE64_STANDARD.decode(&b64).map_err(|_| "invalid base64")
+    BASE64_STANDARD
+        .decode(&b64)
+        .map_err(|_| "invalid base64")
 }
 
 /// Converts a fixed-width `r‖s` ECDSA P-256 signature to `SEQUENCE { INTEGER r, INTEGER s }`.
@@ -95,11 +97,7 @@ pub trait P256PublicKey: Send + Sync + Debug {
     /// valid over `message`.
     ///
     /// `message` is the raw message; the implementation hashes it internally.
-    fn is_valid_signature(
-        &self,
-        signature: &[u8; 64],
-        message: &[u8],
-    ) -> Result<(), CryptoError>;
+    fn is_valid_signature(&self, signature: &[u8; 64], message: &[u8]) -> Result<(), CryptoError>;
 }
 
 /// Controls the cryptography used by this library.

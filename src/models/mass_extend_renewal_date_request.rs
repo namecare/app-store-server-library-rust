@@ -1,5 +1,6 @@
-use crate::models::extend_reason_code::ExtendReasonCode;
 use serde::{Deserialize, Serialize};
+
+use crate::models::extend_reason_code::ExtendReasonCode;
 
 /// The request body that contains subscription-renewal-extension data to apply for all eligible active subscribers.
 ///

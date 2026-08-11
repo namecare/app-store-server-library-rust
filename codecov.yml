@@ -1,0 +1,21 @@
+# Coverage is measured by admin/coverage, which accumulates one run per
+# crypto backend into a single report. See .github/workflows/build_test.yml.
+coverage:
+  status:
+    project:
+      default:
+        # Small movements are noise from which backend happened to enter a
+        # dispatch arm first; only a real drop should fail the check.
+        threshold: 1%
+    patch:
+      default:
+        informational: true
+
+comment:
+  layout: "reach, diff, files"
+  require_changes: true
+
+ignore:
+  - "bench/**"
+  - "examples/**"
+  - "tests/**"

@@ -1,8 +1,9 @@
+use serde::{Deserialize, Serialize};
+
 use crate::models::failures::Failures;
 use crate::models::performance_test_config::PerformanceTestConfig;
 use crate::models::performance_test_response_times::PerformanceTestResponseTimes;
 use crate::models::performance_test_status::PerformanceTestStatus;
-use serde::{Deserialize, Serialize};
 
 /// The response from the Get Performance Test Results API call.
 ///

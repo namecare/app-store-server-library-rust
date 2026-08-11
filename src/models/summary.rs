@@ -1,5 +1,6 @@
-use crate::models::app_store_environment::Environment;
 use serde::{Deserialize, Serialize};
+
+use crate::models::app_store_environment::Environment;
 
 /// The payload data for a subscription-renewal-date extension notification.
 ///

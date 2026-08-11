@@ -1,5 +1,6 @@
-use crate::models::advanced_commerce_offer::AdvancedCommerceOffer;
 use serde::{Deserialize, Serialize};
+
+use crate::models::advanced_commerce_offer::AdvancedCommerceOffer;
 
 /// The data that describes a subscription item.
 ///

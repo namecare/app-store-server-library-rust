@@ -1,3 +1,10 @@
+use std::fmt;
+
+use http::Method;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+use uuid::Uuid;
+
 use crate::api_client::api_client::ApiClient;
 use crate::api_client::error::{ApiClientError, ConfigurationError};
 use crate::api_client::transport::Transport;
@@ -13,6 +20,7 @@ use crate::models::extend_renewal_date_response::ExtendRenewalDateResponse;
 use crate::models::get_image_list_response::GetImageListResponse;
 use crate::models::get_message_list_response::GetMessageListResponse;
 use crate::models::history_response::HistoryResponse;
+use crate::models::image_size::ImageSize;
 use crate::models::mass_extend_renewal_date_request::MassExtendRenewalDateRequest;
 use crate::models::mass_extend_renewal_date_status_response::MassExtendRenewalDateStatusResponse;
 use crate::models::notification_history_request::NotificationHistoryRequest;
@@ -31,12 +39,6 @@ use crate::models::transaction_history_request::TransactionHistoryRequest;
 use crate::models::transaction_info_response::TransactionInfoResponse;
 use crate::models::update_app_account_token_request::UpdateAppAccountTokenRequest;
 use crate::models::upload_message_request_body::UploadMessageRequestBody;
-use crate::models::image_size::ImageSize;
-use http::Method;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
-use std::fmt;
-use uuid::Uuid;
 
 /// The error returned by [`AppStoreServerApiClient`].
 #[derive(Debug, Clone)]
@@ -77,7 +79,10 @@ impl fmt::Display for AppStoreServerApiClientError {
 
 impl From<ApiClientError> for AppStoreServerApiClientError {
     fn from(inner: ApiClientError) -> Self {
-        let api_error = inner.raw_code().map(ApiErrorCode::from_code).unwrap_or(ApiErrorCode::Unknown);
+        let api_error = inner
+            .raw_code()
+            .map(ApiErrorCode::from_code)
+            .unwrap_or(ApiErrorCode::Unknown);
         Self { inner, api_error }
     }
 }
@@ -110,7 +115,14 @@ impl<T: Transport> AppStoreServerApiClient<T> {
         transport: T,
     ) -> Result<Self, ConfigurationError> {
         Ok(Self {
-            inner: ApiClient::new(signing_key, key_id, issuer_id, bundle_id, environment, transport)?,
+            inner: ApiClient::new(
+                signing_key,
+                key_id,
+                issuer_id,
+                bundle_id,
+                environment,
+                transport,
+            )?,
         })
     }
 
@@ -124,8 +136,13 @@ impl<T: Transport> AppStoreServerApiClient<T> {
         Res: DeserializeOwned,
         B: Serialize,
     {
-        let req = self.inner.build_request(path, method, body)?;
-        self.inner.make_request_with_response_body(req).await.map_err(Into::into)
+        let req = self
+            .inner
+            .build_request(path, method, body)?;
+        self.inner
+            .make_request_with_response_body(req)
+            .await
+            .map_err(Into::into)
     }
 
     async fn request_no_body<B: Serialize>(
@@ -134,7 +151,9 @@ impl<T: Transport> AppStoreServerApiClient<T> {
         method: Method,
         body: Option<&B>,
     ) -> Result<(), AppStoreServerApiClientError> {
-        let req = self.inner.build_request(path, method, body)?;
+        let req = self
+            .inner
+            .build_request(path, method, body)?;
         self.inner
             .make_request_without_response_body(req)
             .await
@@ -148,7 +167,9 @@ impl<T: Transport> AppStoreServerApiClient<T> {
         body: Vec<u8>,
         content_type: &str,
     ) -> Result<(), AppStoreServerApiClientError> {
-        let req = self.inner.build_request_with_custom_content(path, method, body, content_type)?;
+        let req = self
+            .inner
+            .build_request_with_custom_content(path, method, body, content_type)?;
         self.inner
             .make_request_without_response_body(req)
             .await
@@ -207,8 +228,12 @@ impl<T: Transport> AppStoreServerApiClient<T> {
             "/inApps/v1/subscriptions/extend/{}",
             original_transaction_id
         );
-        self.request(path.as_str(), Method::PUT, Some(extend_renewal_date_request))
-            .await
+        self.request(
+            path.as_str(),
+            Method::PUT,
+            Some(extend_renewal_date_request),
+        )
+        .await
     }
 
     /// Get the statuses for all of a customer's auto-renewable subscriptions in your app.
@@ -275,7 +300,10 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     ) -> Result<RefundHistoryResponse, AppStoreServerApiClientError> {
         let mut path = format!("/inApps/v2/refund/lookup/{}", transaction_id);
         if !revision.is_empty() {
-            path.push_str(&format!("?revision={}", percent_encode_query_value(revision)));
+            path.push_str(&format!(
+                "?revision={}",
+                percent_encode_query_value(revision)
+            ));
         }
         self.request::<RefundHistoryResponse, ()>(path.as_str(), Method::GET, None)
             .await
@@ -397,11 +425,18 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     ) -> Result<NotificationHistoryResponse, AppStoreServerApiClientError> {
         let mut path = "/inApps/v1/notifications/history".to_string();
         if !pagination_token.is_empty() {
-            path.push_str(&format!("?paginationToken={}", percent_encode_query_value(pagination_token)));
+            path.push_str(&format!(
+                "?paginationToken={}",
+                percent_encode_query_value(pagination_token)
+            ));
         }
 
-        self.request(path.as_str(), Method::POST, Some(notification_history_request))
-            .await
+        self.request(
+            path.as_str(),
+            Method::POST,
+            Some(notification_history_request),
+        )
+        .await
     }
 
     /// Get a customer's in-app purchase transaction history for your app.
@@ -452,12 +487,18 @@ impl<T: Transport> AppStoreServerApiClient<T> {
 
         if let Some(product_types) = &transaction_history_request.product_types {
             for item in product_types {
-                query_strings.push(format!("productType={}", percent_encode_query_value(item.raw_value())));
+                query_strings.push(format!(
+                    "productType={}",
+                    percent_encode_query_value(item.raw_value())
+                ));
             }
         }
 
         if let Some(sort) = &transaction_history_request.sort {
-            query_strings.push(format!("sort={}", percent_encode_query_value(sort.raw_value())));
+            query_strings.push(format!(
+                "sort={}",
+                percent_encode_query_value(sort.raw_value())
+            ));
         }
 
         if let Some(subscription_group_ids) = &transaction_history_request.subscription_group_identifiers {
@@ -613,7 +654,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     /// Returns an `APIError` if the request could not be processed.
     pub async fn finish_transaction(&self, transaction_id: &str) -> Result<(), AppStoreServerApiClientError> {
         let path = format!("/inApps/v1/transactions/{}/finish", transaction_id);
-        self.request_no_body::<()>(&path, Method::POST, None).await
+        self.request_no_body::<()>(&path, Method::POST, None)
+            .await
     }
 
     /// Send consumption information about a consumable in-app purchase to the App Store after your server receives a consumption request notification.
@@ -661,9 +703,16 @@ impl<T: Transport> AppStoreServerApiClient<T> {
         original_transaction_id: &str,
         update_app_account_token_request: &UpdateAppAccountTokenRequest,
     ) -> Result<(), AppStoreServerApiClientError> {
-        let path = format!("/inApps/v1/transactions/{}/appAccountToken", original_transaction_id);
-        self.request_no_body(path.as_str(), Method::PUT, Some(update_app_account_token_request))
-            .await
+        let path = format!(
+            "/inApps/v1/transactions/{}/appAccountToken",
+            original_transaction_id
+        );
+        self.request_no_body(
+            path.as_str(),
+            Method::PUT,
+            Some(update_app_account_token_request),
+        )
+        .await
     }
 
     /// Upload an image to use for retention messaging.
@@ -687,9 +736,13 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     ) -> Result<(), AppStoreServerApiClientError> {
         let mut path = format!("/inApps/v1/messaging/image/{}", image_identifier);
         if let Some(image_size) = image_size {
-            path.push_str(&format!("?imageSize={}", percent_encode_query_value(image_size.raw_value())));
+            path.push_str(&format!(
+                "?imageSize={}",
+                percent_encode_query_value(image_size.raw_value())
+            ));
         }
-        self.request_custom_content(&path, Method::PUT, image, "image/png").await
+        self.request_custom_content(&path, Method::PUT, image, "image/png")
+            .await
     }
 
     /// Delete a previously uploaded image.
@@ -705,7 +758,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     /// Returns an `APIError` if the request could not be processed.
     pub async fn delete_image(&self, image_identifier: Uuid) -> Result<(), AppStoreServerApiClientError> {
         let path = format!("/inApps/v1/messaging/image/{}", image_identifier);
-        self.request_no_body::<()>(&path, Method::DELETE, None).await
+        self.request_no_body::<()>(&path, Method::DELETE, None)
+            .await
     }
 
     /// Get the image identifier and state for all uploaded images.
@@ -759,7 +813,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
     /// Returns an `APIError` if the request could not be processed.
     pub async fn delete_message(&self, message_identifier: Uuid) -> Result<(), AppStoreServerApiClientError> {
         let path = format!("/inApps/v1/messaging/message/{}", message_identifier);
-        self.request_no_body::<()>(&path, Method::DELETE, None).await
+        self.request_no_body::<()>(&path, Method::DELETE, None)
+            .await
     }
 
     /// Get the message identifier and state of all uploaded messages.
@@ -820,7 +875,8 @@ impl<T: Transport> AppStoreServerApiClient<T> {
         locale: &str,
     ) -> Result<(), AppStoreServerApiClientError> {
         let path = format!("/inApps/v1/messaging/default/{}/{}", product_id, locale);
-        self.request_no_body::<()>(&path, Method::DELETE, None).await
+        self.request_no_body::<()>(&path, Method::DELETE, None)
+            .await
     }
 
     /// Get the default message configuration for a specific product in a specific locale.
@@ -864,8 +920,12 @@ impl<T: Transport> AppStoreServerApiClient<T> {
         &self,
         realtime_url_request: &RealtimeUrlRequest,
     ) -> Result<(), AppStoreServerApiClientError> {
-        self.request_no_body("/inApps/v1/messaging/realtime/url", Method::PUT, Some(realtime_url_request))
-            .await
+        self.request_no_body(
+            "/inApps/v1/messaging/realtime/url",
+            Method::PUT,
+            Some(realtime_url_request),
+        )
+        .await
     }
 
     /// Delete the URL of your Get Retention Message endpoint.
@@ -944,8 +1004,6 @@ impl<T: Transport> AppStoreServerApiClient<T> {
         self.request::<PerformanceTestResultResponse, ()>(&path, Method::GET, None)
             .await
     }
-
-
 }
 
 /// Represents the version of the Get Transaction History endpoint to use.

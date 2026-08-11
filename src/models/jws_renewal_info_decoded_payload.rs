@@ -1,6 +1,12 @@
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use serde_with::formats::Flexible;
+use serde_with::TimestampMilliSeconds;
+use uuid::Uuid;
+
 use crate::models::advanced_commerce_renewal_info::AdvancedCommerceRenewalInfo;
-use crate::models::auto_renew_status::AutoRenewStatus;
 use crate::models::app_store_environment::Environment;
+use crate::models::auto_renew_status::AutoRenewStatus;
 use crate::models::decoded_signed_data::DecodedSignedData;
 use crate::models::expiration_intent::ExpirationIntent;
 use crate::models::offer_discount_type::OfferDiscountType;
@@ -8,11 +14,6 @@ use crate::models::offer_type::OfferType;
 use crate::models::price_increase_status::PriceIncreaseStatus;
 use crate::models::renewal_billing_plan_type::RenewalBillingPlanType;
 use crate::models::renewal_commitment_info::RenewalCommitmentInfo;
-use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
-use serde_with::formats::Flexible;
-use serde_with::TimestampMilliSeconds;
-use uuid::Uuid;
 
 /// A decoded payload containing subscription renewal information for an auto-renewable subscription.
 ///

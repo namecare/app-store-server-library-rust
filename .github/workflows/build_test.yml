@@ -1,0 +1,268 @@
+name: Build+test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-test-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  build:
+    name: Build+test (${{ matrix.rust }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        rust: [stable, beta, nightly]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        exclude:
+          # beta and nightly exist here as an early warning for upstream
+          # regressions, which are toolchain bugs rather than platform bugs.
+          # Linux catches those; the other two runners would only spend
+          # aws-lc-sys build minutes to reach the same answer.
+          - { os: windows-latest, rust: beta }
+          - { os: windows-latest, rust: nightly }
+          - { os: macos-latest, rust: beta }
+          - { os: macos-latest, rust: nightly }
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.rust }}-${{ matrix.os }}
+
+      # aws-lc-sys builds vendored C and needs nasm to assemble its x86_64
+      # routines on Windows; the other two runners have a working toolchain
+      # already. cmake is present on all GitHub-hosted images.
+      - name: Install nasm
+        if: runner.os == 'Windows'
+        uses: ilammy/setup-nasm@v1
+
+      - name: cargo build (debug; no backend)
+        run: cargo build --locked --package app-store-server-library --no-default-features
+
+      - name: cargo test (release; per backend)
+        run: |
+          cargo test --locked --release --package app-store-server-library --no-default-features --features aws_lc,api-client-reqwest,receipt-utility --all-targets
+          cargo test --locked --release --package app-store-server-library --no-default-features --features ring,api-client-reqwest,receipt-utility --all-targets
+          cargo test --locked --release --package app-store-server-library --no-default-features --features rust_crypto,api-client-reqwest,receipt-utility --all-targets
+
+      - name: cargo test (release; doctests)
+        run: |
+          cargo test --locked --release --package app-store-server-library --no-default-features --features aws_lc,api-client-reqwest,receipt-utility --doc
+          cargo test --locked --release --package app-store-server-library --no-default-features --features ring,api-client-reqwest,receipt-utility --doc
+          cargo test --locked --release --package app-store-server-library --no-default-features --features rust_crypto,api-client-reqwest,receipt-utility --doc
+
+      # Catches a broken published tarball — most likely via `exclude`
+      # dropping a file the build needs, which no other job would notice
+      # because the working tree still has it.
+      - name: cargo package
+        run: cargo package --locked --package app-store-server-library --no-default-features --features aws_lc
+
+  examples:
+    name: Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      # `examples/` is excluded from the root workspace and pins its own
+      # lockfile, so nothing else in this file builds it.
+      - name: cargo build (examples)
+        run: cargo build --locked --manifest-path examples/Cargo.toml --bins
+
+      - name: cargo test (examples)
+        run: cargo test --locked --manifest-path examples/Cargo.toml
+
+  msrv:
+    name: MSRV
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      # Pinned to the `rust-version` in Cargo.toml. Bump both together, or the
+      # manifest starts making a promise CI never checks.
+      #
+      # 1.88 rather than something older because `time` (reached transitively
+      # via asn1-rs) requires it. The crate's own source builds on less; the
+      # floor comes entirely from that dependency.
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.88"
+
+      - uses: Swatinem/rust-cache@v2
+
+      - run: |
+          cargo check --locked --lib --package app-store-server-library --no-default-features --features aws_lc
+          cargo check --locked --lib --package app-store-server-library --no-default-features --features ring
+          cargo check --locked --lib --package app-store-server-library --no-default-features --features rust_crypto
+
+  features:
+    name: Features
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      # The backend-free configuration compiles but verifies nothing. That is
+      # a deliberate part of the design and easy to break without noticing,
+      # so it is checked and tested on its own rather than only as a
+      # side effect of some other job.
+      - name: cargo check (debug; no backend)
+        run: cargo check --locked --package app-store-server-library --no-default-features --all-targets
+
+      - name: cargo test (debug; no backend)
+        run: cargo test --locked --package app-store-server-library --no-default-features --all-targets
+
+      - name: cargo test (debug; per backend)
+        run: |
+          cargo test --locked --package app-store-server-library --no-default-features --features aws_lc
+          cargo test --locked --package app-store-server-library --no-default-features --features ring
+          cargo test --locked --package app-store-server-library --no-default-features --features rust_crypto
+
+      # The feature-gated modules are orthogonal to the backend, so each is
+      # also checked on its own against a single backend.
+      - name: cargo check (debug; optional modules)
+        run: |
+          cargo check --locked --package app-store-server-library --no-default-features --features aws_lc,api-client --all-targets
+          cargo check --locked --package app-store-server-library --no-default-features --features aws_lc,api-client-reqwest --all-targets
+          cargo check --locked --package app-store-server-library --no-default-features --features aws_lc,api-client-reqwest-native-tls --all-targets
+          cargo check --locked --package app-store-server-library --no-default-features --features aws_lc,receipt-utility --all-targets
+          cargo check --locked --package app-store-server-library --no-default-features --features receipt-utility --all-targets
+
+      # Two backends at once is a configuration a downstream user reaches by
+      # accident via feature unification, so it has to at least compile.
+      - name: cargo check (debug; backend combinations)
+        run: |
+          cargo check --locked --package app-store-server-library --no-default-features --features aws_lc,ring
+          cargo check --locked --package app-store-server-library --no-default-features --features aws_lc,rust_crypto
+          cargo check --locked --package app-store-server-library --no-default-features --features ring,rust_crypto
+          cargo check --locked --package app-store-server-library --all-features
+
+      - name: cargo test (release; no run)
+        run: cargo test --locked --release --package app-store-server-library --no-default-features --features aws_lc --no-run
+
+  docs:
+    name: Check for documentation errors
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      # Nightly, to mirror what docs.rs builds with.
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+
+      - uses: Swatinem/rust-cache@v2
+
+      # One pass per backend: an intra-doc link inside a backend-gated module
+      # is invisible to every run that does not enable it.
+      - name: cargo doc (per backend)
+        run: |
+          cargo doc --locked --package app-store-server-library --no-default-features --features aws_lc,api-client-reqwest,receipt-utility --no-deps
+          cargo doc --locked --package app-store-server-library --no-default-features --features ring,api-client-reqwest,receipt-utility --no-deps
+          cargo doc --locked --package app-store-server-library --no-default-features --features rust_crypto,api-client-reqwest,receipt-utility --no-deps
+        env:
+          RUSTDOCFLAGS: -Dwarnings
+
+  coverage:
+    name: Measure coverage
+    runs-on: ubuntu-latest
+    if: github.event_name != 'merge_group'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: llvm-tools
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: cargo-llvm-cov
+
+      - name: Measure coverage
+        run: ./admin/coverage --lcov --output-path lcov.info
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: lcov.info
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  minver:
+    name: Check minimum versions of direct dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-minimal-versions
+        uses: taiki-e/install-action@cargo-minimal-versions
+
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+
+      - name: Check direct-minimal-versions
+        run: cargo minimal-versions --direct --ignore-private check --each-feature
+        env:
+          RUSTC_BOOTSTRAP: 1
+
+  semver:
+    name: Check semver compatibility
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Check semver
+        uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          package: app-store-server-library
+          feature-group: all-features

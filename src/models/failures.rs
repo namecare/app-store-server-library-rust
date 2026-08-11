@@ -1,5 +1,6 @@
-use crate::models::send_attempt_result::SendAttemptResult;
 use std::collections::HashMap;
+
+use crate::models::send_attempt_result::SendAttemptResult;
 
 /// A map of server-to-server notification failure reasons and counts that represent
 /// the number of failures encountered during the performance test.

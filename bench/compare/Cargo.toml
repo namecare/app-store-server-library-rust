@@ -8,7 +8,10 @@ publish = false
 [dependencies]
 # Same backend pin as `measure`, so the Rust in the cross-language table is
 # the same Rust that CI tracks.
-app-store-server-library = { path = "../..", default-features = false, features = ["aws_lc", "receipt-utility"] }
+app-store-server-library = { path = "../..", default-features = false, features = [
+  "aws_lc",
+  "receipt-utility",
+] }
 uuid = { version = "1.24.0", features = ["v4"] }
 
 # No benchmark harness here, deliberately. This crate's job is to run the same

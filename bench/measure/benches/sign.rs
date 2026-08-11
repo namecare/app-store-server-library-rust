@@ -6,6 +6,8 @@
 //! call; that variance cannot be removed through the public API, so it is
 //! documented rather than hidden.
 
+use std::hint::black_box;
+
 use app_store_server_library::jws_signature_creator::{
     AdvancedCommerceInAppSignatureCreator, IntroductoryOfferEligibilitySignatureCreator,
     PromotionalOfferV2SignatureCreator,
@@ -15,7 +17,6 @@ use app_store_server_library::promotional_offer_signature_creator::PromotionalOf
 use app_store_server_library_bench_measure as bench;
 use criterion::{criterion_group, criterion_main, Criterion};
 use serde::Serialize;
-use std::hint::black_box;
 
 #[derive(Serialize)]
 struct BenchInAppRequest {
@@ -77,8 +78,12 @@ fn sign(c: &mut Criterion) {
     .expect("valid signing key");
     c.bench_function("sign/introductory_offer_eligibility", |b| {
         b.iter(|| {
-            black_box(intro.create_signature(black_box("productId"), black_box(true), black_box("transactionId")))
-                .is_ok()
+            black_box(intro.create_signature(
+                black_box("productId"),
+                black_box(true),
+                black_box("transactionId"),
+            ))
+            .is_ok()
         })
     });
 

@@ -1,7 +1,7 @@
 use app_store_server_library::api_client::transport::{Transport, TransportError};
 use http::StatusCode;
 
-pub type RequestVerifier = Box<dyn Fn(&http::Request<Vec<u8>>, &Vec<u8>) -> () + Send + Sync>;
+pub type RequestVerifier = Box<dyn Fn(&http::Request<Vec<u8>>, &Vec<u8>) + Send + Sync>;
 
 pub struct MockTransport {
     response_body: String,

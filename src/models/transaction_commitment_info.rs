@@ -46,11 +46,9 @@ impl TransactionCommitmentInfo {
     /// valid, matching Swift, which skips validation when the field is absent.
     pub fn validate(&self) -> Result<(), TransactionCommitmentInfoValidationError> {
         if let Some(billing_period) = self.billing_period_number {
-            if billing_period < MINIMUM_PERIOD || billing_period > MAXIMUM_PERIOD {
+            if !(MINIMUM_PERIOD..=MAXIMUM_PERIOD).contains(&billing_period) {
                 return Err(
-                    TransactionCommitmentInfoValidationError::BillingPeriodNumberOutOfRange {
-                        value: billing_period,
-                    },
+                    TransactionCommitmentInfoValidationError::BillingPeriodNumberOutOfRange { value: billing_period },
                 );
             }
         }

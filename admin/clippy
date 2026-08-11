@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# Runs clippy on every package in this repo.
+#
+# Passes through any extra arguments to each invocation.
+#
+# Exits non-zero if any clippy invocation exits non-zero,
+# but always runs them all.
+
+rc=0
+script_args="$@"
+
+function run_clippy() {
+  if ! ( set -x ; cargo clippy --locked "$@" $script_args ) ; then
+    rc=$PIPESTATUS
+  fi
+}
+
+# `app-store-server-library` has no default crypto backend, and the verifier
+# is most of what the crate does. Linting the backends together would compile
+# every backend at once and never once produce the single-backend
+# configuration a downstream user actually gets, so each is linted on its own,
+# paired with the feature-gated modules (`api-client`, `receipt-utility`) that
+# make up the rest of the public surface.
+#
+# The bare run has no backend at all: that configuration compiles but verifies
+# nothing, and it is easy to break without noticing.
+run_clippy --package app-store-server-library --no-default-features --all-targets
+
+for backend in aws_lc ring rust_crypto ; do
+  run_clippy --package app-store-server-library \
+    --no-default-features --features $backend --all-targets
+
+  run_clippy --package app-store-server-library --no-default-features \
+    --features $backend,api-client-reqwest,receipt-utility --all-targets
+done
+
+# The remaining members are linted individually rather than with
+# `--workspace`, because a workspace-wide build unifies features across
+# members: one crate enabling a backend would silently enable it for all of
+# them, which is the situation this whole script exists to avoid.
+for p in $(admin/all-workspace-members) ; do
+  case "$p" in
+    app-store-server-library)
+      # covered by the per-backend loop above
+      continue
+      ;;
+    app-store-server-library-bench-*)
+      # The bench crates pin one backend on purpose and trip a
+      # `compile_error!` guard if a second is enabled, so `--all-features`
+      # is the one thing they must not be linted with.
+      run_clippy --package $p --all-targets
+      continue
+      ;;
+  esac
+
+  run_clippy --package $p --all-features --all-targets
+done
+
+# `examples/` is its own workspace (it is `exclude`d from the root one), so
+# none of the above reaches it.
+run_clippy --manifest-path examples/Cargo.toml --all-targets
+
+exit $rc

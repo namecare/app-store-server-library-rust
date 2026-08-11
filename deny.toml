@@ -1,0 +1,28 @@
+[licenses]
+version = 2
+allow = [
+  "Apache-2.0",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  # webpki-root-certs ships Mozilla's CA certificate data, which is licensed
+  # as data rather than as code.
+  "CDLA-Permissive-2.0",
+  "CC0-1.0",
+  "ISC",
+  "MIT",
+  "MIT-0",
+  "Unicode-3.0",
+  "Unicode-DFS-2016",
+  "Unlicense",
+  "Zlib",
+]
+private = { ignore = true }
+
+[advisories]
+# RUSTSEC-2023-0071 — Marvin Attack, a timing sidechannel in `rsa`'s private
+# key operations. No fixed release exists upstream, so there is nothing to
+# upgrade to. It does not apply to this crate's use: `rsa` is reached only
+# through the `rust_crypto` backend, which uses it to *verify* Apple's
+# signatures with public keys. The attack recovers private keys from
+# decryption/signing timings, and this library performs neither.
+ignore = ["RUSTSEC-2023-0071"]

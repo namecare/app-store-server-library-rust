@@ -1,11 +1,15 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
-use thiserror::Error;
 
-use x509_validator::{rfc5280::RFC5280Policy, store::CertificateStore, validator::ChainValidationResult, Certificate, CertificateExt, Oid, PolicyEvaluationResult, PolicyFailureReason, ValidationPolicy};
+use thiserror::Error;
+use x509_validator::rfc5280::RFC5280Policy;
+use x509_validator::store::CertificateStore;
 use x509_validator::unverified_chain::UnverifiedCertificateChain;
-use x509_validator::BaseValidator;
+use x509_validator::validator::ChainValidationResult;
+use x509_validator::{
+    BaseValidator, Certificate, CertificateExt, Oid, PolicyEvaluationResult, PolicyFailureReason, ValidationPolicy,
+};
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ChainVerifierError {
@@ -46,8 +50,12 @@ struct AppStoreOidPolicy {
 impl AppStoreOidPolicy {
     fn new() -> Self {
         Self {
-            wwdr_oid: APPLE_WWDR_INTERMEDIATE_OID.parse().expect("valid OID"),
-            receipt_signer_oid: APPLE_RECEIPT_SIGNER_OID.parse().expect("valid OID"),
+            wwdr_oid: APPLE_WWDR_INTERMEDIATE_OID
+                .parse()
+                .expect("valid OID"),
+            receipt_signer_oid: APPLE_RECEIPT_SIGNER_OID
+                .parse()
+                .expect("valid OID"),
         }
     }
 
@@ -139,7 +147,13 @@ impl ChainVerifier {
             .duration_since(UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0);
-        self.verify_at(leaf, intermediate, effective_date, enable_online_checks, now)
+        self.verify_at(
+            leaf,
+            intermediate,
+            effective_date,
+            enable_online_checks,
+            now,
+        )
     }
 
     /// [`ChainVerifier::verify`], with the current time injected. Exposed for
@@ -206,13 +220,11 @@ impl ChainVerifier {
 
         let validator = x509_validator::Validator::with_policy(roots, policy);
 
-        match validator.validate(leaf, vec!(intermediate)) {
+        match validator.validate(leaf, vec![intermediate]) {
             ChainValidationResult::ValidCertificate(chain) => Ok(leaf_spki_der(chain.leaf())),
-            ChainValidationResult::CouldNotValidate(_reasons) => {
-                Err(ChainVerifierError::VerificationFailure(
-                    ChainVerificationFailureReason::InvalidCertificate,
-                ))
-            }
+            ChainValidationResult::CouldNotValidate(_reasons) => Err(ChainVerifierError::VerificationFailure(
+                ChainVerificationFailureReason::InvalidCertificate,
+            )),
         }
     }
 
@@ -256,9 +268,8 @@ impl ChainVerifier {
 }
 
 fn parse_certificate(der: &[u8]) -> Result<Certificate<'_>, ChainVerifierError> {
-    Certificate::parse(der).map_err(|_| {
-        ChainVerifierError::VerificationFailure(ChainVerificationFailureReason::InvalidCertificate)
-    })
+    Certificate::parse(der)
+        .map_err(|_| ChainVerifierError::VerificationFailure(ChainVerificationFailureReason::InvalidCertificate))
 }
 
 fn leaf_spki_der(leaf: &Certificate) -> Vec<u8> {

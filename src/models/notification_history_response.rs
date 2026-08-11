@@ -1,5 +1,6 @@
-use crate::models::notification_history_response_item::NotificationHistoryResponseItem;
 use serde::{Deserialize, Serialize};
+
+use crate::models::notification_history_response_item::NotificationHistoryResponseItem;
 
 /// A response that contains the App Store Server Notifications history for your app.
 ///

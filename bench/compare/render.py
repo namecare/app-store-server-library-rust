@@ -73,7 +73,7 @@ def read_results():
                 try:
                     row = json.loads(line)
                 except json.JSONDecodeError:
-                    print(f"warning: unparseable line in {fname}: {line!r}",
+                    print(f"warning: unparsable line in {fname}: {line!r}",
                           file=sys.stderr)
                     continue
                 lib = row.get("lib")
