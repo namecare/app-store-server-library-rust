@@ -50,7 +50,11 @@ pub const CASES: &[&str] = &[
 /// all four arms measure byte-identical inputs, which is what makes a ratio
 /// between two cells of the table mean anything.
 fn data_path(relative: &str) -> String {
-    format!("{}/../../resources/{}", env!("CARGO_MANIFEST_DIR"), relative)
+    format!(
+        "{}/../../resources/{}",
+        env!("CARGO_MANIFEST_DIR"),
+        relative
+    )
 }
 
 fn data(relative: &str) -> String {

@@ -1,9 +1,4 @@
 //! The JWS helpers called on every single verification.
-//!
-//! These cost tens to hundreds of nanoseconds against a full verification's
-//! hundreds of microseconds, so an allocation regression here would be
-//! invisible end to end. `split` allocates a `Vec<&str>` and `signing_input`
-//! allocates a `String` on every verify.
 
 use std::hint::black_box;
 

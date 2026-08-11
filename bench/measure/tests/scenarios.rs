@@ -1,8 +1,3 @@
-//! Asserts that every benchmarked case produces the outcome its name claims.
-//!
-//! These live in `tests/` because the bench files are `harness = false`, where
-//! an in-file `#[test]` would never run.
-
 use app_store_server_library::chain_verifier::ChainVerifier;
 use app_store_server_library::models::app_store_environment::Environment;
 use app_store_server_library::receipt_utility::{

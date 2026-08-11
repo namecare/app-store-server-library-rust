@@ -1,8 +1,4 @@
-//! `ChainVerifier` in isolation — the certificate-path cost that dominates a
-//! full verification.
-//!
-//! `verify_at` rather than `verify`, so "now" is pinned and the numbers do not
-//! drift with the wall clock or expire with the fixtures.
+//! `ChainVerifier` in isolation — the certificate-path cost that dominates a full verification.
 
 use std::hint::black_box;
 

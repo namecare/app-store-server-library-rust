@@ -1,27 +1,4 @@
-"""Python arm of the cross-language comparison, under pytest-benchmark.
-
-Each arm of this suite runs its own language's idiomatic benchmark harness —
-Divan in Rust, XCTest ``measure`` in Swift, tinybench in Node, pytest-benchmark
-here. Stage 3 captures each harness's native output; Stage 4 (``render.py``)
-owns all four formats and normalises them into one table.
-
-What Stage 4 reads
-------------------
-``--benchmark-json`` writes pytest-benchmark's own report, which carries both a
-``median`` in its ``stats`` block and the full raw ``data`` array. Stage 4 takes
-the median from the raw samples, the same way it does for Swift and Node.
-
-Iteration count is pinned, not adaptive
----------------------------------------
-Every harness in this suite is adaptive by default and each needs a different
-explicit opt-out. pytest-benchmark's is ``benchmark.pedantic()``: the ordinary
-``benchmark(fn)`` call auto-calibrates both round count and inner iterations,
-so only ``pedantic`` can pin exactly 50 warmup and 500 timed rounds to match
-the other three arms.
-
-Note this library is fully synchronous, unlike Node and Swift — there is no
-event loop in these numbers.
-"""
+"""Python arm of the cross-language comparison, under pytest-benchmark."""
 import pathlib
 import uuid
 
@@ -34,8 +11,6 @@ from appstoreserverlibrary.signed_data_verifier import SignedDataVerifier
 
 WARMUP, ITERATIONS = 50, 500
 
-# `resources/` is shared by both suites: byte-identical inputs are what make a
-# ratio between two cells of the table mean anything.
 DATA = pathlib.Path(__file__).parent.parent.parent / "resources"
 
 
@@ -44,20 +19,8 @@ def text(rel):
 
 
 root_ca = (DATA / "certs/testCA.der").read_bytes()
-# enable_online_checks = False, second positional argument in this library, so
-# the chain is verified on every iteration rather than served from a cache.
 verifier = SignedDataVerifier([root_ca], False, Environment.SANDBOX, "com.example", 1234)
 
-# Apple's shared test fixtures carry no authorityKeyIdentifier/subjectKeyIdentifier
-# extension. This library is the only arm that sets OpenSSL's X509_STRICT flag on its
-# trust store (_ChainVerifier defaults enable_strict_checks=True and SignedDataVerifier
-# exposes no way to turn it off), and OpenSSL 3.x under X509_STRICT rejects such chains
-# with "Missing Authority Key Identifier" before any signature is checked. Rust and Node
-# use a default, non-strict store and accept the same chain.
-#
-# Clearing just that flag puts Python on equal footing with the other arms. Full chain
-# building, the ECDSA signature check and the Apple OID checks all still run on every
-# iteration — verified to cost tens of microseconds, not the ~1us a no-op would.
 verifier._chain_verifier.enable_strict_checks = False
 receipts = ReceiptUtility()
 # signing_key is bytes here, not str.

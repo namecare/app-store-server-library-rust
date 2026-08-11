@@ -1,8 +1,4 @@
 //! Receipt parsing — both public extractors.
-//!
-//! `transaction_receipt` compiles two `Regex` on every call
-//! (src/receipt_utility.rs). That is a real per-call cost and a fixable one;
-//! benching it separately is what would make a fix visible.
 
 use std::hint::black_box;
 

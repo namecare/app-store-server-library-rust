@@ -1,10 +1,4 @@
 //! Signature creation — the four public creators.
-//!
-//! Variance note: `PromotionalOfferSignatureCreator` takes an explicit nonce
-//! and timestamp, so it is fully deterministic. The three JWS creators
-//! generate a fresh `Uuid::new_v4()` and read `Utc::now()` internally on every
-//! call; that variance cannot be removed through the public API, so it is
-//! documented rather than hidden.
 
 use std::hint::black_box;
 

@@ -1,10 +1,4 @@
 //! The five `verify_and_decode_*` entry points, plus the parse-only path.
-//!
-//! The `verify/` group runs under `Environment::Sandbox`, where the full
-//! chain-verification and signature-checking path executes. The `decode/`
-//! group runs Xcode-environment fixtures, which `decode_signed_object`
-//! returns from before any crypto — that cost is worth tracking, but it is
-//! parsing, not verification, and the group name says so.
 
 use std::hint::black_box;
 

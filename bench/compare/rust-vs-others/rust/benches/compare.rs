@@ -29,9 +29,9 @@
 //! ~4×, and the rendered figures are rounded to 2 decimals anyway — but tail
 //! statistics for Rust would need a re-run rather than a re-render.
 
-use app_store_server_library_bench_compare as compare;
 use app_store_server_library::promotional_offer_signature_creator::PromotionalOfferSignatureCreator;
 use app_store_server_library::signed_data_verifier::SignedDataVerifier;
+use app_store_server_library_bench_compare as compare;
 
 /// Matches the other three arms: 500 timed samples of one iteration each.
 const SAMPLE_COUNT: u32 = 500;
