@@ -6,9 +6,7 @@ use thiserror::Error;
 use x509_validator::rfc5280::RFC5280Policy;
 use x509_validator::store::CertificateStore;
 use x509_validator::unverified_chain::UnverifiedCertificateChain;
-use x509_validator::{
-    Certificate, CertificateExt, Oid, PolicyEvaluationResult, PolicyFailureReason, ValidationPolicy,
-};
+use x509_validator::{Certificate, CertificateExt, Oid, PolicyEvaluationResult, PolicyFailureReason, ValidationPolicy};
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ChainVerifierError {
