@@ -10,12 +10,13 @@ debug
 target
 
 # bench
-bench/compare/node/node_modules/
-bench/compare/python/.venv/
-bench/compare/swift/.build/
-bench/compare/results/
-bench/compare/python/__pycache__/
-bench/compare/python/.pytest_cache/
-bench/compare/python/.benchmarks/
-bench/compare/__pycache__/
+bench/compare/rust-vs-others/node/node_modules/
+bench/compare/rust-vs-others/python/.venv/
+bench/compare/rust-vs-others/swift/.build/
+bench/compare/rust-vs-others/results/
+bench/compare/rust-vs-others/python/__pycache__/
+bench/compare/rust-vs-others/python/.pytest_cache/
+bench/compare/rust-vs-others/python/.benchmarks/
+bench/compare/backend/results/
+bench/compare/**/__pycache__/
 **/.build/

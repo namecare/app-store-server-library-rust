@@ -43,8 +43,8 @@ const {
 const WARMUP = 50;
 const ITERATIONS = 500;
 
-const text = (p) => readFileSync(new URL(`../data/${p}`, import.meta.url), "utf8");
-const bytes = (p) => readFileSync(new URL(`../data/${p}`, import.meta.url));
+const text = (p) => readFileSync(new URL(`../../resources/${p}`, import.meta.url), "utf8");
+const bytes = (p) => readFileSync(new URL(`../../resources/${p}`, import.meta.url));
 
 // Root CA must stay a raw Buffer: the verifier wants DER bytes, not a string.
 const rootCa = bytes("certs/testCA.der");

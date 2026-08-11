@@ -70,6 +70,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "app-store-server-library-bench-backend"
+version = "0.0.0"
+dependencies = [
+ "app-store-server-library",
+ "divan",
+ "uuid",
+]
+
+[[package]]
 name = "app-store-server-library-bench-compare"
 version = "0.0.0"
 dependencies = [

@@ -34,9 +34,9 @@ from appstoreserverlibrary.signed_data_verifier import SignedDataVerifier
 
 WARMUP, ITERATIONS = 50, 500
 
-# `data/` is shared by all four arms: byte-identical inputs are what make a
+# `resources/` is shared by both suites: byte-identical inputs are what make a
 # ratio between two cells of the table mean anything.
-DATA = pathlib.Path(__file__).parent.parent / "data"
+DATA = pathlib.Path(__file__).parent.parent.parent / "resources"
 
 
 def text(rel):

@@ -8,7 +8,7 @@ publish = false
 [dependencies]
 # Same backend pin as `measure`, so the Rust in the cross-language table is
 # the same Rust that CI tracks.
-app-store-server-library = { path = "../../..", default-features = false, features = [
+app-store-server-library = { path = "../../../..", default-features = false, features = [
   "aws_lc",
   "receipt-utility",
 ] }

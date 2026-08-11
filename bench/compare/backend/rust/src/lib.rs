@@ -1,38 +1,10 @@
-//! The cases every language arm runs, over byte-identical inputs.
-//!
-//! Each case is a single function, so `benches/compare.rs` measures exactly one
-//! definition of the work rather than a hand-copied variant of it.
+//! The six cases, run against whichever crypto backend was selected at build time.
 
 use app_store_server_library::models::app_store_environment::Environment;
 use app_store_server_library::promotional_offer_signature_creator::PromotionalOfferSignatureCreator;
 use app_store_server_library::receipt_utility::extract_transaction_id_from_app_receipt;
 use app_store_server_library::signed_data_verifier::SignedDataVerifier;
 
-/// Fails loudly if the pinned crypto backend is not the one actually in effect.
-///
-/// The library selects its backend through a cfg cascade that prefers
-/// `rust_crypto` (see `src/crypto/mod.rs`), so any dependency enabling that
-/// feature would silently redirect every Rust figure in the comparison table to
-/// a different backend — verified: such a build resolves
-/// `CryptoProvider { p256_signing: RustCrypto }` with no other symptom.
-///
-/// This is a runtime check rather than `#[cfg(feature = "rust_crypto")]` plus
-/// `compile_error!`: a cargo-feature cfg written here tests for a feature on
-/// *this* crate, which declares none, so it is always false and never fires.
-/// Checking the provider the library actually resolved is what enforces the pin.
-pub fn assert_pinned_backend() {
-    let provider = format!(
-        "{:?}",
-        app_store_server_library::crypto::CryptoProvider::default_provider()
-    );
-    assert!(
-        provider.contains("AwsLc"),
-        "compare is pinned to aws_lc but the library resolved {provider}; \
-         the cross-language table would describe the wrong Rust backend"
-    );
-}
-
-/// The canonical case names, shared with every other language arm.
 pub const CASES: &[&str] = &[
     "verify_notification",
     "verify_transaction",
@@ -42,15 +14,15 @@ pub const CASES: &[&str] = &[
     "sign_promotional_offer",
 ];
 
-/// The fixtures every language arm reads, resolved from `CARGO_MANIFEST_DIR`
-/// rather than the cwd so the binary produces the same numbers wherever it is
-/// launched from — the same policy the Swift arm applies with `#filePath`.
-///
-/// `data/` sits one level up, at `bench/compare/data/`, because it is shared:
-/// all four arms measure byte-identical inputs, which is what makes a ratio
-/// between two cells of the table mean anything.
+pub fn resolved_backend() -> String {
+    format!(
+        "{:?}",
+        app_store_server_library::crypto::CryptoProvider::default_provider()
+    )
+}
+
 fn data_path(relative: &str) -> String {
-    format!("{}/../data/{}", env!("CARGO_MANIFEST_DIR"), relative)
+    format!("{}/../../resources/{}", env!("CARGO_MANIFEST_DIR"), relative)
 }
 
 fn data(relative: &str) -> String {
@@ -122,9 +94,12 @@ pub fn run_case(
             .verify_and_decode_renewal_info(&inputs.renewal_info)
             .is_ok(),
         "receipt_app" => extract_transaction_id_from_app_receipt(&inputs.receipt).is_ok(),
-        "receipt_app_legacy" => extract_transaction_id_from_app_receipt(&inputs.receipt_legacy).is_ok(),
+        "receipt_app_legacy" => {
+            extract_transaction_id_from_app_receipt(&inputs.receipt_legacy).is_ok()
+        }
         "sign_promotional_offer" => {
-            let nonce = uuid::Uuid::parse_str("3db5c98d-8acf-4e29-831e-8e1f82f9f6e9").expect("valid uuid");
+            let nonce = uuid::Uuid::parse_str("3db5c98d-8acf-4e29-831e-8e1f82f9f6e9")
+                .expect("valid uuid");
             signer
                 .create_signature(
                     "com.test.product",

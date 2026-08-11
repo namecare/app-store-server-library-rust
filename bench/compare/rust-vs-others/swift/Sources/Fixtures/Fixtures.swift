@@ -49,17 +49,18 @@ public struct Fixture: @unchecked Sendable {
 
     /// Resolved from `#filePath` rather than the cwd, so the figures do not
     /// depend on where the benchmark was launched from.
-    /// #filePath = <repo>/bench/compare/swift/Sources/Fixtures/Fixtures.swift
-    /// data dir  = <repo>/bench/compare/data
+    /// #filePath = <repo>/bench/compare/rust-vs-others/swift/Sources/Fixtures/Fixtures.swift
+    /// data dir  = <repo>/bench/compare/resources
     ///
-    /// `data/` is shared by all four arms: byte-identical inputs are what make a
+    /// `resources/` is shared by both suites: byte-identical inputs are what make a
     /// comparison between two cells of the table mean anything.
     static let dataDirectory = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()   // .../Fixtures
         .deletingLastPathComponent()   // .../Sources
         .deletingLastPathComponent()   // .../swift
+        .deletingLastPathComponent()   // .../rust-vs-others
         .deletingLastPathComponent()   // .../compare
-        .appendingPathComponent("data")
+        .appendingPathComponent("resources")
 
     static func dataString(_ relative: String) throws -> String {
         try String(contentsOf: dataDirectory.appendingPathComponent(relative), encoding: .utf8)
