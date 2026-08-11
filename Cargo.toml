@@ -10,9 +10,6 @@ readme = "README.md"
 documentation = "https://docs.rs/app-store-server-library"
 keywords = ["apple", "appstore", "appstore-server-api", "appstore-receipt", "advanced-commerce"]
 edition = "2021"
-# Kept in step with the MSRV job in .github/workflows/build_test.yml. The
-# crate's own source builds on less; the floor comes from `time` (reached
-# transitively via asn1-rs), which requires 1.88.
 rust-version = "1.88"
 
 [dependencies]
