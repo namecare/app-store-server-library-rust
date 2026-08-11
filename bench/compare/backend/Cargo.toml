@@ -6,9 +6,7 @@ edition = "2021"
 publish = false
 
 [dependencies]
-app-store-server-library = { path = "../../../..", default-features = false, features = [
-  "receipt-utility",
-] }
+app-store-server-library = { path = "../../..", default-features = false }
 uuid = { version = "1.24.0", features = ["v4"] }
 
 [dev-dependencies]
@@ -20,5 +18,9 @@ rust_crypto = ["app-store-server-library/rust_crypto"]
 ring = ["app-store-server-library/ring"]
 
 [[bench]]
-name = "backend"
+name = "verify"
+harness = false
+
+[[bench]]
+name = "sign"
 harness = false

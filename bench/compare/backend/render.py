@@ -7,17 +7,19 @@ import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-RAW_DIR = os.path.join(HERE, "results", "raw")
+RAW_DIR = os.path.join(HERE, os.environ.get("OUTPUT_DIR", ".output"))
 OUT_PATH = os.path.join(HERE, "RESULTS.md")
 
+# (bench file, divan row name) in the order they appear in the table. For a
+# bench taking `args`, the row name is the argument, not the function name.
 CASES = [
-    "verify_notification",
-    "verify_transaction",
-    "verify_renewal_info",
-    "receipt_app",
-    "receipt_app_legacy",
-    "sign_promotional_offer",
+    ("verify", "notification"),
+    ("verify", "transaction"),
+    ("verify", "renewal_info"),
+    ("sign", "promo_offer"),
 ]
+
+BENCHES = ["verify", "sign"]
 
 BACKEND_ORDER = ["aws_lc", "rust_crypto", "ring"]
 BACKEND_LABEL = {
@@ -25,10 +27,6 @@ BACKEND_LABEL = {
     "rust_crypto": "RustCrypto",
     "ring": "ring",
 }
-
-# receipt parsing touches no crypto, so these rows are expected to match across
-# every column; they are kept so both suites run one case list.
-NO_CRYPTO = {"receipt_app", "receipt_app_legacy"}
 
 
 def parse_duration(cell: str) -> float | None:
@@ -43,7 +41,7 @@ def parse_duration(cell: str) -> float | None:
     return value * scale if scale else None
 
 
-def parse_divan(path: str) -> dict[str, float]:
+def parse_divan(path: str, names: set[str]) -> dict[str, float]:
     """Divan's console table: name and `fastest` share field 0, so median is at index 2."""
     out: dict[str, float] = {}
     with open(path, "r", encoding="utf-8") as fh:
@@ -55,7 +53,7 @@ def parse_divan(path: str) -> dict[str, float]:
                 continue
             head = columns[0].lstrip("├╰│─ ").strip()
             name = re.split(r"\s{2,}", head)[0].strip()
-            if name not in CASES:
+            if name not in names:
                 continue
             ns = parse_duration(columns[2])
             if ns is not None:
@@ -63,22 +61,24 @@ def parse_divan(path: str) -> dict[str, float]:
     return out
 
 
-def read_results() -> dict[str, dict[str, float]]:
-    timings: dict[str, dict[str, float]] = {}
+def read_results() -> dict[str, dict[tuple[str, str], float]]:
+    timings: dict[str, dict[tuple[str, str], float]] = {}
     if not os.path.isdir(RAW_DIR):
         print(f"warning: no {RAW_DIR}; run ./run.sh first", file=sys.stderr)
         return timings
     for backend in BACKEND_ORDER:
-        path = os.path.join(RAW_DIR, f"{backend}.txt")
-        if not os.path.exists(path):
-            continue
-        try:
-            parsed = parse_divan(path)
-        except Exception as e:  # noqa: BLE001
-            print(f"warning: could not parse {backend}.txt: {e}", file=sys.stderr)
-            continue
-        if parsed:
-            timings[backend] = parsed
+        for bench in BENCHES:
+            path = os.path.join(RAW_DIR, f"{backend}.{bench}.txt")
+            if not os.path.exists(path):
+                continue
+            names = {n for b, n in CASES if b == bench}
+            try:
+                parsed = parse_divan(path, names)
+            except Exception as e:  # noqa: BLE001
+                print(f"warning: could not parse {backend}.{bench}.txt: {e}", file=sys.stderr)
+                continue
+            for name, ns in parsed.items():
+                timings.setdefault(backend, {})[(bench, name)] = ns
     return timings
 
 
@@ -105,7 +105,7 @@ def build_table(timings) -> tuple[list[str], list[str]]:
     lines = ["| " + " | ".join(header) + " |",
              "| " + " | ".join(align) + " |"]
     for case in CASES:
-        cells = [f"`{case}`"]
+        cells = [f"`{case[0]}::{case[1]}`"]
         for b in backends:
             ns = timings.get(b, {}).get(case)
             cells.append("n/a" if ns is None else format_ns(ns))
@@ -125,19 +125,6 @@ def main() -> int:
                "or re-render existing results with `python3 render.py`.")
     doc.append("")
     doc.extend(table)
-    doc.append("")
-    doc.append(f"`{'`, `'.join(sorted(NO_CRYPTO))}` touch no crypto; "
-               "those rows are expected to agree across every column.")
-    doc.append("")
-    doc.append("## Coverage")
-    doc.append("")
-    if skipped:
-        doc.append("These backends did not contribute to the table:")
-        doc.append("")
-        for entry in skipped:
-            doc.append(f"- {entry}")
-    else:
-        doc.append("Skipped or failed backends: none. Every backend ran.")
     doc.append("")
     ran = ", ".join(BACKEND_LABEL.get(b, b) for b in backends) if backends else "none"
     doc.append(f"Backends that reported results: {ran}.")

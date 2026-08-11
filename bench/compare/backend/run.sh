@@ -3,12 +3,15 @@
 set -uo pipefail
 
 cd "$(dirname "$0")" || exit 1
-mkdir -p results/raw
-SKIPPED=()
 
+OUTPUT_DIR="${OUTPUT_DIR:-.output}"
 BACKENDS=(aws_lc rust_crypto ring)
+BENCHES=(verify sign)
 SAMPLE_COUNT=500
 SAMPLE_SIZE=1
+
+mkdir -p "$OUTPUT_DIR"
+SKIPPED=()
 
 if ! command -v cargo >/dev/null 2>&1; then
   echo "error: cargo not found" >&2
@@ -16,22 +19,25 @@ if ! command -v cargo >/dev/null 2>&1; then
 fi
 
 for backend in "${BACKENDS[@]}"; do
-  raw="results/raw/$backend.txt"
-  echo "running $backend..." >&2
-  if ! ( cd rust && COMPARE_BACKEND="$backend" exec cargo bench -q \
-           --no-default-features --features "$backend" --bench backend -- \
-           --color never --sample-count "$SAMPLE_COUNT" --sample-size "$SAMPLE_SIZE" ) \
-       > "$raw" 2>"results/raw/$backend.err"; then
-    echo "warning: the $backend arm failed - see results/raw/$backend.err" >&2
-    SKIPPED+=("$backend (failed; stderr in results/raw/$backend.err)")
-    rm -f "$raw"
-  fi
+  for bench in "${BENCHES[@]}"; do
+    raw="$OUTPUT_DIR/$backend.$bench.txt"
+    err="$OUTPUT_DIR/$backend.$bench.err"
+    echo "running $backend/$bench..." >&2
+    if ! COMPARE_BACKEND="$backend" cargo bench -q \
+           --no-default-features --features "$backend" --bench "$bench" -- \
+           --color never --sample-count "$SAMPLE_COUNT" --sample-size "$SAMPLE_SIZE" \
+         > "$raw" 2>"$err"; then
+      echo "warning: the $backend/$bench arm failed - see $err" >&2
+      SKIPPED+=("$backend/$bench (failed; stderr in $err)")
+      rm -f "$raw"
+    fi
+  done
 done
 
-printf '%s\n' "${SKIPPED[@]+"${SKIPPED[@]}"}" > results/raw/skipped.txt
+printf '%s\n' "${SKIPPED[@]+"${SKIPPED[@]}"}" > "$OUTPUT_DIR/skipped.txt"
 
 if command -v python3 >/dev/null 2>&1; then
-  python3 render.py
+  OUTPUT_DIR="$OUTPUT_DIR" python3 render.py
 else
   echo "warning: python3 not found - cannot render RESULTS.md" >&2
 fi

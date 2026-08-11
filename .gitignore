@@ -17,6 +17,6 @@ bench/compare/rust-vs-others/results/
 bench/compare/rust-vs-others/python/__pycache__/
 bench/compare/rust-vs-others/python/.pytest_cache/
 bench/compare/rust-vs-others/python/.benchmarks/
-bench/compare/backend/results/
+bench/compare/backend/.output/
 bench/compare/**/__pycache__/
 **/.build/
