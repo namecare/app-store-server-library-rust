@@ -1,4 +1,10 @@
 # Apple App Store Server Rust Library
+
+[![Build+test](https://github.com/namecare/app-store-server-library-rust/actions/workflows/build_test.yml/badge.svg?branch=master)](https://github.com/namecare/app-store-server-library-rust/actions/workflows/build_test.yml?query=branch%3Amaster)
+[![Documentation](https://docs.rs/app-store-server-library/badge.svg)](https://docs.rs/app-store-server-library/)
+[![Crates.io](https://img.shields.io/crates/v/app-store-server-library.svg)](https://crates.io/crates/app-store-server-library)
+[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fnamecare%2Fapp-store-server-library-rust%2Fmaster%2F.local%2Fcoverage.json)](https://github.com/namecare/app-store-server-library-rust/actions/workflows/build_test.yml?query=branch%3Amaster)
+
 The Rust server library for the [App Store Server API](https://developer.apple.com/documentation/appstoreserverapi), [App Store Server Notifications](https://developer.apple.com/documentation/appstoreservernotifications), the [Retention Messaging API](https://developer.apple.com/documentation/retentionmessaging), and [Advanced Commerce API](https://developer.apple.com/documentation/AdvancedCommerceAPI).
 
 ## Requirements
