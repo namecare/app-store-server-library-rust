@@ -123,7 +123,7 @@ jobs:
       # before/after comparisons. The summary table says a number moved; these
       # plots are how you tell a real shift from a couple of outliers.
       - name: Upload HTML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: criterion-report-${{ github.run_id }}
           path: target/criterion/report/
