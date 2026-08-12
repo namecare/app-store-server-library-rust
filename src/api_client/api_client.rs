@@ -1,30 +1,22 @@
-use crate::primitives::environment::Environment;
-use crate::api_client::transport::Transport;
-use crate::api_client::error::{ApiServiceError, APIServiceErrorCode, ConfigurationError, ErrorPayload};
-
 use chrono::Utc;
-use http::Method;
-use http::{Request, Response};
-use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
+use http::{Method, Request, Response};
 use serde::{Deserialize, Serialize};
-use std::marker::PhantomData;
-use serde::de::DeserializeOwned;
 
-pub struct ApiClient<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> {
+use crate::api_client::error::{ApiClientError, ConfigurationError};
+use crate::api_client::transport::{Transport, TransportError};
+use crate::crypto::{jws, CryptoProvider};
+use crate::models::app_store_environment::Environment;
+
+pub struct ApiClient<T: Transport> {
     base_url: String,
     signing_key: Vec<u8>,
     key_id: String,
     issuer_id: String,
     bundle_id: String,
     transport: T,
-    _api: PhantomData<API>,
-    _api_error: PhantomData<E>,
 }
 
-unsafe impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> Send for ApiClient<T, API, E> {}
-unsafe impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> Sync for ApiClient<T, API, E> {}
-
-impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, API, E> {
+impl<T: Transport> ApiClient<T> {
     /// Creates a new App Store Server API client.
     ///
     /// # Arguments
@@ -63,45 +55,59 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
             issuer_id: issuer_id.to_string(),
             bundle_id: bundle_id.to_string(),
             transport,
-            _api: PhantomData,
-            _api_error: PhantomData,
         })
     }
 
-    pub(super) fn generate_token(&self) -> String {
-        let future_time = Utc::now() + chrono::Duration::minutes(5);
-        let key_id = (&self.key_id).to_string();
+    pub(crate) fn generate_token(&self) -> Result<String, ApiClientError> {
+        let now = Utc::now();
+        let future_time = now + chrono::Duration::minutes(5);
 
-        let mut header = Header::new(Algorithm::ES256);
-        header.kid = Some(key_id);
+        let header = serde_json::json!({
+            "alg": "ES256",
+            "kid": self.key_id,
+            "typ": "JWT",
+        });
 
         let claims = Claims {
             bid: &self.bundle_id,
             iss: &self.issuer_id,
             aud: "appstoreconnect-v1",
+            iat: now.timestamp(),
             exp: future_time.timestamp(),
         };
 
-        encode(
-            &header,
-            &claims,
-            &EncodingKey::from_ec_pem(self.signing_key.as_slice()).unwrap(),
-        )
-        .unwrap()
+        let signing_error = || ApiClientError::new(500, None, Some("Failed to sign request token".to_string()));
+
+        let pem = std::str::from_utf8(self.signing_key.as_slice()).map_err(|_| signing_error())?;
+        let key = CryptoProvider::default_provider()
+            .p256_signing
+            .private_key(pem)
+            .map_err(|_| signing_error())?;
+
+        let encoded_header = jws::b64url_encode(&serde_json::to_vec(&header).map_err(|_| signing_error())?);
+        let encoded_payload = jws::b64url_encode(&serde_json::to_vec(&claims).map_err(|_| signing_error())?);
+        let signing_input = format!("{encoded_header}.{encoded_payload}");
+
+        let (raw, _) = key
+            .signature(signing_input.as_bytes())
+            .map_err(|_| signing_error())?;
+
+        Ok(jws::encode_compact(&encoded_header, &encoded_payload, &raw))
     }
 
-    pub(super) fn build_request<B: serde::Serialize>(
+    pub(crate) fn build_request<B: serde::Serialize>(
         &self,
         path: &str,
         method: Method,
         body: Option<&B>,
-    ) -> Result<Request<Vec<u8>>, ApiServiceError<E>> {
+    ) -> Result<Request<Vec<u8>>, ApiClientError> {
         let (body_bytes, content_type) = if let Some(body_data) = body {
-            let serialized = serde_json::to_vec(body_data).map_err(|_| ApiServiceError {
-                http_status_code: 400,
-                api_error: None,
-                error_code: None,
-                error_message: Some("Failed to serialize request body".to_string()),
+            let serialized = serde_json::to_vec(body_data).map_err(|_| {
+                ApiClientError::new(
+                    400,
+                    None,
+                    Some("Failed to serialize request body".to_string()),
+                )
             })?;
             (serialized, Some("application/json"))
         } else {
@@ -111,13 +117,13 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
         self.build_request_base(path, method, body_bytes, content_type)
     }
 
-    pub(super) fn build_request_with_custom_content(
+    pub(crate) fn build_request_with_custom_content(
         &self,
         path: &str,
         method: Method,
         body: Vec<u8>,
         content_type: &str,
-    ) -> Result<Request<Vec<u8>>, ApiServiceError<E>> {
+    ) -> Result<Request<Vec<u8>>, ApiClientError> {
         self.build_request_base(path, method, body, Some(content_type))
     }
 
@@ -127,14 +133,17 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
         method: Method,
         body: Vec<u8>,
         content_type: Option<&str>,
-    ) -> Result<Request<Vec<u8>>, ApiServiceError<E>> {
+    ) -> Result<Request<Vec<u8>>, ApiClientError> {
         let url = format!("{}{}", self.base_url, path);
 
         let mut request_builder = Request::builder()
             .method(method)
             .uri(url)
-            .header("User-Agent", "app-store-server-library/rust/4.3.0")
-            .header("Authorization", format!("Bearer {}", self.generate_token()))
+            .header("User-Agent", "app-store-server-library/rust/6.0.0")
+            .header(
+                "Authorization",
+                format!("Bearer {}", self.generate_token()?),
+            )
             .header("Accept", "application/json");
 
         if let Some(ct) = content_type {
@@ -146,58 +155,81 @@ impl<T: Transport, API, E: APIServiceErrorCode + DeserializeOwned> ApiClient<T, 
             .map_err(|e| e.into())
     }
 
-    pub(super) async fn make_request_with_response_body<Res>(&self, request: Request<Vec<u8>>) -> Result<Res, ApiServiceError<E>>
+    pub(crate) async fn make_request_with_response_body<Res>(
+        &self,
+        request: Request<Vec<u8>>,
+    ) -> Result<Res, ApiClientError>
     where
         Res: for<'de> Deserialize<'de>,
     {
         let response = self.make_request(request).await?;
-        let body = response.into_body();
-        let json_result = serde_json::from_slice::<Res>(&body).map_err(|_| ApiServiceError {
-            http_status_code: 500,
-            api_error: None,
-            error_code: None,
-            error_message: Some("Failed to deserialize response JSON".to_string()),
-        })?;
-        Ok(json_result)
+        self.extract_response(&response)
     }
 
-    pub(super) async fn make_request_without_response_body(&self, request: Request<Vec<u8>>) -> Result<(), ApiServiceError<E>> {
-        let _ = self.make_request(request).await?;
+    pub(crate) async fn make_request_without_response_body(
+        &self,
+        request: Request<Vec<u8>>,
+    ) -> Result<(), ApiClientError> {
+        let response = self.make_request(request).await?;
+
+        let status_code = response.status().as_u16();
+        if !(200..300).contains(&status_code) {
+            return Err(self.extract_error(&response));
+        }
+
         Ok(())
     }
 
-    pub(super) async fn make_request(&self, request: Request<Vec<u8>>) -> Result<Response<Vec<u8>>, ApiServiceError<E>> {
-        let response = self
-            .transport
-            .send(request).await?;
-
-        let status_code = response.status().as_u16();
-
-        if status_code >= 200 && status_code < 300 {
-            Ok(response)
-        } else {
-            Err(self.extract_error(&response))
-        }
+    pub(crate) async fn make_request(&self, request: Request<Vec<u8>>) -> Result<Response<Vec<u8>>, TransportError> {
+        self.transport.send(request).await
     }
 
-    pub(super) fn extract_error(&self, response: &Response<Vec<u8>>) -> ApiServiceError<E> {
+    pub(crate) fn extract_response<Res>(&self, response: &Response<Vec<u8>>) -> Result<Res, ApiClientError>
+    where
+        Res: for<'de> Deserialize<'de>,
+    {
         let status_code = response.status().as_u16();
 
-        serde_json::from_slice::<ErrorPayload<E>>(response.body())
-            .map(|payload| {
-                ApiServiceError {
-                    http_status_code: status_code,
-                    api_error: Some(payload.error_code),
-                    error_code: payload.raw_error_code,
-                    error_message: payload.error_message,
-                }
-            })
-            .unwrap_or_else(|_| ApiServiceError {
-                http_status_code: status_code,
-                api_error: None,
-                error_code: None,
-                error_message: Some("Failed to deserialize error JSON".to_string()),
-            })
+        if !(200..300).contains(&status_code) {
+            return Err(self.extract_error(response));
+        }
+
+        let body = response.body();
+        let json_result = serde_json::from_slice::<Res>(body).map_err(|_| {
+            ApiClientError::new(
+                500,
+                None,
+                Some("Failed to deserialize response JSON".to_string()),
+            )
+        })?;
+
+        Ok(json_result)
+    }
+
+    pub(crate) fn extract_error(&self, response: &Response<Vec<u8>>) -> ApiClientError {
+        let status_code = response.status().as_u16();
+
+        #[derive(Deserialize)]
+        struct ErrorPayload {
+            #[serde(rename = "errorCode")]
+            error_code: Option<i64>,
+            #[serde(rename = "errorMessage")]
+            error_message: Option<String>,
+        }
+
+        serde_json::from_slice::<ErrorPayload>(response.body())
+            .ok()
+            .and_then(
+                |payload| match (payload.error_code, payload.error_message) {
+                    (Some(error_code), Some(error_message)) => Some(ApiClientError::new(
+                        status_code,
+                        Some(error_code),
+                        Some(error_message),
+                    )),
+                    _ => None,
+                },
+            )
+            .unwrap_or_else(|| ApiClientError::new(status_code, None, None))
     }
 }
 
@@ -206,5 +238,6 @@ struct Claims<'a> {
     bid: &'a str,
     iss: &'a str,
     aud: &'a str,
+    iat: i64,
     exp: i64,
 }

@@ -1,0 +1,26 @@
+[package]
+name = "app-store-server-library-bench-backend"
+description = "Crypto backend comparison benchmarks for app-store-server-library. Not published."
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+app-store-server-library = { path = "../../..", default-features = false }
+uuid = { version = "1.24.0", features = ["v4"] }
+
+[dev-dependencies]
+divan = "0.1.21"
+
+[features]
+aws_lc = ["app-store-server-library/aws_lc"]
+rust_crypto = ["app-store-server-library/rust_crypto"]
+ring = ["app-store-server-library/ring"]
+
+[[bench]]
+name = "verify"
+harness = false
+
+[[bench]]
+name = "sign"
+harness = false

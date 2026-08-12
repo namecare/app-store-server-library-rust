@@ -1,0 +1,5 @@
+app-store-server-library==3.1.2
+# Python's idiomatic benchmark harness, matching the per-language harness policy
+# the other three arms follow (Divan, XCTest measure, tinybench).
+pytest==8.4.2
+pytest-benchmark==5.2.3

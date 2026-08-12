@@ -1,0 +1,183 @@
+name: Benchmarks
+
+# Regression tracking for `app-store-server-library-bench-measure`.
+
+on:
+  push:
+    # Long-lived branches only: each push saves the baseline that pull
+    # requests targeting the branch compare against. Add other merge targets
+    # here if they exist.
+    branches: [master]
+    paths: &bench_paths
+      - "src/**"
+      - "bench/measure/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/benchmarks.yml"
+      - ".github/scripts/criterion-report.py"
+  pull_request:
+    paths: *bench_paths
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: benchmarks-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  BENCH_CRATE: app-store-server-library-bench-measure
+  # Criterion stores baselines by name. The name is fixed; which branch a
+  # baseline belongs to is carried by the cache key, not the name.
+  BASELINE: base
+  # Where the baseline is staged between `target/criterion/` and the cache.
+  BASELINE_DIR: criterion-baseline
+
+jobs:
+  benchmark:
+    name: Criterion
+    # See the RUNNER NOTE above: a hosted runner has no persistent baseline
+    # machine, so most runs will report "no baseline found" until this moves
+    # to a self-hosted runner.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-
+
+      # Guards the parity claim. A scenario that returns the wrong result
+      # still benchmarks something, just not what its name says — which would
+      # make the whole table meaningless while looking perfectly healthy.
+      # The target must be named explicitly: `cargo test -p ... --release`
+      # without `--test scenarios` has been observed to run 0 tests in some
+      # workspace layouts, which would make this guard a silent no-op.
+      - name: Verify benchmark scenarios
+        run: cargo test -p ${{ env.BENCH_CRATE }} --release --test scenarios
+
+      # The baseline of the branch this PR targets, saved by the last push to
+      # it. The key never matches exactly (it is a bare prefix); the newest
+      # cache under the restore-keys prefix wins, which is precisely "the
+      # latest report for that branch". A miss is not fatal: the run still
+      # measures, and the report states loudly that nothing was compared.
+      - name: Restore baseline
+        if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.BASELINE_DIR }}
+          key: criterion-baseline-${{ github.base_ref }}-
+          restore-keys: criterion-baseline-${{ github.base_ref }}-
+
+      - name: Install baseline
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ -d "$BASELINE_DIR" ]; then
+            mkdir -p target/criterion
+            cp -R "$BASELINE_DIR"/. target/criterion/
+          fi
+
+      # On a push to a long-lived branch: record the baseline its PRs will be
+      # measured against. On a PR: compare against the restored one.
+      #
+      # `--baseline-lenient` keeps a newly added benchmark, which has no entry
+      # in the stored baseline, from failing the run; it is reported as new.
+      - name: Run benchmarks
+        id: bench
+        run: |
+          # Recorded before the run so the report can discard anything in
+          # `target/criterion/` that this run did not produce — the restored
+          # baseline files, or leftovers should the workspace ever persist.
+          echo "started=$(date +%s)" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            cargo bench -p "$BENCH_CRATE" -- --save-baseline "$BASELINE"
+          else
+            cargo bench -p "$BENCH_CRATE" -- --baseline-lenient "$BASELINE"
+          fi
+
+      - name: Build report
+        id: report
+        run: |
+          python3 .github/scripts/criterion-report.py \
+            --since "${{ steps.bench.outputs.started }}" \
+            --base "${{ github.base_ref || github.ref_name }}" \
+            > report.md 2> summary.json
+          {
+            echo "## Benchmark report"
+            echo
+            cat report.md
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "summary=$(cat summary.json)" >> "$GITHUB_OUTPUT"
+
+      # The full criterion HTML report — density plots, iteration scatter, and
+      # before/after comparisons. The summary table says a number moved; these
+      # plots are how you tell a real shift from a couple of outliers.
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: criterion-report-${{ github.run_id }}
+          path: target/criterion/report/
+          retention-days: 14
+
+      # Collect the just-saved baseline out of `target/criterion/` so the
+      # cache holds only baseline estimates, not this run's samples or the
+      # rendered HTML.
+      - name: Export baseline
+        if: github.event_name == 'push'
+        run: |
+          rm -rf "$BASELINE_DIR"
+          cd target/criterion
+          find . -type d -name "$BASELINE" -not -path "./report/*" |
+            while IFS= read -r dir; do
+              mkdir -p "$GITHUB_WORKSPACE/$BASELINE_DIR/${dir%/*}"
+              cp -R "$dir" "$GITHUB_WORKSPACE/$BASELINE_DIR/$dir"
+            done
+
+      # One cache entry per commit; restore's prefix match picks the newest,
+      # so this is "save this report as the latest for this branch".
+      - name: Save baseline
+        if: github.event_name == 'push'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.BASELINE_DIR }}
+          key: criterion-baseline-${{ github.ref_name }}-${{ github.sha }}
+
+      # Upsert keyed on the invisible marker the report embeds, so the result
+      # is edited in place. Without this the bot stacks a fresh table on every
+      # push and the discussion becomes unreadable on a long-running PR.
+      - name: Comment on pull request
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('report.md', 'utf8');
+            const { data: comments } = await github.rest.issues.listComments({
+              ...context.repo,
+              issue_number: context.issue.number,
+            });
+            const previous = comments.find(c =>
+              c.body.includes('<!-- criterion-benchmark-report -->'));
+            if (previous) {
+              await github.rest.issues.updateComment({
+                ...context.repo,
+                comment_id: previous.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

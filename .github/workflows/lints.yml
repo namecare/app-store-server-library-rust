@@ -1,0 +1,104 @@
+name: Lints
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lints-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      # `examples/` is its own workspace, so `--all` does not reach it.
+      - name: Check formatting (examples)
+        run: cargo fmt --all --manifest-path examples/Cargo.toml -- --check
+
+  format-unstable:
+    name: Format (unstable)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install rust nightly toolchain
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+      - name: Check formatting (unstable)
+        run: cargo fmt --all -- --check --config-path .rustfmt.unstable.toml
+      - name: Check formatting (unstable, examples)
+        run: >-
+          cargo fmt --all --manifest-path examples/Cargo.toml --
+          --check --config-path .rustfmt.unstable.toml
+      - if: ${{ failure() }}
+        run: echo "Nightly formatting check failed. Please run \`cargo +nightly fmt-unstable\`"
+
+  taplo:
+    name: Format (TOML)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: taplo-cli
+      - run: taplo fmt --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: ./admin/clippy -- --deny warnings
+
+  clippy-nightly:
+    name: Clippy (Nightly)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      # Do not deny warnings, as nightly clippy sometimes has false positives.
+      - run: ./admin/clippy
+
+  typos:
+    name: Spelling
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: crate-ci/typos@master
+        with:
+          config: .github/typos.toml
+
+  audit:
+    name: Advisories and licenses
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check
+          arguments: --workspace --all-features

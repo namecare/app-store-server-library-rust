@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+
+DESCRIPTION = """
+Usage: admin/all-workspace-members
+
+Prints the name of every package in this workspace, one per line.
+
+Used by admin/clippy to drive a per-package loop, so that a new
+workspace member is linted from the moment it is added rather than
+whenever someone remembers to extend a hardcoded list.
+"""
+
+import argparse
+import json
+import subprocess
+
+
+def workspace_members():
+    js = json.loads(
+        subprocess.check_output(
+            ["cargo", "metadata", "--no-deps", "--format-version=1"]
+        )
+    )
+    return sorted(p["name"] for p in js["packages"])
+
+
+if __name__ == "__main__":
+    argparse.ArgumentParser(description=DESCRIPTION).parse_args()
+
+    for name in workspace_members():
+        print(name)

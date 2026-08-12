@@ -1,0 +1,44 @@
+#!/bin/bash
+
+rc=0
+script_args="$@"
+
+function run_clippy() {
+  if ! ( set -x ; cargo clippy --locked "$@" $script_args ) ; then
+    rc=$PIPESTATUS
+  fi
+}
+
+run_clippy --package app-store-server-library --no-default-features --all-targets
+
+for backend in aws_lc ring rust_crypto ; do
+  run_clippy --package app-store-server-library \
+    --no-default-features --features $backend --all-targets
+
+  run_clippy --package app-store-server-library --no-default-features \
+    --features $backend,api-client-reqwest,receipt-utility --all-targets
+done
+
+for p in $(admin/all-workspace-members) ; do
+  case "$p" in
+    app-store-server-library)
+      # covered by the per-backend loop above
+      continue
+      ;;
+    app-store-server-library-bench-*)
+      # The bench crates pin one backend on purpose and trip a
+      # `compile_error!` guard if a second is enabled, so `--all-features`
+      # is the one thing they must not be linted with.
+      run_clippy --package $p --all-targets
+      continue
+      ;;
+  esac
+
+  run_clippy --package $p --all-features --all-targets
+done
+
+# `examples/` is its own workspace (it is `exclude`d from the root one), so
+# none of the above reaches it.
+run_clippy --manifest-path examples/Cargo.toml --all-targets
+
+exit $rc

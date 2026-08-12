@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# Runs everything CI runs, in the order that fails cheapest first.
+#
+# Stops at the first failing step: a formatting difference makes the clippy
+# output hard to read, and a clippy error usually means the tests will not
+# build either.
+#
+# See CONTRIBUTING.md for the one-time tool installation, and for how to run
+# any single step on its own.
+
+set -euo pipefail
+
+step() {
+  echo
+  echo "==> $1"
+}
+
+# `examples/` is its own workspace, so `--all` never reaches it.
+step "Formatting"
+cargo fmt --all -- --check
+cargo fmt --all --manifest-path examples/Cargo.toml -- --check
+
+step "Formatting (unstable)"
+if cargo +nightly --version >/dev/null 2>&1 ; then
+  cargo +nightly fmt --all -- --check --config-path .rustfmt.unstable.toml
+  cargo +nightly fmt --all --manifest-path examples/Cargo.toml -- \
+    --check --config-path .rustfmt.unstable.toml
+else
+  echo "skipped: no nightly toolchain (rustup toolchain install nightly)"
+fi
+
+step "TOML formatting"
+taplo fmt --check
+
+step "Clippy"
+./admin/clippy -- --deny warnings
+
+step "Tests"
+# One run per backend rather than --all-features: the backends are optional
+# and mutually independent, so a combined run would only prove they coexist,
+# never that any one of them works on its own.
+for backend in aws_lc ring rust_crypto ; do
+  cargo test --package app-store-server-library \
+    --no-default-features --features $backend,api-client-reqwest,receipt-utility --all-targets
+done
+
+step "Doctests"
+cargo test --package app-store-server-library \
+  --no-default-features --features aws_lc,api-client-reqwest,receipt-utility --doc
+
+step "Advisories and licenses"
+cargo deny --workspace --all-features check
+
+step "Spelling"
+typos --config .github/typos.toml
+
+echo
+echo "All checks passed."

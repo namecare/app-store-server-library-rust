@@ -1,0 +1,9 @@
+[default.extend-words]
+# ASN.1 type names, written in the spec's own uppercase.
+STRIN = "STRIN"
+# Fragments of hand-built DER/JWS test fixtures, not prose.
+Hel = "Hel"
+Iif = "Iif"
+
+[files]
+extend-exclude = ["*.der", "*.p8", "*.pem", "tests/resources/", "bench/compare/data/"]

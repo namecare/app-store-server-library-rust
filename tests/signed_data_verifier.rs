@@ -1,35 +1,44 @@
-use app_store_server_library::primitives::app_data::AppData;
-use app_store_server_library::primitives::auto_renew_status::AutoRenewStatus;
-use app_store_server_library::primitives::consumption_request_reason::ConsumptionRequestReason;
-use app_store_server_library::primitives::environment::Environment;
-use app_store_server_library::primitives::expiration_intent::ExpirationIntent;
-use app_store_server_library::primitives::in_app_ownership_type::InAppOwnershipType;
-use app_store_server_library::primitives::notification_type_v2::NotificationTypeV2;
-use app_store_server_library::primitives::offer_discount_type::OfferDiscountType;
-use app_store_server_library::primitives::offer_type::OfferType;
-use app_store_server_library::primitives::price_increase_status::PriceIncreaseStatus;
-use app_store_server_library::primitives::product_type::ProductType;
-use app_store_server_library::primitives::purchase_platform::PurchasePlatform;
-use app_store_server_library::primitives::revocation_reason::RevocationReason;
-use app_store_server_library::primitives::revocation_type::RevocationType;
-use app_store_server_library::primitives::status::Status;
-use app_store_server_library::primitives::subtype::Subtype;
-use app_store_server_library::primitives::transaction_reason::TransactionReason;
-use app_store_server_library::signed_data_verifier::{SignedDataVerifier, SignedDataVerifierError};
-use app_store_server_library::utils::StringExt;
-use jsonwebtoken::Algorithm;
-use p256::ecdsa::SigningKey;
-use p256::pkcs8::EncodePrivateKey;
-use serde_json::{Map, Value};
 use std::fs;
+
+use app_store_server_library::crypto::{jws, CryptoProvider};
+use app_store_server_library::models::advanced_commerce_period::AdvancedCommercePeriod;
+use app_store_server_library::models::advanced_commerce_price_increase_info_status::AdvancedCommercePriceIncreaseInfoStatus;
+use app_store_server_library::models::advanced_commerce_refund_reason::AdvancedCommerceRefundReason;
+use app_store_server_library::models::advanced_commerce_refund_type::AdvancedCommerceRefundType;
+use app_store_server_library::models::app_data::AppData;
+use app_store_server_library::models::app_store_environment::Environment;
+use app_store_server_library::models::auto_renew_status::AutoRenewStatus;
+use app_store_server_library::models::billing_plan_type::BillingPlanType;
+use app_store_server_library::models::consumption_request_reason::ConsumptionRequestReason;
+use app_store_server_library::models::expiration_intent::ExpirationIntent;
+use app_store_server_library::models::in_app_ownership_type::InAppOwnershipType;
+use app_store_server_library::models::jws_renewal_info_decoded_payload::JWSRenewalInfoDecodedPayload;
+use app_store_server_library::models::jws_transaction_decoded_payload::JWSTransactionDecodedPayload;
+use app_store_server_library::models::notification_type_v2::NotificationTypeV2;
+use app_store_server_library::models::offer_discount_type::OfferDiscountType;
+use app_store_server_library::models::offer_type::OfferType;
+use app_store_server_library::models::price_increase_status::PriceIncreaseStatus;
+use app_store_server_library::models::product_type::ProductType;
+use app_store_server_library::models::purchase_platform::PurchasePlatform;
+use app_store_server_library::models::renewal_billing_plan_type::RenewalBillingPlanType;
+use app_store_server_library::models::revocation_reason::RevocationReason;
+use app_store_server_library::models::revocation_type::RevocationType;
+use app_store_server_library::models::status::Status;
+use app_store_server_library::models::subtype::Subtype;
+use app_store_server_library::models::transaction_reason::TransactionReason;
+use app_store_server_library::signed_data_verifier::{SignedDataVerifier, SignedDataVerifierError};
+use common::StringExt;
+use serde_json::{Map, Value};
+
+mod common;
 
 const ROOT_CA_BASE64_ENCODED: &str = "MIIBgjCCASmgAwIBAgIJALUc5ALiH5pbMAoGCCqGSM49BAMDMDYxCzAJBgNVBAYTAlVTMRMwEQYDVQQIDApDYWxpZm9ybmlhMRIwEAYDVQQHDAlDdXBlcnRpbm8wHhcNMjMwMTA1MjEzMDIyWhcNMzMwMTAyMjEzMDIyWjA2MQswCQYDVQQGEwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTESMBAGA1UEBwwJQ3VwZXJ0aW5vMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEc+/Bl+gospo6tf9Z7io5tdKdrlN1YdVnqEhEDXDShzdAJPQijamXIMHf8xWWTa1zgoYTxOKpbuJtDplz1XriTaMgMB4wDAYDVR0TBAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYwCgYIKoZIzj0EAwMDRwAwRAIgemWQXnMAdTad2JDJWng9U4uBBL5mA7WI05H7oH7c6iQCIHiRqMjNfzUAyiu9h6rOU/K+iTR0I/3Y/NSWsXHX+acc";
 const XCODE_BUNDLE_ID: &str = "com.example.naturelab.backyardbirds.example";
 
 #[test]
 fn test_app_store_server_notification_decoding() {
-    let test_notification_data = fs::read_to_string("tests/resources/mock_signed_data/testNotification")
-        .expect("Failed to read file");
+    let test_notification_data =
+        fs::read_to_string("tests/resources/mock_signed_data/testNotification").expect("Failed to read file");
     let verifier = get_signed_data_verifier(Environment::Sandbox, "com.example", None);
     let notification = verifier
         .verify_and_decode_notification(&test_notification_data)
@@ -39,64 +48,69 @@ fn test_app_store_server_notification_decoding() {
 
 #[test]
 fn test_app_store_server_notification_decoding_production() {
-    let test_notification_data = fs::read_to_string("tests/resources/mock_signed_data/testNotification")
-        .expect("Failed to read file");
+    let test_notification_data =
+        fs::read_to_string("tests/resources/mock_signed_data/testNotification").expect("Failed to read file");
     let verifier = get_signed_data_verifier(Environment::Production, "com.example", None);
     let error = verifier
         .verify_and_decode_notification(&test_notification_data)
         .err()
         .unwrap();
 
-    assert!(
-        matches!(error, SignedDataVerifierError::InvalidEnvironment)
-    );
+    assert!(matches!(error, SignedDataVerifierError::InvalidEnvironment));
 }
 
 #[test]
 fn test_missing_x5c_header() {
-    let missing_x5c_header_claim_data = fs::read_to_string("tests/resources/mock_signed_data/missingX5CHeaderClaim")
-        .expect("Failed to read file");
+    let missing_x5c_header_claim_data =
+        fs::read_to_string("tests/resources/mock_signed_data/missingX5CHeaderClaim").expect("Failed to read file");
     let verifier = get_signed_data_verifier(Environment::Sandbox, "com.example", None);
     let result = verifier.verify_and_decode_notification(&missing_x5c_header_claim_data);
-    assert!(
-        matches!(
-            result.err().unwrap(),
-            SignedDataVerifierError::InternalJWTError(_)
-        )
-    );
+    assert!(matches!(
+        result.err().unwrap(),
+        SignedDataVerifierError::VerificationFailure
+    ));
 }
 
 #[test]
 fn test_wrong_bundle_id_for_server_notification() {
-    let wrong_bundle_id_data = fs::read_to_string("tests/resources/mock_signed_data/wrongBundleId")
-        .expect("Failed to read file");
+    let wrong_bundle_id_data =
+        fs::read_to_string("tests/resources/mock_signed_data/wrongBundleId").expect("Failed to read file");
     let verifier = get_signed_data_verifier(Environment::Sandbox, "com.example", None);
     let result = verifier.verify_and_decode_notification(&wrong_bundle_id_data);
-    assert!(
-        matches!(
-            result.err().unwrap(),
-            SignedDataVerifierError::InvalidAppIdentifier
-        )
-    );
+    assert!(matches!(
+        result.err().unwrap(),
+        SignedDataVerifierError::InvalidAppIdentifier
+    ));
 }
 
 #[test]
 fn test_wrong_app_apple_id_for_server_notification() {
-    let test_notification_data = fs::read_to_string("tests/resources/mock_signed_data/testNotification")
-        .expect("Failed to read file");
+    let test_notification_data =
+        fs::read_to_string("tests/resources/mock_signed_data/testNotification").expect("Failed to read file");
     let verifier = get_signed_data_verifier(Environment::Production, "com.example", Some(1235));
-    let result = verifier.verify_and_decode_notification(&test_notification_data);
-    assert!(
-        matches!(
-            result.err().unwrap(),
-            SignedDataVerifierError::InvalidAppIdentifier
-        )
-    );
+    let result = verifier.verify_and_decode_signed_transaction(&test_notification_data);
+    assert!(matches!(
+        result.err().unwrap(),
+        SignedDataVerifierError::InvalidAppIdentifier
+    ));
+}
+
+#[test]
+fn test_wrong_bundle_id_for_transaction() {
+    let transaction_info_data =
+        fs::read_to_string("tests/resources/mock_signed_data/transactionInfo").expect("Failed to read file");
+    let verifier = get_signed_data_verifier(Environment::Sandbox, "com.example.x", None);
+    let result = verifier.verify_and_decode_signed_transaction(&transaction_info_data);
+    assert!(matches!(
+        result.err().unwrap(),
+        SignedDataVerifierError::InvalidAppIdentifier
+    ));
 }
 
 #[test]
 fn test_renewal_info_decoding() {
-    let renewal_info_data = fs::read_to_string("tests/resources/mock_signed_data/renewalInfo").expect("Failed to read file");
+    let renewal_info_data =
+        fs::read_to_string("tests/resources/mock_signed_data/renewalInfo").expect("Failed to read file");
     let verifier = get_signed_data_verifier(Environment::Sandbox, "com.example", None);
     let renewal_info = verifier
         .verify_and_decode_renewal_info(&renewal_info_data)
@@ -106,7 +120,8 @@ fn test_renewal_info_decoding() {
 
 #[test]
 fn test_external_purchase_token_notification_decoding() {
-    let signed_notification = create_signed_data_from_json("tests/resources/models/signedExternalPurchaseTokenNotification.json");
+    let signed_notification =
+        create_signed_data_from_json("tests/resources/models/signedExternalPurchaseTokenNotification.json");
     let signed_data_verifier = get_signed_data_verifier(Environment::LocalTesting, "com.example", Some(55555));
 
     match signed_data_verifier.verify_and_decode_notification(&signed_notification) {
@@ -181,8 +196,9 @@ fn test_external_purchase_token_notification_decoding() {
 }
 
 #[test]
-fn test_external_purchase_token_sanbox_notification_decoding() {
-    let signed_notification = create_signed_data_from_json("tests/resources/models/signedExternalPurchaseTokenSandboxNotification.json");
+fn test_external_purchase_token_sandbox_notification_decoding() {
+    let signed_notification =
+        create_signed_data_from_json("tests/resources/models/signedExternalPurchaseTokenSandboxNotification.json");
     let signed_data_verifier = get_signed_data_verifier(Environment::LocalTesting, "com.example", Some(55555));
 
     match signed_data_verifier.verify_and_decode_notification(&signed_notification) {
@@ -258,8 +274,8 @@ fn test_external_purchase_token_sanbox_notification_decoding() {
 
 #[test]
 fn test_transaction_info_decoding() {
-    let transaction_info_data = fs::read_to_string("tests/resources/mock_signed_data/transactionInfo")
-        .expect("Failed to read file");
+    let transaction_info_data =
+        fs::read_to_string("tests/resources/mock_signed_data/transactionInfo").expect("Failed to read file");
     let verifier = get_signed_data_verifier(Environment::Sandbox, "com.example", None);
     let notification = verifier
         .verify_and_decode_signed_transaction(&transaction_info_data)
@@ -275,7 +291,7 @@ fn test_malformed_jwt_with_too_many_parts() {
         .err()
         .unwrap()
         .to_string()
-        .contains("InternalJWTError"));
+        .contains("InternalJWSError"));
 }
 
 #[test]
@@ -286,7 +302,7 @@ fn test_malformed_jwt_with_malformed_data() {
         .err()
         .unwrap()
         .to_string()
-        .contains("InternalJWTError"));
+        .contains("InternalJWSError"));
 }
 
 fn get_signed_data_verifier(
@@ -294,16 +310,16 @@ fn get_signed_data_verifier(
     bundle_id: &str,
     app_apple_id: Option<i64>,
 ) -> SignedDataVerifier {
-    let verifier = SignedDataVerifier::new(
+    SignedDataVerifier::new(
         vec![ROOT_CA_BASE64_ENCODED
             .as_der_bytes()
             .unwrap()],
         environment,
         bundle_id.to_string(),
         app_apple_id.or(Some(1234)),
-    );
-
-    verifier
+        false,
+    )
+    .expect("valid config")
 }
 
 #[test]
@@ -584,6 +600,133 @@ fn test_decoded_payloads_transaction_decoding() {
                     .expect("Expect offer_period")
                     .to_string()
             );
+
+            let ac_info = transaction
+                .advanced_commerce_info
+                .as_ref()
+                .expect("Expect advanced_commerce_info");
+            let descriptors = ac_info
+                .descriptors
+                .as_ref()
+                .expect("Expect descriptors");
+            assert_eq!("Premium Plan", descriptors.description);
+            assert_eq!("Premium", descriptors.display_name);
+            assert_eq!(
+                1500,
+                ac_info
+                    .estimated_tax
+                    .expect("Expect estimated_tax")
+            );
+            assert_eq!(
+                AdvancedCommercePeriod::P1M,
+                ac_info.period.expect("Expect period")
+            );
+            assert_eq!(
+                "ref-12345",
+                ac_info
+                    .request_reference_id
+                    .as_deref()
+                    .expect("Expect request_reference_id")
+            );
+            assert_eq!(
+                "TAX_CODE_1",
+                ac_info
+                    .tax_code
+                    .as_deref()
+                    .expect("Expect tax_code")
+            );
+            assert_eq!(
+                8490,
+                ac_info
+                    .tax_exclusive_price
+                    .expect("Expect tax_exclusive_price")
+            );
+            assert_eq!(
+                "0.15",
+                ac_info
+                    .tax_rate
+                    .as_deref()
+                    .expect("Expect tax_rate")
+            );
+            let items = ac_info
+                .items
+                .as_ref()
+                .expect("Expect items");
+            assert_eq!(1, items.len());
+            let item = &items[0];
+            assert_eq!(
+                "com.example.sku.premium",
+                item.sku.as_deref().expect("Expect sku")
+            );
+            assert_eq!(
+                "Premium feature",
+                item.description
+                    .as_deref()
+                    .expect("Expect description")
+            );
+            assert_eq!(
+                "Premium Feature",
+                item.display_name
+                    .as_deref()
+                    .expect("Expect display_name")
+            );
+            assert_eq!(9990, item.price.expect("Expect price"));
+            assert_eq!(
+                1698149200,
+                item.revocation_date
+                    .expect("Expect revocation_date")
+                    .timestamp()
+            );
+            let refunds = item
+                .refunds
+                .as_ref()
+                .expect("Expect refunds");
+            assert_eq!(1, refunds.len());
+            let refund = &refunds[0];
+            assert_eq!(5000, refund.refund_amount);
+            assert_eq!(1698149100, refund.refund_date.timestamp());
+            assert_eq!(
+                AdvancedCommerceRefundReason::FulfillmentIssue,
+                refund.refund_reason
+            );
+            assert_eq!(AdvancedCommerceRefundType::Prorated, refund.refund_type);
+
+            assert_eq!(
+                BillingPlanType::Monthly,
+                transaction
+                    .billing_plan_type
+                    .expect("Expect billing_plan_type")
+            );
+
+            let commitment_info = transaction
+                .commitment_info
+                .as_ref()
+                .expect("Expect commitment_info");
+            assert_eq!(
+                3,
+                commitment_info
+                    .billing_period_number
+                    .expect("Expect billing_period_number")
+            );
+            assert_eq!(
+                1698150000,
+                commitment_info
+                    .commitment_expires_date
+                    .expect("Expect commitment_expires_date")
+                    .timestamp()
+            );
+            assert_eq!(
+                119880,
+                commitment_info
+                    .commitment_price
+                    .expect("Expect commitment_price")
+            );
+            assert_eq!(
+                12,
+                commitment_info
+                    .total_billing_periods
+                    .expect("Expect total_billing_periods")
+            );
         }
         Err(err) => panic!("Failed to verify and decode signed transaction: {:?}", err),
     }
@@ -707,6 +850,160 @@ fn test_decoded_payloads_renewal_info_decoding() {
                     .expect("Expect app_account_token")
                     .to_string()
             );
+            assert_eq!(
+                9990,
+                renewal_info
+                    .renewal_price
+                    .expect("Expect renewal_price")
+            );
+            assert_eq!(
+                "USD",
+                renewal_info
+                    .currency
+                    .as_deref()
+                    .expect("Expect currency")
+            );
+            assert_eq!(
+                OfferDiscountType::PayAsYouGo,
+                renewal_info
+                    .offer_discount_type
+                    .expect("Expect offer_discount_type")
+            );
+            assert_eq!(
+                vec!["eligible1".to_string(), "eligible2".to_string()],
+                renewal_info
+                    .eligible_win_back_offer_ids
+                    .clone()
+                    .expect("Expect eligible_win_back_offer_ids")
+            );
+
+            let ac_info = renewal_info
+                .advanced_commerce_info
+                .as_ref()
+                .expect("Expect advanced_commerce_info");
+            assert_eq!(
+                "token-abc-123",
+                ac_info
+                    .consistency_token
+                    .as_deref()
+                    .expect("Expect consistency_token")
+            );
+            let descriptors = ac_info
+                .descriptors
+                .as_ref()
+                .expect("Expect descriptors");
+            assert_eq!("Premium Plan", descriptors.description);
+            assert_eq!("Premium", descriptors.display_name);
+            assert_eq!(
+                AdvancedCommercePeriod::P1M,
+                ac_info.period.expect("Expect period")
+            );
+            assert_eq!(
+                "ref-12345",
+                ac_info
+                    .request_reference_id
+                    .as_deref()
+                    .expect("Expect request_reference_id")
+            );
+            assert_eq!(
+                "TAX_CODE_1",
+                ac_info
+                    .tax_code
+                    .as_deref()
+                    .expect("Expect tax_code")
+            );
+            let items = ac_info
+                .items
+                .as_ref()
+                .expect("Expect items");
+            assert_eq!(1, items.len());
+            let item = &items[0];
+            assert_eq!(
+                "com.example.sku.premium",
+                item.sku.as_deref().expect("Expect sku")
+            );
+            assert_eq!(
+                "Premium feature",
+                item.description
+                    .as_deref()
+                    .expect("Expect description")
+            );
+            assert_eq!(
+                "Premium Feature",
+                item.display_name
+                    .as_deref()
+                    .expect("Expect display_name")
+            );
+            assert_eq!(9990, item.price.expect("Expect price"));
+            let price_increase_info = item
+                .price_increase_info
+                .as_ref()
+                .expect("Expect price_increase_info");
+            assert_eq!(
+                vec!["com.example.sku.1".to_string(), "com.example.sku.2".to_string()],
+                price_increase_info
+                    .dependent_skus
+                    .clone()
+                    .expect("Expect dependent_skus")
+            );
+            assert_eq!(
+                12990,
+                price_increase_info
+                    .price
+                    .expect("Expect price")
+            );
+            assert_eq!(
+                AdvancedCommercePriceIncreaseInfoStatus::Pending,
+                price_increase_info
+                    .status
+                    .clone()
+                    .expect("Expect status")
+            );
+
+            let commitment_info = renewal_info
+                .commitment_info
+                .as_ref()
+                .expect("Expect commitment_info");
+            assert_eq!(
+                "com.example.product.commitment",
+                commitment_info
+                    .commitment_auto_renew_product_id
+                    .as_deref()
+                    .expect("Expect commitment_auto_renew_product_id")
+            );
+            assert_eq!(
+                AutoRenewStatus::On,
+                commitment_info
+                    .commitment_auto_renew_status
+                    .clone()
+                    .expect("Expect commitment_auto_renew_status")
+            );
+            assert_eq!(
+                RenewalBillingPlanType::Monthly,
+                commitment_info
+                    .commitment_renewal_billing_plan_type
+                    .expect("Expect commitment_renewal_billing_plan_type")
+            );
+            assert_eq!(
+                1698149500,
+                commitment_info
+                    .commitment_renewal_date
+                    .expect("Expect commitment_renewal_date")
+                    .timestamp()
+            );
+            assert_eq!(
+                9990,
+                commitment_info
+                    .commitment_renewal_price
+                    .expect("Expect commitment_renewal_price")
+            );
+
+            assert_eq!(
+                RenewalBillingPlanType::Monthly,
+                renewal_info
+                    .renewal_billing_plan_type
+                    .expect("Expect renewal_billing_plan_type")
+            );
         }
         Err(err) => panic!("Failed to verify and decode renewal info: {:?}", err),
     }
@@ -803,7 +1100,8 @@ fn test_decoded_payloads_notification_decoding() {
 
 #[test]
 fn test_consumption_request_notification_decoding() {
-    let signed_notification = create_signed_data_from_json("tests/resources/models/signedConsumptionRequestNotification.json");
+    let signed_notification =
+        create_signed_data_from_json("tests/resources/models/signedConsumptionRequestNotification.json");
 
     let signed_data_verifier = get_default_signed_data_verifier();
 
@@ -861,7 +1159,8 @@ fn test_consumption_request_notification_decoding() {
 
 #[test]
 fn test_summary_notification_decoding() {
-    let signed_summary_notification = create_signed_data_from_json("tests/resources/models/signedSummaryNotification.json");
+    let signed_summary_notification =
+        create_signed_data_from_json("tests/resources/models/signedSummaryNotification.json");
 
     let signed_data_verifier = get_default_signed_data_verifier();
 
@@ -949,8 +1248,8 @@ fn test_summary_notification_decoding() {
 #[test]
 fn test_xcode_signed_app_transaction() {
     let verifier = get_signed_data_verifier(Environment::Xcode, XCODE_BUNDLE_ID, None);
-    let encoded_app_transaction = fs::read_to_string("tests/resources/xcode/xcode-signed-app-transaction")
-        .expect("Failed to read file");
+    let encoded_app_transaction =
+        fs::read_to_string("tests/resources/xcode/xcode-signed-app-transaction").expect("Failed to read file");
 
     if let Ok(app_transaction) = verifier.verify_and_decode_app_transaction(&encoded_app_transaction) {
         assert_eq!(
@@ -1006,8 +1305,8 @@ fn test_xcode_signed_app_transaction() {
 #[test]
 fn test_xcode_signed_transaction() {
     let verifier = get_signed_data_verifier(Environment::Xcode, XCODE_BUNDLE_ID, None);
-    let encoded_app_transaction = fs::read_to_string("tests/resources/xcode/xcode-signed-transaction")
-        .expect("Failed to read file");
+    let encoded_app_transaction =
+        fs::read_to_string("tests/resources/xcode/xcode-signed-transaction").expect("Failed to read file");
 
     if let Ok(transaction) = verifier.verify_and_decode_signed_transaction(&encoded_app_transaction) {
         assert_eq!(
@@ -1140,8 +1439,8 @@ fn test_xcode_signed_transaction() {
 #[test]
 fn test_xcode_signed_renewal_info() {
     let verifier = get_signed_data_verifier(Environment::Xcode, XCODE_BUNDLE_ID, None);
-    let encoded_renewal_info = fs::read_to_string("tests/resources/xcode/xcode-signed-renewal-info")
-        .expect("Failed to read file");
+    let encoded_renewal_info =
+        fs::read_to_string("tests/resources/xcode/xcode-signed-renewal-info").expect("Failed to read file");
 
     if let Ok(renewal_info) = verifier.verify_and_decode_renewal_info(&encoded_renewal_info) {
         assert_eq!(None, renewal_info.expiration_intent);
@@ -1212,10 +1511,13 @@ fn test_xcode_signed_renewal_info() {
 #[test]
 fn test_xcode_signed_app_transaction_with_production_environment() {
     let verifier = get_signed_data_verifier(Environment::Production, XCODE_BUNDLE_ID, None);
-    let encoded_app_transaction = fs::read_to_string("tests/resources/xcode/xcode-signed-app-transaction")
-        .expect("Failed to read file");
+    let encoded_app_transaction =
+        fs::read_to_string("tests/resources/xcode/xcode-signed-app-transaction").expect("Failed to read file");
 
-    if let Err(_) = verifier.verify_and_decode_app_transaction(&encoded_app_transaction) {
+    if verifier
+        .verify_and_decode_app_transaction(&encoded_app_transaction)
+        .is_err()
+    {
         return;
     }
     panic!("Expected VerificationException, but no exception was raised");
@@ -1229,20 +1531,22 @@ fn create_signed_data_from_json(path: &str) -> String {
     let json_payload = fs::read_to_string(path).expect("Failed to read JSON file");
     let json: Map<String, Value> = serde_json::from_str(json_payload.as_str()).expect("Expect JSON");
 
-    let header = jsonwebtoken::Header::new(Algorithm::ES256);
-    let private_key = generate_p256_private_key();
-    let key = jsonwebtoken::EncodingKey::from_ec_der(private_key.as_ref());
-    let payload = jsonwebtoken::encode(&header, &json, &key).expect("Failed to encode JWT");
-    payload
-}
+    let private_key_pem = include_str!("resources/certs/testSigningKey.p8");
+    let key = CryptoProvider::default_provider()
+        .p256_signing
+        .private_key(private_key_pem)
+        .expect("Failed to load test key");
 
-fn generate_p256_private_key() -> Vec<u8> {
-    let signing_key = SigningKey::random(&mut p256::elliptic_curve::rand_core::OsRng);
-    signing_key
-        .to_pkcs8_der()
-        .expect("Failed to encode private key")
-        .as_bytes()
-        .to_vec()
+    let header = serde_json::json!({ "alg": "ES256", "typ": "JWT" });
+    let encoded_header = jws::b64url_encode(&serde_json::to_vec(&header).expect("Expect header JSON"));
+    let encoded_payload = jws::b64url_encode(&serde_json::to_vec(&json).expect("Expect payload JSON"));
+    let signing_input = format!("{encoded_header}.{encoded_payload}");
+
+    let (raw, _) = key
+        .signature(signing_input.as_bytes())
+        .expect("Failed to sign payload");
+
+    jws::encode_compact(&encoded_header, &encoded_payload, &raw)
 }
 
 #[test]
@@ -1262,10 +1566,7 @@ fn test_realtime_request_decoding() {
                 request.request_identifier
             );
             assert_eq!(Environment::LocalTesting, request.environment);
-            assert_eq!(
-                1698148900,
-                request.signed_date.timestamp()
-            );
+            assert_eq!(1698148900, request.signed_date.timestamp());
         }
         Err(err) => panic!("Failed to verify and decode realtime request: {:?}", err),
     }
@@ -1273,7 +1574,8 @@ fn test_realtime_request_decoding() {
 
 #[test]
 fn test_transaction_with_revocation_decoding() {
-    let signed_transaction = create_signed_data_from_json("tests/resources/models/signedTransactionWithRevocation.json");
+    let signed_transaction =
+        create_signed_data_from_json("tests/resources/models/signedTransactionWithRevocation.json");
 
     let signed_data_verifier = get_default_signed_data_verifier();
 
@@ -1474,7 +1776,8 @@ fn test_transaction_with_revocation_decoding() {
 
 #[test]
 fn test_rescind_consent_notification_decoding() {
-    let signed_notification = create_signed_data_from_json("tests/resources/models/signedRescindConsentNotification.json");
+    let signed_notification =
+        create_signed_data_from_json("tests/resources/models/signedRescindConsentNotification.json");
 
     let signed_data_verifier = get_default_signed_data_verifier();
 
@@ -1499,25 +1802,37 @@ fn test_rescind_consent_notification_decoding() {
             );
             assert!(notification.data.is_none());
             assert!(notification.summary.is_none());
-            assert!(notification.external_purchase_token.is_none());
+            assert!(notification
+                .external_purchase_token
+                .is_none());
             assert!(notification.app_data.is_some());
 
             if let Some(app_data) = notification.app_data {
                 assert_eq!(
                     Environment::LocalTesting,
-                    app_data.environment.expect("Expect environment")
+                    app_data
+                        .environment
+                        .expect("Expect environment")
                 );
                 assert_eq!(
                     41234,
-                    app_data.app_apple_id.expect("Expect app_apple_id")
+                    app_data
+                        .app_apple_id
+                        .expect("Expect app_apple_id")
                 );
                 assert_eq!(
                     "com.example",
-                    app_data.bundle_id.as_deref().expect("Expect bundle_id")
+                    app_data
+                        .bundle_id
+                        .as_deref()
+                        .expect("Expect bundle_id")
                 );
                 assert_eq!(
                     "signed_app_transaction_info_value",
-                    app_data.signed_app_transaction_info.as_deref().expect("Expect signed_app_transaction_info")
+                    app_data
+                        .signed_app_transaction_info
+                        .as_deref()
+                        .expect("Expect signed_app_transaction_info")
                 );
             } else {
                 panic!("AppData field is expected to be present in the notification");
@@ -1536,11 +1851,121 @@ fn test_app_data() {
 
     let app_data: AppData = serde_json::from_str(&json).expect("Failed to decode AppData");
 
-    assert_eq!(987654321, app_data.app_apple_id.expect("Expect app_apple_id"));
-    assert_eq!("com.example", app_data.bundle_id.as_deref().expect("Expect bundle_id"));
-    assert_eq!(Environment::Sandbox, app_data.environment.expect("Expect environment"));
+    assert_eq!(
+        987654321,
+        app_data
+            .app_apple_id
+            .expect("Expect app_apple_id")
+    );
+    assert_eq!(
+        "com.example",
+        app_data
+            .bundle_id
+            .as_deref()
+            .expect("Expect bundle_id")
+    );
+    assert_eq!(
+        Environment::Sandbox,
+        app_data
+            .environment
+            .expect("Expect environment")
+    );
     assert_eq!(
         "signed-app-transaction-info",
-        app_data.signed_app_transaction_info.as_deref().expect("Expect signed_app_transaction_info")
+        app_data
+            .signed_app_transaction_info
+            .as_deref()
+            .expect("Expect signed_app_transaction_info")
+    );
+}
+
+#[test]
+fn test_jws_transaction_decoded_payload_with_commitment_info() {
+    let fixture = fs::read_to_string("tests/resources/models/signedTransaction.json").expect("Failed to read fixture");
+    let payload: JWSTransactionDecodedPayload =
+        serde_json::from_str(&fixture).expect("Expect JWSTransactionDecodedPayload");
+
+    assert_eq!(payload.billing_plan_type, Some(BillingPlanType::Monthly));
+
+    let commitment = payload
+        .commitment_info
+        .expect("Expect commitment_info");
+    assert_eq!(commitment.billing_period_number, Some(3));
+    assert_eq!(commitment.total_billing_periods, Some(12));
+    assert_eq!(commitment.commitment_price, Some(119880));
+    assert!(commitment
+        .commitment_expires_date
+        .is_some());
+}
+
+#[test]
+fn test_jws_renewal_info_decoded_payload_with_commitment_info() {
+    let fixture = fs::read_to_string("tests/resources/models/signedRenewalInfo.json").expect("Failed to read fixture");
+    let payload: JWSRenewalInfoDecodedPayload =
+        serde_json::from_str(&fixture).expect("Expect JWSRenewalInfoDecodedPayload");
+
+    assert_eq!(
+        payload.renewal_billing_plan_type,
+        Some(RenewalBillingPlanType::Monthly)
+    );
+
+    let commitment = payload
+        .commitment_info
+        .expect("Expect commitment_info");
+    assert_eq!(
+        commitment.commitment_auto_renew_product_id,
+        Some("com.example.product.commitment".to_string())
+    );
+    assert_eq!(
+        commitment.commitment_renewal_billing_plan_type,
+        Some(RenewalBillingPlanType::Monthly)
+    );
+    assert_eq!(commitment.commitment_renewal_price, Some(9990));
+    assert!(commitment
+        .commitment_renewal_date
+        .is_some());
+}
+
+#[test]
+fn test_jws_transaction_decoded_payload_backwards_compatible_without_commitment() {
+    let json = r#"{
+        "transactionId": "12345",
+        "originalTransactionId": "orig123",
+        "bundleId": "com.example",
+        "productId": "product1",
+        "purchaseDate": 1698148900000,
+        "environment": "Production",
+        "type": "Auto-Renewable Subscription"
+    }"#;
+    let payload: JWSTransactionDecodedPayload =
+        serde_json::from_str(json).expect("Expect JWSTransactionDecodedPayload");
+
+    assert!(payload.billing_plan_type.is_none());
+    assert!(payload.commitment_info.is_none());
+}
+
+#[test]
+fn test_backward_compatibility_notification_without_commitment_fields() {
+    // The ASSN v2 outer envelope (notificationType/subtype/data/summary) carries no
+    // commitment fields of its own -- those live one level down, inside the inner
+    // signedTransactionInfo / signedRenewalInfo JWS strings referenced by `data`,
+    // covered by test_jws_transaction_decoded_payload_with_commitment_info and
+    // test_jws_renewal_info_decoded_payload_with_commitment_info above. This test just
+    // confirms a notification payload with no commitment-related content anywhere
+    // still verifies and decodes cleanly.
+    let signed_notification = create_signed_data_from_json("tests/resources/models/signedNotification.json");
+    let verifier = get_default_signed_data_verifier();
+
+    let notification = verifier
+        .verify_and_decode_notification(&signed_notification)
+        .expect("Expected notification to verify and decode successfully");
+
+    assert_eq!(
+        NotificationTypeV2::Subscribed,
+        notification.notification_type
+    );
+    assert_eq!(
+        "002e14d5-51f5-4503-b5a8-c3a1af68eb20",
+        notification.notification_uuid
     );
 }

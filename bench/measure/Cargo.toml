@@ -1,0 +1,65 @@
+[package]
+name = "app-store-server-library-bench-measure"
+description = "Regression benchmarks for app-store-server-library. Not published."
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+# aws_lc pinned, default-features off. See the backend guard in src/lib.rs:
+# this crate's cfg cascade prefers rust_crypto, so enabling both would
+# silently measure the wrong backend.
+app-store-server-library = { path = "../..", default-features = false, features = [
+  "aws_lc",
+  "receipt-utility",
+] }
+base64 = "0.23.0"
+uuid = { version = "1.24.0", features = ["v4"] }
+serde = { version = "1.0.229", features = ["derive"] }
+
+[features]
+# Forwarding features so `#[cfg(feature = "...")]` in src/lib.rs can observe
+# what the caller is trying to enable on the dependency. `cfg(feature = ...)`
+# only ever inspects the *current* crate's own declared features, never a
+# dependency's — without this forwarding, passing
+# `--features app-store-server-library/rust_crypto` would silently enable the
+# dependency feature while the guard below stayed dark, defeating the point
+# of the guard. Pass `--features rust_crypto` (or `ring`) to this crate to
+# trip it.
+rust_crypto = ["app-store-server-library/rust_crypto"]
+ring = ["app-store-server-library/ring"]
+
+[dev-dependencies]
+# Criterion rather than divan: this suite is tracked over time by CI, and
+# criterion is what benchmark services ingest. html_reports needs plotters to
+# render with; enabling it alone silently produces no report.
+criterion = { version = "0.8", default-features = false, features = [
+  "cargo_bench_support",
+  "html_reports",
+  "plotters",
+] }
+
+# `cargo bench` would otherwise run src/lib.rs as a bench target under the
+# default libtest harness, which rejects criterion's flags.
+[lib]
+bench = false
+
+[[bench]]
+name = "verify"
+harness = false
+
+[[bench]]
+name = "chain"
+harness = false
+
+[[bench]]
+name = "sign"
+harness = false
+
+[[bench]]
+name = "receipt"
+harness = false
+
+[[bench]]
+name = "jws"
+harness = false

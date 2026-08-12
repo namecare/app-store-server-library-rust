@@ -1,0 +1,323 @@
+mod common;
+use std::collections::HashMap;
+use std::fs;
+
+use app_store_server_library::advanced_commerce_api_client::AdvancedCommerceApiClient;
+use app_store_server_library::api_client::error::ConfigurationError;
+use app_store_server_library::models::advanced_commerce_refund_reason::AdvancedCommerceRefundReason;
+use app_store_server_library::models::advanced_commerce_refund_type::AdvancedCommerceRefundType;
+use app_store_server_library::models::advanced_commerce_request_info::AdvancedCommerceRequestInfo;
+use app_store_server_library::models::advanced_commerce_request_refund_item::AdvancedCommerceRequestRefundItem;
+use app_store_server_library::models::advanced_commerce_request_refund_request::AdvancedCommerceRequestRefundRequest;
+use app_store_server_library::models::advanced_commerce_subscription_cancel_request::AdvancedCommerceSubscriptionCancelRequest;
+use app_store_server_library::models::advanced_commerce_subscription_change_metadata_request::AdvancedCommerceSubscriptionChangeMetadataRequest;
+use app_store_server_library::models::advanced_commerce_subscription_migrate_item::AdvancedCommerceSubscriptionMigrateItem;
+use app_store_server_library::models::advanced_commerce_subscription_migrate_request::AdvancedCommerceSubscriptionMigrateRequest;
+use app_store_server_library::models::advanced_commerce_subscription_price_change_item::AdvancedCommerceSubscriptionPriceChangeItem;
+use app_store_server_library::models::advanced_commerce_subscription_price_change_request::AdvancedCommerceSubscriptionPriceChangeRequest;
+use app_store_server_library::models::advanced_commerce_subscription_revoke_request::AdvancedCommerceSubscriptionRevokeRequest;
+use app_store_server_library::models::app_store_environment::Environment;
+use common::transport_mock::{MockTransport, RequestVerifier};
+use http::{Method, StatusCode};
+use serde_json::Value;
+use uuid::Uuid;
+
+#[tokio::test]
+async fn test_cancel_subscription() {
+    let client = advanced_commerce_api_client_with_body_from_file(
+        "tests/resources/models/subscriptionCancelResponse.json",
+        StatusCode::OK,
+        Some(Box::new(|req, body| {
+            assert_eq!(&Method::POST, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/advancedCommerce/v1/subscription/cancel/test_transaction_id",
+                req.uri().to_string()
+            );
+
+            let decoded_json: HashMap<&str, Value> = serde_json::from_slice(body).unwrap();
+            assert!(decoded_json.contains_key("requestInfo"));
+        })),
+    );
+
+    let request =
+        AdvancedCommerceSubscriptionCancelRequest::new(Uuid::new_v4()).with_storefront("test_storefront".to_string());
+
+    let response = client
+        .cancel_subscription("test_transaction_id", &request)
+        .await
+        .unwrap();
+
+    assert!(!response
+        .signed_transaction_info
+        .is_empty());
+    assert!(!response.signed_renewal_info.is_empty());
+}
+
+#[tokio::test]
+async fn test_revoke_subscription() {
+    let client = advanced_commerce_api_client_with_body_from_file(
+        "tests/resources/models/subscriptionRevokeResponse.json",
+        StatusCode::OK,
+        Some(Box::new(|req, body| {
+            assert_eq!(&Method::POST, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/advancedCommerce/v1/subscription/revoke/test_transaction_id",
+                req.uri().to_string()
+            );
+
+            let decoded_json: HashMap<&str, Value> = serde_json::from_slice(body).unwrap();
+            assert!(decoded_json.contains_key("requestInfo"));
+            assert!(decoded_json.contains_key("refundReason"));
+            assert!(decoded_json.contains_key("refundType"));
+        })),
+    );
+
+    let request = AdvancedCommerceSubscriptionRevokeRequest::new(
+        Uuid::new_v4(),
+        AdvancedCommerceRefundReason::UnsatisfiedWithPurchase,
+        true,
+        AdvancedCommerceRefundType::Full,
+    );
+
+    let response = client
+        .revoke_subscription("test_transaction_id", &request)
+        .await
+        .unwrap();
+
+    assert!(!response
+        .signed_transaction_info
+        .is_empty());
+    assert!(!response.signed_renewal_info.is_empty());
+}
+
+#[tokio::test]
+async fn test_request_transaction_refund() {
+    let client = advanced_commerce_api_client_with_body_from_file(
+        "tests/resources/models/requestRefundResponse.json",
+        StatusCode::OK,
+        Some(Box::new(|req, body| {
+            assert_eq!(&Method::POST, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/advancedCommerce/v1/transaction/requestRefund/test_transaction_id",
+                req.uri().to_string()
+            );
+
+            let decoded_json: HashMap<&str, Value> = serde_json::from_slice(body).unwrap();
+            assert!(decoded_json.contains_key("requestInfo"));
+            assert!(decoded_json.contains_key("items"));
+        })),
+    );
+
+    let request = AdvancedCommerceRequestRefundRequest::new(
+        vec![AdvancedCommerceRequestRefundItem {
+            sku: "sku".to_string(),
+            refund_amount: None,
+            refund_reason: AdvancedCommerceRefundReason::FulfillmentIssue,
+            refund_type: AdvancedCommerceRefundType::Full,
+            revoke: false,
+        }],
+        false,
+        AdvancedCommerceRequestInfo::new(Uuid::new_v4()),
+    )
+    .unwrap();
+
+    let response = client
+        .request_transaction_refund("test_transaction_id", &request)
+        .await
+        .unwrap();
+
+    assert!(!response
+        .signed_transaction_info
+        .is_empty());
+}
+
+#[tokio::test]
+async fn test_change_subscription_metadata() {
+    let client = advanced_commerce_api_client_with_body_from_file(
+        "tests/resources/models/subscriptionChangeMetadataResponse.json",
+        StatusCode::OK,
+        Some(Box::new(|req, body| {
+            assert_eq!(&Method::POST, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/advancedCommerce/v1/subscription/changeMetadata/test_transaction_id",
+                req.uri().to_string()
+            );
+
+            let decoded_json: HashMap<&str, Value> = serde_json::from_slice(body).unwrap();
+            assert!(decoded_json.contains_key("requestInfo"));
+            assert!(decoded_json.contains_key("items"));
+        })),
+    );
+
+    let request = AdvancedCommerceSubscriptionChangeMetadataRequest::new(Uuid::new_v4()).with_items(vec![]);
+
+    let response = client
+        .change_subscription_metadata("test_transaction_id", &request)
+        .await
+        .unwrap();
+
+    assert!(!response
+        .signed_transaction_info
+        .is_empty());
+    assert!(!response.signed_renewal_info.is_empty());
+}
+
+#[tokio::test]
+async fn test_change_subscription_price() {
+    let client = advanced_commerce_api_client_with_body_from_file(
+        "tests/resources/models/subscriptionPriceChangeResponse.json",
+        StatusCode::OK,
+        Some(Box::new(|req, body| {
+            assert_eq!(&Method::POST, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/advancedCommerce/v1/subscription/changePrice/test_transaction_id",
+                req.uri().to_string()
+            );
+
+            let decoded_json: HashMap<&str, Value> = serde_json::from_slice(body).unwrap();
+            assert!(decoded_json.contains_key("requestInfo"));
+            assert!(decoded_json.contains_key("items"));
+        })),
+    );
+
+    let request = AdvancedCommerceSubscriptionPriceChangeRequest::new(
+        "test_storefront".to_string(),
+        vec![AdvancedCommerceSubscriptionPriceChangeItem::new("sku".to_string(), 1000, None).unwrap()],
+        Uuid::new_v4(),
+    )
+    .unwrap();
+
+    let response = client
+        .change_subscription_price("test_transaction_id", &request)
+        .await
+        .unwrap();
+
+    assert!(!response
+        .signed_transaction_info
+        .is_empty());
+    assert!(!response.signed_renewal_info.is_empty());
+}
+
+#[tokio::test]
+async fn test_migrate_subscription() {
+    let client = advanced_commerce_api_client_with_body_from_file(
+        "tests/resources/models/subscriptionMigrateResponse.json",
+        StatusCode::OK,
+        Some(Box::new(|req, body| {
+            assert_eq!(&Method::POST, req.method());
+            assert_eq!(
+                "https://local-testing-base-url/advancedCommerce/v1/subscription/migrate/test_transaction_id",
+                req.uri().to_string()
+            );
+
+            let decoded_json: HashMap<&str, Value> = serde_json::from_slice(body).unwrap();
+            assert!(decoded_json.contains_key("requestInfo"));
+            assert!(decoded_json.contains_key("items"));
+        })),
+    );
+
+    let request = AdvancedCommerceSubscriptionMigrateRequest::new(
+        Uuid::new_v4(),
+        vec![AdvancedCommerceSubscriptionMigrateItem::new(
+            "sku".to_string(),
+            "description".to_string(),
+            "display_name".to_string(),
+        )],
+        "target_product".to_string(),
+        "tax_code".to_string(),
+    )
+    .unwrap();
+
+    let response = client
+        .migrate_subscription("test_transaction_id", &request)
+        .await
+        .unwrap();
+
+    assert!(!response
+        .signed_transaction_info
+        .is_empty());
+    assert!(!response.signed_renewal_info.is_empty());
+}
+
+#[test]
+fn test_xcode_environment_is_not_supported() {
+    let mock_transport = MockTransport::new(String::new(), StatusCode::OK, None);
+
+    let result = AdvancedCommerceApiClient::new(
+        vec![],
+        "test_key_id",
+        "test_issuer_id",
+        "com.test.app",
+        Environment::Xcode,
+        mock_transport,
+    );
+
+    assert!(result.is_err());
+    match result {
+        Err(ConfigurationError::InvalidEnvironment(msg)) => {
+            assert!(msg.contains("Xcode environment is not supported"));
+        }
+        _ => panic!("Expected InvalidEnvironment error"),
+    }
+}
+
+#[test]
+fn test_sandbox_environment_is_accepted() {
+    let mock_transport = MockTransport::new(String::new(), StatusCode::OK, None);
+
+    let result = AdvancedCommerceApiClient::new(
+        vec![],
+        "test_key_id",
+        "test_issuer_id",
+        "com.test.app",
+        Environment::Sandbox,
+        mock_transport,
+    );
+
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_production_environment_is_accepted() {
+    let mock_transport = MockTransport::new(String::new(), StatusCode::OK, None);
+
+    let result = AdvancedCommerceApiClient::new(
+        vec![],
+        "test_key_id",
+        "test_issuer_id",
+        "com.test.app",
+        Environment::Production,
+        mock_transport,
+    );
+
+    assert!(result.is_ok());
+}
+
+fn advanced_commerce_api_client_with_body_from_file(
+    path: &str,
+    status: StatusCode,
+    request_verifier: Option<RequestVerifier>,
+) -> AdvancedCommerceApiClient<MockTransport> {
+    let body = fs::read_to_string(path).expect("Failed to read file");
+    advanced_commerce_api_client(body, status, request_verifier)
+}
+
+fn advanced_commerce_api_client(
+    body: String,
+    status: StatusCode,
+    request_verifier: Option<RequestVerifier>,
+) -> AdvancedCommerceApiClient<MockTransport> {
+    let key = fs::read("tests/resources/certs/testSigningKey.p8").expect("Failed to read file");
+
+    let mock_transport = MockTransport::new(body, status, request_verifier);
+
+    AdvancedCommerceApiClient::new(
+        key,
+        "keyId",
+        "issuerId",
+        "com.example",
+        Environment::LocalTesting,
+        mock_transport,
+    )
+    .expect("Error creating advanced commerce client")
+}

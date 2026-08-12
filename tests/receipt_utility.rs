@@ -1,9 +1,10 @@
 #![cfg(feature = "receipt-utility")]
 
+use std::fs;
+
 use app_store_server_library::receipt_utility::{
     extract_transaction_id_from_app_receipt, extract_transaction_id_from_transaction_receipt,
 };
-use std::fs;
 
 const APP_RECEIPT_EXPECTED_TRANSACTION_ID: &str = "0";
 const TRANSACTION_RECEIPT_EXPECTED_TRANSACTION_ID: &str = "33993399";
@@ -34,7 +35,8 @@ fn test_xcode_app_receipt_extraction_with_transactions() {
 
 #[test]
 fn test_transaction_receipt_extraction() {
-    let receipt = fs::read_to_string("tests/resources/mock_signed_data/legacyTransaction").expect("Failed to read file");
+    let receipt =
+        fs::read_to_string("tests/resources/mock_signed_data/legacyTransaction").expect("Failed to read file");
     let extracted_transaction_id = extract_transaction_id_from_transaction_receipt(&receipt);
 
     assert_eq!(

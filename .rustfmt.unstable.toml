@@ -1,0 +1,7 @@
+max_width = 120
+fn_call_width = 60
+chain_width = 40
+
+# format imports
+group_imports = "StdExternalCrate"
+imports_granularity = "Module"

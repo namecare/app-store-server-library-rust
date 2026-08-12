@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Measures test coverage across every crypto backend.
+
+set -euo pipefail
+
+readonly SCOPE='bench/|/examples/|/tests/'
+
+report() {
+  cargo llvm-cov report --ignore-filename-regex "$SCOPE" "$@"
+}
+
+if [ -n "${REPORT_ONLY:-}" ]; then
+  report "$@"
+  exit
+fi
+
+cargo llvm-cov clean --workspace
+
+for backend in aws_lc ring rust_crypto ; do
+  cargo llvm-cov --no-report --package app-store-server-library \
+    --no-default-features --features $backend,api-client-reqwest,receipt-utility --all-targets
+done
+
+cargo llvm-cov --no-report --package app-store-server-library \
+  --no-default-features --all-targets
+
+report "$@"

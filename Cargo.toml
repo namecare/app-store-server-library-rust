@@ -1,7 +1,7 @@
 [package]
 name = "app-store-server-library"
 description = "The Rust server library for the App Store Server API, App Store Server Notifications and Advanced Commerce API"
-version = "4.3.0"
+version = "6.0.0"
 repository = "https://github.com/namecare/app-store-server-library-rust"
 homepage = "https://github.com/namecare/app-store-server-library-rust"
 authors = ["tkhp", "namecare"]
@@ -10,74 +10,149 @@ readme = "README.md"
 documentation = "https://docs.rs/app-store-server-library"
 keywords = ["apple", "appstore", "appstore-server-api", "appstore-receipt", "advanced-commerce"]
 edition = "2021"
+rust-version = "1.88"
 
 [dependencies]
 
-# Cryptography
-jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"]  }
-pem-rfc7468 = "1.0.0"
-der = { version = "0.7.10", features = ["alloc", "oid"] }
-x509-cert = { version = "0.2.5", features = ["std"] }
-x509-ocsp = { version = "0.2.1" , optional = true, features = ["builder"] }
-const-oid = { version = "0.9.6" }
-spki = { version = "0.7.3" }
-sha1 = { version = "0.10.6" , features = ["oid"]}
-p256 = { version = "0.13.2", features = ["ecdsa", "pkcs8"] }
-p384 = { version = "0.13.1", features = ["ecdsa"] }
-rsa = "0.9.10"
-sha2 = "0.10.9"
-signature = "2.2.0"
+x509-validator = { version = "0.2.0", default-features = false }
+
+# Cryptography - RustCrypto backend (optional)
+p256 = { version = "0.14.0", features = ["ecdsa", "pkcs8"], optional = true }
+p384 = { version = "0.14.0", features = ["ecdsa"], optional = true }
+rsa = { version = "0.10.0-rc.18", optional = true }
+sha2 = { version = "0.11.0", features = ["oid"], optional = true }
+pem-rfc7468 = { version = "1.0.0", optional = true }
+signature = { version = "3.0.0", optional = true }
+
+# Cryptography - AWS-LC backend (optional)
+aws-lc-rs = { version = "1.18.0", optional = true }
+
+# Cryptography - ring backend (optional)
+ring = { version = "0.17.14", optional = true }
 
 # Serialization
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = { version = "1.0.149" }
-serde_with = { version = "3.16.1", features = ["chrono"] }
-serde_repr = "0.1.20"
-uuid = { version = "1.20.0", features = ["serde", "v4"] }
-chrono = { version = "0.4.43", features = ["serde"] }
-base64 = "0.22.1"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.151" }
+serde_with = { version = "3.22.0", features = ["chrono"] }
+serde_repr = "0.1.21"
+uuid = { version = "1.24.0", features = ["serde", "v4"] }
+chrono = { version = "0.4.45", features = ["serde"] }
+base64 = "0.23.1"
+asn1-rs = { version = "0.7.2", optional = true }
 
 # Networking
-reqwest = { version = "0.13.1", default-features = false, features = ["json", "http2"], optional = true }
-http = { version = "1.4.0", optional = true }
+reqwest = { version = "0.13.4", default-features = false, features = [
+  "json",
+  "http2",
+  "blocking",
+], optional = true }
+http = { version = "1.5.0", optional = true }
 
 # Utils
-thiserror = "2.0.18"
+thiserror = "2.0.20"
 
 # Tools
-regex = { version = "1.12.3", optional = true }
+regex = { version = "1.13.1", optional = true }
 
 [dev-dependencies]
-
-tokio = { version = "1.49.0", features = ["test-util", "macros"] }
-jsonwebtoken = { version = "10.3.0", features = ["use_pem"] }
+tokio = { version = "1.53.1", features = ["test-util", "macros"] }
 
 [features]
+default = []
+
+rust_crypto = [
+  "dep:pem-rfc7468",
+  "dep:p256",
+  "dep:p384",
+  "dep:rsa",
+  "dep:sha2",
+  "dep:signature",
+  "x509-validator/rust_crypto",
+]
+aws_lc = ["dep:aws-lc-rs", "dep:asn1-rs", "x509-validator/aws_lc"]
+ring = ["dep:ring", "dep:asn1-rs", "x509-validator/ring"]
+
 api-client = ["dep:http"]
 api-client-reqwest = ["api-client", "dep:reqwest", "reqwest-tls-rustls"]
 api-client-reqwest-native-tls = ["api-client", "dep:reqwest", "reqwest-tls-native"]
+
 # reqwest TLS backend markers; the reqwest transport asserts one is set.
 reqwest-tls-rustls = ["reqwest/rustls"]
 reqwest-tls-native = ["reqwest/native-tls"]
-receipt-utility = ["dep:regex"]
-ocsp = ["dep:x509-ocsp", "dep:reqwest", "reqwest/blocking"]
+receipt-utility = ["dep:regex", "dep:asn1-rs"]
 
 [[test]]
-name = "ass_api_client"
-path = "tests/ass_api_client.rs"
+name = "app_store_server_api_client"
+path = "tests/app_store_server_api_client.rs"
 required-features = ["api-client"]
 
 [[test]]
-name = "ac_api_client"
-path = "tests/ac_api_client.rs"
+name = "advanced_commerce_api_client"
+path = "tests/advanced_commerce_api_client.rs"
 required-features = ["api-client"]
 
 [[test]]
-name = "rm_api_client"
-path = "tests/rm_api_client.rs"
-required-features = ["api-client"]
+name = "crypto_provider_rust_crypto"
+path = "tests/crypto_provider.rs"
+required-features = ["rust_crypto"]
 
 [[test]]
-name = "chain_verifier_ocsp"
-path = "tests/chain_verifier_ocsp.rs"
-required-features = ["ocsp"]
+name = "crypto_provider_aws_lc"
+path = "tests/crypto_provider.rs"
+required-features = ["aws_lc"]
+
+[[test]]
+name = "crypto_provider_ring"
+path = "tests/crypto_provider.rs"
+required-features = ["ring"]
+
+[[test]]
+name = "jws_signature_creator_rust_crypto"
+path = "tests/jws_signature_creator.rs"
+required-features = ["rust_crypto"]
+
+[[test]]
+name = "jws_signature_creator_aws_lc"
+path = "tests/jws_signature_creator.rs"
+required-features = ["aws_lc"]
+
+[[test]]
+name = "jws_signature_creator_ring"
+path = "tests/jws_signature_creator.rs"
+required-features = ["ring"]
+
+[[test]]
+name = "promotional_offer_signature_creator_rust_crypto"
+path = "tests/promotional_offer_signature_creator.rs"
+required-features = ["rust_crypto"]
+
+[[test]]
+name = "promotional_offer_signature_creator_aws_lc"
+path = "tests/promotional_offer_signature_creator.rs"
+required-features = ["aws_lc"]
+
+[[test]]
+name = "promotional_offer_signature_creator_ring"
+path = "tests/promotional_offer_signature_creator.rs"
+required-features = ["ring"]
+
+[[test]]
+name = "signed_data_verifier_rust_crypto"
+path = "tests/signed_data_verifier.rs"
+required-features = ["rust_crypto"]
+
+[[test]]
+name = "signed_data_verifier_aws_lc"
+path = "tests/signed_data_verifier.rs"
+required-features = ["aws_lc"]
+
+[[test]]
+name = "signed_data_verifier_ring"
+path = "tests/signed_data_verifier.rs"
+required-features = ["ring"]
+
+[workspace]
+members = ["bench/measure", "bench/compare/rust-vs-others/rust", "bench/compare/backend"]
+exclude = ["examples"]
+
+resolver = "2"

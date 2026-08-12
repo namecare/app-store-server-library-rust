@@ -1,12 +1,17 @@
-use crate::asn1::asn1_basics::*;
+use std::borrow::Cow;
+
+use asn1_rs::{Any, BerParser, Class, FromBer, Integer, SequenceIterator, Tag};
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use regex::Regex;
 
 // ASN.1 Type IDs for receipt attributes
-const IN_APP_TYPE_ID: u64 = 17;
-const TRANSACTION_IDENTIFIER_TYPE_ID: u64 = 1703;
-const ORIGINAL_TRANSACTION_IDENTIFIER_TYPE_ID: u64 = 1705;
+const IN_APP_TYPE_ID: i64 = 17;
+const TRANSACTION_IDENTIFIER_TYPE_ID: i64 = 1703;
+const ORIGINAL_TRANSACTION_IDENTIFIER_TYPE_ID: i64 = 1705;
+
+/// Maximum recursion depth when flattening a constructed BER OCTET STRING.
+const MAX_OCTET_STRING_DEPTH: usize = 32;
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum ReceiptUtilityError {
@@ -15,9 +20,6 @@ pub enum ReceiptUtilityError {
 
     #[error("InternalBase64DecodeError: [{0}]")]
     InternalBase64DecodeError(#[from] base64::DecodeError),
-
-    #[error("InternalASN1DecodeError: [{0}]")]
-    InternalASN1DecodeError(#[from] ASN1Error),
 
     #[error("InternalRegexError: [{0}]")]
     InternalRegexError(#[from] regex::Error),
@@ -33,171 +35,132 @@ pub enum ReceiptUtilityError {
 pub fn extract_transaction_id_from_app_receipt(app_receipt: &str) -> Result<Option<String>, ReceiptUtilityError> {
     let app_receipt_bytes = STANDARD.decode(app_receipt)?;
 
-    // Parse the outer PKCS7 structure using custom BER parser
-    let mut offset = 0;
+    // ContentInfo ::= SEQUENCE { contentType OBJECT IDENTIFIER, content [0] EXPLICIT ANY }
+    let (_, container) = Any::from_ber(&app_receipt_bytes)
+        .map_err(|e| ReceiptUtilityError::DecodeError(format!("Malformed receipt: {}", e)))?;
 
-    // Read SEQUENCE
-    let (content_offset, _) = read_sequence(&app_receipt_bytes, offset)?;
-    offset = content_offset;
-
-    // Skip OID
-    let _ = read_oid(&app_receipt_bytes, offset)?;
-    offset = skip(&app_receipt_bytes, offset)?;
-
-    // Read context-specific [0]
-    let (content_offset, _) = read_context_specific_0(&app_receipt_bytes, offset)?;
-    offset = content_offset;
-
-    // Read inner SEQUENCE
-    let (content_offset, _) = read_sequence(&app_receipt_bytes, offset)?;
-    offset = content_offset;
-
-    // Skip two items
-    offset = skip(&app_receipt_bytes, offset)?;
-    offset = skip(&app_receipt_bytes, offset)?;
-
-    // Read receipt content SEQUENCE
-    let (content_offset, _) = read_sequence(&app_receipt_bytes, offset)?;
-    offset = content_offset;
-
-    // Skip OID
-    offset = skip(&app_receipt_bytes, offset)?;
-
-    // Read context-specific [0] with receipt data
-    let (content_offset, _) = read_context_specific_0(&app_receipt_bytes, offset)?;
-    offset = content_offset;
-
-    // Read indefinite-length content starting with 0x24 0x80 or direct OCTET STRING
-    let (tag, length, content_offset) = read_tlv(&app_receipt_bytes, offset)?;
-    if tag == TAG_CONTEXT_SPECIFIC_CONSTRUCTED_4 {
-        // BIT STRING with indefinite length
-        offset = content_offset;
-
-        // Read OCTET STRING
-        let (content_offset, length) = read_octet_string(&app_receipt_bytes, offset)?;
-
-        // Read the receipt data - if indefinite length, look for end marker
-        let receipt_data = get_content(&app_receipt_bytes, content_offset, length)?;
-
-        extract_transaction_id_from_app_receipt_inner(receipt_data)
-    } else if tag == TAG_OCTET_STRING {
-        // Direct OCTET STRING
-        let receipt_data = get_content(&app_receipt_bytes, content_offset, length)?;
-        extract_transaction_id_from_app_receipt_inner(receipt_data)
-    } else {
-        Err(ReceiptUtilityError::DecodeError(format!(
-            "Unexpected tag: 0x{:02x}",
-            tag
-        )))
+    if container.tag() != Tag::Sequence {
+        return Err(ReceiptUtilityError::DecodeError(format!(
+            "Expected SEQUENCE, got {}",
+            container.tag()
+        )));
     }
-}
 
-/// Helper function to unwrap content if it's wrapped in an OCTET STRING
-fn unwrap_octet_string(data: &[u8]) -> &[u8] {
-    if let Ok((tag, length, content_offset)) = read_tlv(data, 0) {
-        if tag == TAG_OCTET_STRING {
-            return &data[content_offset..content_offset + length];
-        }
+    let mut nodes = SequenceIterator::<Any, BerParser>::new(container.data);
+
+    // contentType OBJECT IDENTIFIER (signedData)
+    let Some(Ok(oid)) = nodes.next() else {
+        return Ok(None);
+    };
+    if oid.tag() != Tag::Oid {
+        return Err(ReceiptUtilityError::DecodeError(format!(
+            "Expected OID, got {}",
+            oid.tag()
+        )));
     }
-    data
-}
 
-/// Helper function to parse an ASN.1 attribute (SEQUENCE with type, version, value)
-fn parse_attribute(data: &[u8], offset: usize) -> Result<(u64, usize), ReceiptUtilityError> {
-    // Read type integer
-    let type_int = read_integer(data, offset)?;
-    // Skip type integer
-    let after_type_offset = skip(data, offset)?;
-    // Skip version integer
-    let after_version_offset = skip(data, after_type_offset)?;
-    Ok((type_int, after_version_offset))
-}
+    // content [0] EXPLICIT SignedData
+    let Some(Ok(tagged)) = nodes.next() else {
+        return Ok(None);
+    };
+    let Some(signed_data) = explicitly_tagged(&tagged, 0) else {
+        return Ok(None);
+    };
+    if signed_data.tag() != Tag::Sequence {
+        return Ok(None);
+    }
 
-/// Helper function to find an attribute with a specific type ID in a SET
-fn find_attribute_in_set<F>(
-    set_data: &[u8],
-    target_type_ids: &[u64],
-    processor: F,
-) -> Result<Option<String>, ReceiptUtilityError>
-where
-    F: Fn(&[u8], usize) -> Result<Option<String>, ReceiptUtilityError>,
-{
-    let mut offset = 0;
+    // SignedData ::= SEQUENCE { version, digestAlgorithms, contentInfo, ... }
+    let mut nodes = SequenceIterator::<Any, BerParser>::new(signed_data.data);
+    let _version = nodes.next();
+    let _digest_algorithms = nodes.next();
+    let Some(Ok(content_info)) = nodes.next() else {
+        return Ok(None);
+    };
+    if content_info.tag() != Tag::Sequence {
+        return Ok(None);
+    }
 
-    // Parse as SET
-    let (content_offset, set_length) = read_set(set_data, offset)?;
-    offset = content_offset;
-    let set_end = if set_length == usize::MAX {
-        set_data.len()
-    } else {
-        content_offset + set_length
+    // ContentInfo ::= SEQUENCE { contentType OBJECT IDENTIFIER, content [0] EXPLICIT OCTET STRING }
+    let mut nodes = SequenceIterator::<Any, BerParser>::new(content_info.data);
+    let _content_type = nodes.next();
+    let Some(Ok(tagged)) = nodes.next() else {
+        return Ok(None);
+    };
+    let Some(content) = explicitly_tagged(&tagged, 0) else {
+        return Ok(None);
+    };
+    let Some(content) = ber_octet_string(&content, MAX_OCTET_STRING_DEPTH) else {
+        return Ok(None);
     };
 
-    while offset < set_end {
-        let (tag, seq_length, content_offset) = read_tlv(set_data, offset)?;
-        if tag == TAG_SEQUENCE {
-            let (type_int, after_version_offset) = parse_attribute(set_data, content_offset)?;
+    Ok(extract_transaction_id_from_app_receipt_inner(&content))
+}
 
-            if target_type_ids.contains(&type_int) {
-                if let Some(result) = processor(set_data, after_version_offset)? {
-                    return Ok(Some(result));
-                }
+/// Iterates the attributes of a receipt payload, which is a SET of
+/// SEQUENCE { type INTEGER, version INTEGER, value OCTET STRING }, and returns the
+/// first non-none result the `processor` produces for a matching type id.
+fn find_attribute_in_set<F>(receipt_content: &[u8], target_type_ids: &[i64], processor: F) -> Option<String>
+where
+    F: Fn(&[u8]) -> Option<String>,
+{
+    let (_, set) = Any::from_ber(receipt_content).ok()?;
+    if set.tag() != Tag::Set {
+        return None;
+    }
+
+    let mut result = None;
+
+    for node in SequenceIterator::<Any, BerParser>::new(set.data) {
+        let Ok(node) = node else { break };
+        if node.tag() != Tag::Sequence {
+            continue;
+        }
+
+        let mut nodes = SequenceIterator::<Any, BerParser>::new(node.data);
+        let (Some(Ok(type_encoded)), Some(Ok(_version)), Some(Ok(value_encoded))) =
+            (nodes.next(), nodes.next(), nodes.next())
+        else {
+            continue;
+        };
+
+        let Ok(attribute_type) = Integer::try_from(type_encoded).and_then(|i| i.as_i64()) else {
+            continue;
+        };
+        let Some(value) = ber_octet_string(&value_encoded, MAX_OCTET_STRING_DEPTH) else {
+            continue;
+        };
+
+        if target_type_ids.contains(&attribute_type) {
+            if let Some(processed) = processor(&value) {
+                result = Some(processed);
             }
-
-            // Move to next item
-            offset = if seq_length == usize::MAX {
-                find_end_of_contents(set_data, content_offset)?
-            } else {
-                content_offset + seq_length
-            };
-        } else if tag == 0x00 && set_length == usize::MAX {
-            // End-of-contents marker
-            break;
-        } else {
-            // Skip this item
-            offset = skip(set_data, offset)?;
         }
     }
 
-    Ok(None)
+    result
 }
 
-fn extract_transaction_id_from_app_receipt_inner(
-    app_receipt_content: &[u8],
-) -> Result<Option<String>, ReceiptUtilityError> {
-    // Unwrap if wrapped in OCTET STRING
-    let content_to_parse = unwrap_octet_string(app_receipt_content);
-
-    find_attribute_in_set(content_to_parse, &[IN_APP_TYPE_ID], |data, offset| {
-        // Read OCTET STRING containing in-app data
-        if let Ok((content_offset, length)) = read_octet_string(data, offset) {
-            let in_app_data = &data[content_offset..content_offset + length];
-            extract_transaction_id_from_in_app_receipt(in_app_data)
-        } else {
-            Ok(None)
-        }
-    })
-}
-
-fn extract_transaction_id_from_in_app_receipt(
-    app_receipt_content: &[u8],
-) -> Result<Option<String>, ReceiptUtilityError> {
-    // Unwrap if wrapped in OCTET STRING
-    let set_data = unwrap_octet_string(app_receipt_content);
-
+fn extract_transaction_id_from_app_receipt_inner(app_receipt_content: &[u8]) -> Option<String> {
     find_attribute_in_set(
-        set_data,
+        app_receipt_content,
+        &[IN_APP_TYPE_ID],
+        extract_transaction_id_from_in_app_receipt,
+    )
+}
+
+fn extract_transaction_id_from_in_app_receipt(in_app_receipt_content: &[u8]) -> Option<String> {
+    find_attribute_in_set(
+        in_app_receipt_content,
         &[TRANSACTION_IDENTIFIER_TYPE_ID, ORIGINAL_TRANSACTION_IDENTIFIER_TYPE_ID],
-        |data, offset| {
-            // Read OCTET STRING containing the transaction ID
-            if let Ok((content_offset, length)) = read_octet_string(data, offset) {
-                let octet_data = &data[content_offset..content_offset + length];
-                // Parse UTF8String from the OCTET STRING
-                if let Ok(utf8_str) = read_utf8_string(octet_data, 0) {
-                    return Ok(Some(utf8_str));
-                }
+        |value| {
+            let (_, node) = Any::from_ber(value).ok()?;
+            if node.tag() != Tag::Utf8String {
+                return None;
             }
-            Ok(None)
+            node.as_any_string()
+                .ok()
+                .map(str::to_string)
         },
     )
 }
@@ -241,4 +204,195 @@ pub fn extract_transaction_id_from_transaction_receipt(
     }
 
     Ok(None)
+}
+
+/// Reads a BER OCTET STRING, flattening the constructed form.
+///
+/// BER permits an OCTET STRING to be encoded as a composition of many individual,
+/// recursively encoded (primitive or constructed) OCTET STRINGs. Apple's app receipts
+/// use this form (`0x24 0x80 ...`), so the fragments have to be concatenated to
+/// recover the content.
+fn ber_octet_string<'a>(node: &Any<'a>, depth: usize) -> Option<Cow<'a, [u8]>> {
+    if node.tag() != Tag::OctetString {
+        return None;
+    }
+
+    if node.header.is_primitive() {
+        return Some(Cow::Borrowed(node.data));
+    }
+
+    if depth == 0 {
+        return None;
+    }
+
+    let mut nodes = SequenceIterator::<Any, BerParser>::new(node.data);
+    let first = match nodes.next() {
+        // An empty constructed OCTET STRING is a valid, empty string.
+        None => return Some(Cow::Borrowed(&[])),
+        Some(node) => ber_octet_string(&node.ok()?, depth - 1)?,
+    };
+
+    // Common case: a single fragment, so the inner (already flattened) view is
+    // returned as-is rather than copied.
+    let second = match nodes.next() {
+        None => return Some(first),
+        Some(node) => ber_octet_string(&node.ok()?, depth - 1)?,
+    };
+
+    let mut flattened = first.into_owned();
+    flattened.extend_from_slice(&second);
+    for node in nodes {
+        flattened.extend_from_slice(&ber_octet_string(&node.ok()?, depth - 1)?);
+    }
+
+    Some(Cow::Owned(flattened))
+}
+
+/// Reads an explicitly tagged context-specific [n] node and returns its inner node.
+fn explicitly_tagged<'a>(node: &Any<'a>, tag_number: u32) -> Option<Any<'a>> {
+    if node.class() != Class::ContextSpecific || node.tag() != Tag(tag_number) {
+        return None;
+    }
+
+    Any::from_ber(node.data)
+        .ok()
+        .map(|(_, inner)| inner)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ber_octet_string_primitive() {
+        let data = [0x04, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f]; // OCTET STRING "Hello"
+        let (_, node) = Any::from_ber(&data).unwrap();
+        assert_eq!(
+            ber_octet_string(&node, MAX_OCTET_STRING_DEPTH).as_deref(),
+            Some(&b"Hello"[..])
+        );
+    }
+
+    #[test]
+    fn test_ber_octet_string_constructed_indefinite() {
+        let data = [
+            0x24, 0x80, // constructed OCTET STRING, indefinite length
+            0x04, 0x03, 0x48, 0x65, 0x6c, // "Hel"
+            0x04, 0x02, 0x6c, 0x6f, // "lo"
+            0x00, 0x00, // end-of-contents
+        ];
+        let (_, node) = Any::from_ber(&data).unwrap();
+        assert_eq!(
+            ber_octet_string(&node, MAX_OCTET_STRING_DEPTH).as_deref(),
+            Some(&b"Hello"[..])
+        );
+    }
+
+    #[test]
+    fn test_ber_octet_string_constructed_single_fragment() {
+        let data = [
+            0x24, 0x80, // constructed OCTET STRING, indefinite length
+            0x04, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f, // "Hello"
+            0x00, 0x00, // end-of-contents
+        ];
+        let (_, node) = Any::from_ber(&data).unwrap();
+        assert_eq!(
+            ber_octet_string(&node, MAX_OCTET_STRING_DEPTH).as_deref(),
+            Some(&b"Hello"[..])
+        );
+    }
+
+    #[test]
+    fn test_ber_octet_string_nested_constructed() {
+        let data = [
+            0x24, 0x80, // constructed OCTET STRING, indefinite length
+            0x24, 0x06, // nested constructed OCTET STRING
+            0x04, 0x02, 0x48, 0x65, // "He"
+            0x04, 0x00, // ""
+            0x04, 0x03, 0x6c, 0x6c, 0x6f, // "llo"
+            0x00, 0x00, // end-of-contents
+        ];
+        let (_, node) = Any::from_ber(&data).unwrap();
+        assert_eq!(
+            ber_octet_string(&node, MAX_OCTET_STRING_DEPTH).as_deref(),
+            Some(&b"Hello"[..])
+        );
+    }
+
+    #[test]
+    fn test_ber_octet_string_empty_constructed() {
+        let data = [0x24, 0x80, 0x00, 0x00];
+        let (_, node) = Any::from_ber(&data).unwrap();
+        assert_eq!(
+            ber_octet_string(&node, MAX_OCTET_STRING_DEPTH).as_deref(),
+            Some(&b""[..])
+        );
+    }
+
+    #[test]
+    fn test_ber_octet_string_wrong_tag() {
+        let data = [0x0C, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f]; // UTF8String
+        let (_, node) = Any::from_ber(&data).unwrap();
+        assert!(ber_octet_string(&node, MAX_OCTET_STRING_DEPTH).is_none());
+    }
+
+    #[test]
+    fn test_ber_octet_string_depth_limit() {
+        let data = [
+            0x24, 0x04, // constructed OCTET STRING
+            0x24, 0x02, // nested constructed OCTET STRING
+            0x04, 0x00, // ""
+        ];
+        let (_, node) = Any::from_ber(&data).unwrap();
+        assert!(ber_octet_string(&node, 1).is_none());
+        assert!(ber_octet_string(&node, 2).is_some());
+    }
+
+    #[test]
+    fn test_explicitly_tagged() {
+        let data = [
+            0xA0, 0x03, // [0] EXPLICIT
+            0x02, 0x01, 0x05, // INTEGER 5
+        ];
+        let (_, node) = Any::from_ber(&data).unwrap();
+        let inner = explicitly_tagged(&node, 0).expect("Expected inner node");
+        assert_eq!(inner.tag(), Tag::Integer);
+    }
+
+    #[test]
+    fn test_explicitly_tagged_wrong_number() {
+        let data = [0xA0, 0x03, 0x02, 0x01, 0x05];
+        let (_, node) = Any::from_ber(&data).unwrap();
+        assert!(explicitly_tagged(&node, 1).is_none());
+    }
+
+    #[test]
+    fn test_explicitly_tagged_wrong_class() {
+        let data = [0x30, 0x03, 0x02, 0x01, 0x05]; // SEQUENCE, universal class
+        let (_, node) = Any::from_ber(&data).unwrap();
+        assert!(explicitly_tagged(&node, 0).is_none());
+    }
+
+    #[test]
+    fn test_extract_from_app_receipt_invalid_base64() {
+        let result = extract_transaction_id_from_app_receipt("not base64!!!");
+        assert!(matches!(
+            result,
+            Err(ReceiptUtilityError::InternalBase64DecodeError(_))
+        ));
+    }
+
+    #[test]
+    fn test_extract_from_app_receipt_not_asn1() {
+        // Valid base64, but not a valid BER structure.
+        let result = extract_transaction_id_from_app_receipt(&STANDARD.encode([0xFF, 0xFF, 0xFF]));
+        assert!(matches!(result, Err(ReceiptUtilityError::DecodeError(_))));
+    }
+
+    #[test]
+    fn test_extract_from_app_receipt_truncated() {
+        // A SEQUENCE header claiming more content than is present must not panic.
+        let result = extract_transaction_id_from_app_receipt(&STANDARD.encode([0x30, 0x7F, 0x06, 0x01]));
+        assert!(result.is_err());
+    }
 }

@@ -1,4 +1,5 @@
 use std::future::Future;
+
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -29,5 +30,8 @@ pub enum TransportError {
 }
 
 pub trait Transport: Send + Sync {
-    fn send(&self, req: http::Request<Vec<u8>>) -> impl Future<Output = Result<http::Response<Vec<u8>>, TransportError>> + Send;
+    fn send(
+        &self,
+        req: http::Request<Vec<u8>>,
+    ) -> impl Future<Output = Result<http::Response<Vec<u8>>, TransportError>> + Send;
 }

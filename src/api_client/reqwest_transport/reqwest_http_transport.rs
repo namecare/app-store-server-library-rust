@@ -1,5 +1,6 @@
-use crate::api_client::transport::{Transport, TransportError};
 use reqwest::Client;
+
+use crate::api_client::transport::{Transport, TransportError};
 
 impl From<reqwest::Error> for TransportError {
     fn from(err: reqwest::Error) -> Self {
@@ -22,9 +23,13 @@ pub struct ReqwestHttpTransport {
 
 impl ReqwestHttpTransport {
     pub fn new() -> ReqwestHttpTransport {
-        Self {
-            client: Client::new()
-        }
+        Self { client: Client::new() }
+    }
+}
+
+impl Default for ReqwestHttpTransport {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
