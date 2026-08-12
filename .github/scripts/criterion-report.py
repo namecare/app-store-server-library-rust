@@ -1,34 +1,5 @@
 #!/usr/bin/env python3
-"""Turn a criterion run into a markdown delta table.
-
-Reads `target/criterion/` rather than `cargo bench` stdout. Criterion's
-terminal output is formatted for humans and its wording has changed between
-versions; the JSON under each benchmark directory has not, and it carries the
-confidence intervals that decide whether a delta means anything.
-
-Three files per benchmark matter here:
-
-  new/benchmark.json     the real benchmark id, e.g. `verifier/trivial_chain_building`
-                         (the directory name is flattened and lossy)
-  new/estimates.json     this run's absolute time, in nanoseconds
-  change/estimates.json  the delta against the baseline, as a ratio, with a
-                         confidence interval — absent when there is nothing
-                         to compare against
-
-A benchmark directory is any directory containing `new/estimates.json`. They
-are found by walking rather than listing, because criterion nests a level
-deeper for grouped or parameterized benchmarks.
-
-Stale directories are excluded by modification time, via `--since`. When
-`target/criterion/` carries state from before the run — a restored baseline
-cache, or a workspace that happened to persist — a benchmark that was
-renamed, removed, or simply not selected by this run still has a directory
-sitting there holding old numbers. Reporting those as current results is the
-failure this guards against.
-
-The output is a table on stdout and a compact JSON summary on stderr for the
-workflow to act on.
-"""
+"""Turn a criterion run into a markdown delta table."""
 
 from __future__ import annotations
 

@@ -1,9 +1,3 @@
-// The cases the Swift arm runs, over the fixtures every language arm shares.
-//
-// Defined here rather than in the benchmark target so the setup exists once and
-// the harness only times it — the same split the Rust arm makes between
-// `rust/src/lib.rs` and `rust/benches/compare.rs`.
-
 import Foundation
 import AppStoreServerLibrary
 
@@ -16,11 +10,6 @@ public enum CompareCase: String, CaseIterable, Sendable {
     case receiptAppLegacy = "receipt_app_legacy"
     case signPromotionalOffer = "sign_promotional_offer"
 
-    /// Whether the underlying library API is `async`.
-    ///
-    /// The three verify methods are; the receipt and signing calls are plain
-    /// synchronous functions. The benchmark target uses this to avoid putting an
-    /// async bridge around work that does not need one.
     public var isAsync: Bool {
         switch self {
         case .verifyNotification, .verifyTransaction, .verifyRenewalInfo: return true
@@ -29,14 +18,6 @@ public enum CompareCase: String, CaseIterable, Sendable {
     }
 }
 
-/// Built once and reused for every iteration, so the measured work is the
-/// library call and not verifier construction — the same setup split every
-/// other arm makes.
-///
-/// `@unchecked Sendable` because every stored property is a `let` written once
-/// during construction and only read thereafter. The `unchecked` is needed only
-/// because the library does not declare `SignedDataVerifier` and
-/// `PromotionalOfferSignatureCreator` as `Sendable`; nothing here mutates them.
 public struct Fixture: @unchecked Sendable {
     let verifier: SignedDataVerifier
     let signer: PromotionalOfferSignatureCreator
@@ -47,13 +28,6 @@ public struct Fixture: @unchecked Sendable {
     let receiptLegacy: String
     let nonce: UUID
 
-    /// Resolved from `#filePath` rather than the cwd, so the figures do not
-    /// depend on where the benchmark was launched from.
-    /// #filePath = <repo>/bench/compare/rust-vs-others/swift/Sources/Fixtures/Fixtures.swift
-    /// data dir  = <repo>/bench/compare/resources
-    ///
-    /// `resources/` is shared by both suites: byte-identical inputs are what make a
-    /// comparison between two cells of the table mean anything.
     static let dataDirectory = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()   // .../Fixtures
         .deletingLastPathComponent()   // .../Sources

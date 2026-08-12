@@ -1,30 +1,6 @@
 name: Benchmarks
 
 # Regression tracking for `app-store-server-library-bench-measure`.
-#
-# Criterion detects regressions on its own, but only against baselines stored
-# in `target/criterion/` — and every run starts without one, because
-# checkout's default clean (`git clean -ffdx`) wipes ignored files, so even a
-# self-hosted runner's workspace is empty where it counts. Baselines
-# therefore live in the GitHub Actions cache, keyed by branch: a push to a
-# long-lived branch saves its baseline, and a pull request restores the
-# baseline of the branch it targets. Cache scoping matches those semantics
-# exactly — a pull request may read caches created on its base branch.
-#
-# Pull requests report and never block. Wall-clock benchmarks on any shared
-# machine carry enough noise that a gate would cost more in false reds than it
-# catches; rustls, which runs on tuned bare metal, still only comments.
-#
-# RUNNER NOTE: this job runs on `ubuntu-latest`, a fresh hosted VM per run —
-# not a persistent machine. Criterion's baseline comparison depends on both
-# runs happening on the same physical hardware; on hosted runners that almost
-# never holds, so most runs will report "no baseline found" rather than a
-# real delta. The suite still records absolute numbers every run (visible in
-# the job summary and the uploaded HTML report), which remains useful on its
-# own. When a self-hosted runner becomes available for this repository,
-# switch `runs-on` below to `[self-hosted, Linux, X64]` (or whatever labels
-# apply) — everything else in this workflow (the branch-keyed baseline cache,
-# the PR comment, the artifact upload) works unchanged.
 
 on:
   push:

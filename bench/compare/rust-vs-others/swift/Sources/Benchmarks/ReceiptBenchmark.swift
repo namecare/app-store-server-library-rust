@@ -1,13 +1,3 @@
-//===----------------------------------------------------------------------===//
-//
-// The receipt-parsing cases: extracting a transaction id from an app receipt.
-//
-// `receipt_app` uses a BER indefinite-length receipt (header `30 80`), which is
-// what real Apple app receipts use. Node's library cannot parse it at all — see
-// the README — so that cell of the table is `unsupported` rather than a figure.
-//
-//===----------------------------------------------------------------------===//
-
 import Benchmark
 import Fixtures
 

@@ -1,10 +1,3 @@
-//===----------------------------------------------------------------------===//
-//
-// The promotional-offer signature case: an ECDSA P-256 signature over the
-// offer's fields.
-//
-//===----------------------------------------------------------------------===//
-
 import Benchmark
 import Fixtures
 
