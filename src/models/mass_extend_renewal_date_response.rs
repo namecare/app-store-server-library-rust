@@ -9,5 +9,5 @@ pub struct MassExtendRenewalDateResponse {
     ///
     /// [requestIdentifier](https://developer.apple.com/documentation/appstoreserverapi/requestidentifier)
     #[serde(rename = "requestIdentifier")]
-    pub request_identifier: String,
+    pub request_identifier: Option<String>,
 }

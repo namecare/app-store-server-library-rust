@@ -43,7 +43,10 @@ fn test_app_store_server_notification_decoding() {
     let notification = verifier
         .verify_and_decode_notification(&test_notification_data)
         .unwrap();
-    assert_eq!(notification.notification_type, NotificationTypeV2::Test);
+    assert_eq!(
+        notification.notification_type,
+        Some(NotificationTypeV2::Test)
+    );
 }
 
 #[test]
@@ -127,7 +130,7 @@ fn test_external_purchase_token_notification_decoding() {
     match signed_data_verifier.verify_and_decode_notification(&signed_notification) {
         Ok(notification) => {
             assert_eq!(
-                NotificationTypeV2::ExternalPurchaseToken,
+                Some(NotificationTypeV2::ExternalPurchaseToken),
                 notification.notification_type
             );
             assert_eq!(
@@ -138,7 +141,10 @@ fn test_external_purchase_token_notification_decoding() {
             );
             assert_eq!(
                 "002e14d5-51f5-4503-b5a8-c3a1af68eb20",
-                &notification.notification_uuid
+                notification
+                    .notification_uuid
+                    .as_deref()
+                    .expect("Expect notificationUUID")
             );
             assert_eq!(
                 "2.0",
@@ -204,7 +210,7 @@ fn test_external_purchase_token_sandbox_notification_decoding() {
     match signed_data_verifier.verify_and_decode_notification(&signed_notification) {
         Ok(notification) => {
             assert_eq!(
-                NotificationTypeV2::ExternalPurchaseToken,
+                Some(NotificationTypeV2::ExternalPurchaseToken),
                 notification.notification_type
             );
             assert_eq!(
@@ -215,7 +221,10 @@ fn test_external_purchase_token_sandbox_notification_decoding() {
             );
             assert_eq!(
                 "002e14d5-51f5-4503-b5a8-c3a1af68eb20",
-                &notification.notification_uuid
+                notification
+                    .notification_uuid
+                    .as_deref()
+                    .expect("Expect notificationUUID")
             );
             assert_eq!(
                 "2.0",
@@ -683,13 +692,19 @@ fn test_decoded_payloads_transaction_decoding() {
                 .expect("Expect refunds");
             assert_eq!(1, refunds.len());
             let refund = &refunds[0];
-            assert_eq!(5000, refund.refund_amount);
-            assert_eq!(1698149100, refund.refund_date.timestamp());
+            assert_eq!(Some(5000), refund.refund_amount);
             assert_eq!(
-                AdvancedCommerceRefundReason::FulfillmentIssue,
+                1698149100,
+                refund.refund_date.expect("Expect refundDate").timestamp()
+            );
+            assert_eq!(
+                Some(AdvancedCommerceRefundReason::FulfillmentIssue),
                 refund.refund_reason
             );
-            assert_eq!(AdvancedCommerceRefundType::Prorated, refund.refund_type);
+            assert_eq!(
+                Some(AdvancedCommerceRefundType::Prorated),
+                refund.refund_type
+            );
 
             assert_eq!(
                 BillingPlanType::Monthly,
@@ -1018,7 +1033,7 @@ fn test_decoded_payloads_notification_decoding() {
     match signed_data_verifier.verify_and_decode_notification(&signed_notification) {
         Ok(notification) => {
             assert_eq!(
-                NotificationTypeV2::Subscribed,
+                Some(NotificationTypeV2::Subscribed),
                 notification.notification_type
             );
             assert_eq!(
@@ -1029,7 +1044,10 @@ fn test_decoded_payloads_notification_decoding() {
             );
             assert_eq!(
                 "002e14d5-51f5-4503-b5a8-c3a1af68eb20",
-                notification.notification_uuid
+                notification
+                    .notification_uuid
+                    .as_deref()
+                    .expect("Expect notificationUUID")
             );
             assert_eq!(
                 "2.0",
@@ -1108,13 +1126,16 @@ fn test_consumption_request_notification_decoding() {
     match signed_data_verifier.verify_and_decode_notification(&signed_notification) {
         Ok(notification) => {
             assert_eq!(
-                NotificationTypeV2::ConsumptionRequest,
+                Some(NotificationTypeV2::ConsumptionRequest),
                 notification.notification_type
             );
             assert!(notification.subtype.is_none());
             assert_eq!(
                 "002e14d5-51f5-4503-b5a8-c3a1af68eb20",
-                notification.notification_uuid
+                notification
+                    .notification_uuid
+                    .as_deref()
+                    .expect("Expect notificationUUID")
             );
             assert_eq!("2.0", notification.version.unwrap());
             assert_eq!(
@@ -1167,7 +1188,7 @@ fn test_summary_notification_decoding() {
     match signed_data_verifier.verify_and_decode_notification(&signed_summary_notification) {
         Ok(notification) => {
             assert_eq!(
-                NotificationTypeV2::RenewalExtension,
+                Some(NotificationTypeV2::RenewalExtension),
                 notification.notification_type
             );
             assert_eq!(
@@ -1178,7 +1199,10 @@ fn test_summary_notification_decoding() {
             );
             assert_eq!(
                 "002e14d5-51f5-4503-b5a8-c3a1af68eb20",
-                notification.notification_uuid
+                notification
+                    .notification_uuid
+                    .as_deref()
+                    .expect("Expect notificationUUID")
             );
             assert_eq!(
                 "2.0",
@@ -1229,11 +1253,20 @@ fn test_summary_notification_decoding() {
                 );
                 assert_eq!(
                     "efb27071-45a4-4aca-9854-2a1e9146f265",
-                    summary.request_identifier
+                    summary
+                        .request_identifier
+                        .as_deref()
+                        .expect("Expect request_identifier")
                 );
-                assert_eq!(vec!["CAN", "USA", "MEX"], summary.storefront_country_codes);
-                assert_eq!(5, summary.succeeded_count);
-                assert_eq!(2, summary.failed_count);
+                assert_eq!(
+                    vec!["CAN", "USA", "MEX"],
+                    summary
+                        .storefront_country_codes
+                        .as_deref()
+                        .expect("Expect storefront_country_codes")
+                );
+                assert_eq!(Some(5), summary.succeeded_count);
+                assert_eq!(Some(2), summary.failed_count);
             } else {
                 panic!("Summary field is expected to be present in the notification");
             }
@@ -1784,13 +1817,16 @@ fn test_rescind_consent_notification_decoding() {
     match signed_data_verifier.verify_and_decode_notification(&signed_notification) {
         Ok(notification) => {
             assert_eq!(
-                NotificationTypeV2::RescindConsent,
+                Some(NotificationTypeV2::RescindConsent),
                 notification.notification_type
             );
             assert!(notification.subtype.is_none());
             assert_eq!(
                 "002e14d5-51f5-4503-b5a8-c3a1af68eb20",
-                notification.notification_uuid
+                notification
+                    .notification_uuid
+                    .as_deref()
+                    .expect("Expect notificationUUID")
             );
             assert_eq!("2.0", notification.version.unwrap());
             assert_eq!(
@@ -1961,11 +1997,14 @@ fn test_backward_compatibility_notification_without_commitment_fields() {
         .expect("Expected notification to verify and decode successfully");
 
     assert_eq!(
-        NotificationTypeV2::Subscribed,
+        Some(NotificationTypeV2::Subscribed),
         notification.notification_type
     );
     assert_eq!(
         "002e14d5-51f5-4503-b5a8-c3a1af68eb20",
-        notification.notification_uuid
+        notification
+            .notification_uuid
+            .as_deref()
+            .expect("Expect notificationUUID")
     );
 }

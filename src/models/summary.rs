@@ -34,23 +34,23 @@ pub struct Summary {
     ///
     /// [requestIdentifier](https://developer.apple.com/documentation/appstoreserverapi/requestidentifier)
     #[serde(rename = "requestIdentifier")]
-    pub request_identifier: String,
+    pub request_identifier: Option<String>,
 
     /// A list of storefront country codes you provide to limit the storefronts for a subscription-renewal-date extension.
     ///
     /// [storefrontCountryCodes](https://developer.apple.com/documentation/appstoreserverapi/storefrontcountrycodes)
     #[serde(rename = "storefrontCountryCodes")]
-    pub storefront_country_codes: Vec<String>,
+    pub storefront_country_codes: Option<Vec<String>>,
 
     /// The count of subscriptions that successfully receive a subscription-renewal-date extension.
     ///
     /// [succeededCount](https://developer.apple.com/documentation/appstoreserverapi/succeededcount)
     #[serde(rename = "succeededCount")]
-    pub succeeded_count: i64,
+    pub succeeded_count: Option<i64>,
 
     /// The count of subscriptions that fail to receive a subscription-renewal-date extension.
     ///
     /// [failedCount](https://developer.apple.com/documentation/appstoreserverapi/failedcount)
     #[serde(rename = "failedCount")]
-    pub failed_count: i64,
+    pub failed_count: Option<i64>,
 }

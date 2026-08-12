@@ -249,6 +249,8 @@ impl SignedDataVerifier {
             .bundle_id
             .as_ref()
             != Some(&self.bundle_id)
+            || (self.environment == Environment::Production
+                && self.app_apple_id != decoded_app_transaction.app_apple_id)
         {
             return Err(SignedDataVerifierError::InvalidAppIdentifier);
         }

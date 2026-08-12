@@ -12,21 +12,21 @@ use crate::models::subtype::Subtype;
 #[serde_with::serde_as]
 #[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub struct NotificationHistoryRequest {
-    /// The start date of the timespan for the requested App Store Server Notification history records.
+    /// (Required) The start date of the timespan for the requested App Store Server Notification history records.
     /// The startDate needs to precede the endDate. Choose a startDate that’s within the past 180 days from the current date.
     ///
     /// [startDate](https://developer.apple.com/documentation/appstoreserverapi/startdate)
     #[serde(rename = "startDate")]
-    #[serde_as(as = "Option<TimestampMilliSeconds<i64, Flexible>>")]
-    pub start_date: Option<DateTime<Utc>>,
+    #[serde_as(as = "TimestampMilliSeconds<i64, Flexible>")]
+    pub start_date: DateTime<Utc>,
 
-    /// The end date of the timespan for the requested App Store Server Notification history records.
+    /// (Required) The end date of the timespan for the requested App Store Server Notification history records.
     /// Choose an endDate that’s later than the startDate. If you choose an endDate in the future, the endpoint automatically uses the current date as the endDate.
     ///
     /// [endDate](https://developer.apple.com/documentation/appstoreserverapi/enddate)
     #[serde(rename = "endDate")]
-    #[serde_as(as = "Option<TimestampMilliSeconds<i64, Flexible>>")]
-    pub end_date: Option<DateTime<Utc>>,
+    #[serde_as(as = "TimestampMilliSeconds<i64, Flexible>")]
+    pub end_date: DateTime<Utc>,
 
     /// A notification type. Provide this field to limit the notification history records to those with this one notification type.
     /// For a list of notifications types, see notificationType.

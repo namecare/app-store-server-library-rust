@@ -17,7 +17,7 @@ pub struct StatusResponse {
     ///
     /// [bundleId](https://developer.apple.com/documentation/appstoreserverapi/bundleid)
     #[serde(rename = "bundleId")]
-    pub bundle_id: String,
+    pub bundle_id: Option<String>,
 
     /// The unique identifier of an app in the App Store.
     ///
@@ -26,5 +26,5 @@ pub struct StatusResponse {
     pub app_apple_id: Option<i64>,
 
     /// An array of information for auto-renewable subscriptions, including App Store-signed transaction information and App Store-signed renewal information.
-    pub data: Vec<SubscriptionGroupIdentifierItem>,
+    pub data: Option<Vec<SubscriptionGroupIdentifierItem>>,
 }
