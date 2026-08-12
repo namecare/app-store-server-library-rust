@@ -75,6 +75,7 @@ ring = ["dep:ring", "dep:asn1-rs", "x509-validator/ring"]
 api-client = ["dep:http"]
 api-client-reqwest = ["api-client", "dep:reqwest", "reqwest-tls-rustls"]
 api-client-reqwest-native-tls = ["api-client", "dep:reqwest", "reqwest-tls-native"]
+
 # reqwest TLS backend markers; the reqwest transport asserts one is set.
 reqwest-tls-rustls = ["reqwest/rustls"]
 reqwest-tls-native = ["reqwest/native-tls"]
@@ -90,10 +91,6 @@ name = "advanced_commerce_api_client"
 path = "tests/advanced_commerce_api_client.rs"
 required-features = ["api-client"]
 
-# These reach `CryptoProvider::default_provider()`, which panics when no
-# backend is enabled, so they are meaningless in the backend-free build.
-# Cargo has no "any of these features" form, so each file is declared once
-# per backend; with no backend every copy is skipped, which is the intent.
 [[test]]
 name = "crypto_provider_rust_crypto"
 path = "tests/crypto_provider.rs"
@@ -158,7 +155,4 @@ required-features = ["ring"]
 members = ["bench/measure", "bench/compare/rust-vs-others/rust", "bench/compare/backend"]
 exclude = ["examples"]
 
-# The bench crates are not published and their lockfile entries should not
-# constrain the library's. Resolver 2 keeps their dev-dependency features
-# from unifying into the library's build.
 resolver = "2"

@@ -6,7 +6,7 @@ machine, and prints a single table.
 
 ## Requirements
 - One machine
-- Swift's arm needs jemalloc installed
+- jemalloc installed
 
 ```sh
 brew install jemalloc              # macOS
