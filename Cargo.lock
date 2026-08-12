@@ -3119,9 +3119,9 @@ dependencies = [
 
 [[package]]
 name = "x509-validator"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72f277e11310b4145c02deb56fcf7d4379dd78410af7277d6cd2ffdb55f9f702"
+checksum = "1e2abf8a6dd52dc581a66e2a967420b7949b6c156f39bdc80bd25be72a65487a"
 dependencies = [
  "aws-lc-rs",
  "aws-lc-sys",

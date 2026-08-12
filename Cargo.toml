@@ -14,7 +14,7 @@ rust-version = "1.88"
 
 [dependencies]
 
-x509-validator = { version = "0.1.0", default-features = false }
+x509-validator = { version = "0.2.0", default-features = false }
 
 # Cryptography - RustCrypto backend (optional)
 p256 = { version = "0.14.0", features = ["ecdsa", "pkcs8"], optional = true }

@@ -139,7 +139,7 @@ impl<T: Transport> ApiClient<T> {
         let mut request_builder = Request::builder()
             .method(method)
             .uri(url)
-            .header("User-Agent", "app-store-server-library/rust/4.3.0")
+            .header("User-Agent", "app-store-server-library/rust/6.0.0")
             .header(
                 "Authorization",
                 format!("Bearer {}", self.generate_token()?),
