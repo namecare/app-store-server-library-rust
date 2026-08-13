@@ -3,11 +3,10 @@
 //! These run against whichever backend feature is enabled, so the same
 //! assertions cover `rust_crypto`, `aws_lc` and `ring` alike.
 
-use base64::prelude::BASE64_STANDARD;
-use base64::Engine;
-
 use app_store_server_library::crypto::CryptoProvider;
 use app_store_server_library::promotional_offer_signature_creator::PromotionalOfferSignatureCreator;
+use base64::prelude::BASE64_STANDARD;
+use base64::Engine;
 
 const PRIVATE_KEY: &str = include_str!("../tests/resources/certs/testSigningKey.p8");
 
@@ -102,7 +101,10 @@ fn signature_is_der_encoded_not_p1363() {
         64,
         "signature is 64 bytes — this is the raw P1363 form, not DER"
     );
-    assert_eq!(der[0], 0x30, "DER signature must start with SEQUENCE (0x30)");
+    assert_eq!(
+        der[0], 0x30,
+        "DER signature must start with SEQUENCE (0x30)"
+    );
     assert_eq!(
         der[1] as usize,
         der.len() - 2,
@@ -196,12 +198,19 @@ fn payload_separator_is_invisible_separator() {
         "payload must have exactly six U+2063 separators"
     );
     assert_eq!(
-        payload.as_bytes().windows(3).filter(|w| *w == [0xE2, 0x81, 0xA3]).count(),
+        payload
+            .as_bytes()
+            .windows(3)
+            .filter(|w| *w == [0xE2, 0x81, 0xA3])
+            .count(),
         6,
         "separators must encode as E2 81 A3"
     );
     // The app account token and nonce are lowercased.
-    assert!(payload.contains("user123"), "app account token must be lowercased");
+    assert!(
+        payload.contains("user123"),
+        "app account token must be lowercased"
+    );
     assert!(
         payload.contains("550e8400-e29b-41d4-a716-446655440000"),
         "nonce must be lowercased"

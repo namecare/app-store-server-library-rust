@@ -116,8 +116,9 @@ impl std::error::Error for ValidationError {}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use uuid::Uuid;
+
+    use super::*;
 
     fn bullet_point() -> BulletPoint {
         BulletPoint::new("text".to_string(), Uuid::new_v4(), "alt".to_string()).unwrap()
@@ -181,13 +182,6 @@ mod tests {
 
     #[test]
     fn test_bullet_points_absent_is_allowed() {
-        assert!(UploadMessageRequestBody::new(
-            "header".to_string(),
-            "body".to_string(),
-            None,
-            None,
-            None,
-        )
-        .is_ok());
+        assert!(UploadMessageRequestBody::new("header".to_string(), "body".to_string(), None, None, None,).is_ok());
     }
 }

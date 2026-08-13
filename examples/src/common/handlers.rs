@@ -59,10 +59,10 @@ pub struct NotificationRequest {
 #[derive(Debug, Serialize)]
 pub struct NotificationResponse {
     #[serde(rename = "notificationType")]
-    pub notification_type: NotificationTypeV2,
+    pub notification_type: Option<NotificationTypeV2>,
     pub subtype: Option<Subtype>,
     #[serde(rename = "notificationUUID")]
-    pub notification_uuid: String,
+    pub notification_uuid: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -120,21 +120,23 @@ fn dispatch(payload: &ResponseBodyV2DecodedPayload) {
         .unwrap_or("<none>");
 
     match &payload.notification_type {
-        Subscribed => println!("[notify] new subscription for {}", bundle_id),
-        DidRenew => println!("[notify] subscription renewed for {}", bundle_id),
-        DidChangeRenewalStatus => {
+        Some(Subscribed) => println!("[notify] new subscription for {}", bundle_id),
+        Some(DidRenew) => println!("[notify] subscription renewed for {}", bundle_id),
+        Some(DidChangeRenewalStatus) => {
             println!(
                 "[notify] auto-renew toggled for {} ({:?})",
                 bundle_id, payload.subtype
             )
         }
-        DidFailToRenew => println!("[notify] renewal failed for {} - billing retry", bundle_id),
-        Expired => println!("[notify] subscription expired for {}", bundle_id),
-        Revoke => println!(
+        Some(DidFailToRenew) => {
+            println!("[notify] renewal failed for {} - billing retry", bundle_id)
+        }
+        Some(Expired) => println!("[notify] subscription expired for {}", bundle_id),
+        Some(Revoke) => println!(
             "[notify] access revoked for {} - remove entitlement",
             bundle_id
         ),
-        Test => println!("[notify] test notification received - endpoint is reachable"),
+        Some(Test) => println!("[notify] test notification received - endpoint is reachable"),
         other => println!(
             "[notify] unhandled notification type {:?} for {}",
             other, bundle_id
@@ -208,10 +210,10 @@ mod tests {
 
         let response = handle_notification(&state, &NotificationRequest { signed_payload }).unwrap();
 
-        assert_eq!(response.notification_type, NotificationTypeV2::Test);
+        assert_eq!(response.notification_type, Some(NotificationTypeV2::Test));
         assert_eq!(
-            response.notification_uuid,
-            "9ad56bd2-0bc6-42e0-af24-fd996d87a1e6"
+            response.notification_uuid.as_deref(),
+            Some("9ad56bd2-0bc6-42e0-af24-fd996d87a1e6")
         );
     }
 

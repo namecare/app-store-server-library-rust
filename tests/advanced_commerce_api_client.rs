@@ -220,10 +220,7 @@ async fn test_migrate_subscription() {
 
     let request = AdvancedCommerceSubscriptionMigrateRequest::new(
         Uuid::new_v4(),
-        AdvancedCommerceSubscriptionMigrateDescriptors::new(
-            "description".to_string(),
-            "display_name".to_string(),
-        ),
+        AdvancedCommerceSubscriptionMigrateDescriptors::new("description".to_string(), "display_name".to_string()),
         vec![AdvancedCommerceSubscriptionMigrateItem::new(
             "sku".to_string(),
             "description".to_string(),
