@@ -9,6 +9,11 @@ pub enum AdvancedCommerceOfferReason {
     Acquisition,
     WinBack,
     Retention,
+
+    /// A value the App Store sent that this version of the
+    /// library does not support, preserved as received.
+    #[serde(untagged)]
+    NotSupported(String),
 }
 
 impl AdvancedCommerceOfferReason {
@@ -17,6 +22,7 @@ impl AdvancedCommerceOfferReason {
             AdvancedCommerceOfferReason::Acquisition => "ACQUISITION",
             AdvancedCommerceOfferReason::WinBack => "WIN_BACK",
             AdvancedCommerceOfferReason::Retention => "RETENTION",
+            AdvancedCommerceOfferReason::NotSupported(value) => value.as_str(),
         }
     }
 }

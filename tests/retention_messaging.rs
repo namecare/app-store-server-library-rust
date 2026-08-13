@@ -149,7 +149,7 @@ fn performance_test_result_response_parses_fixture() {
     let parsed: PerformanceTestResultResponse =
         serde_json::from_str(&fixture("performanceTestResultResponse.json")).unwrap();
     assert_eq!(parsed.config.max_concurrent_requests, 10);
-    assert_eq!(parsed.result, PerformanceTestStatus::Pass);
+    assert_eq!(parsed.result, Some(PerformanceTestStatus::Pass));
     assert_eq!(parsed.success_rate, 98);
     assert_eq!(parsed.num_pending, 0);
     assert_eq!(parsed.target, "https://example.com/retention");
@@ -158,7 +158,13 @@ fn performance_test_result_response_parses_fixture() {
     assert_eq!(parsed.response_times.p90, 200);
     assert_eq!(parsed.response_times.p95, 250);
     assert_eq!(parsed.response_times.p99, 400);
-    assert_eq!(parsed.failures.len(), 2);
+    assert_eq!(
+        parsed
+            .failures
+            .expect("Expect failures")
+            .len(),
+        2
+    );
 }
 
 #[test]

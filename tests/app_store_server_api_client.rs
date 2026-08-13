@@ -118,7 +118,7 @@ async fn test_extend_renewal_date_for_all_active_subscribers() {
         extend_by_days: 45,
         extend_reason_code: ExtendReasonCode::CustomerSatisfaction,
         request_identifier: "fdf964a4-233b-486c-aac1-97d8d52688ac".to_string(),
-        storefront_country_codes: vec!["USA".to_string(), "MEX".to_string()],
+        storefront_country_codes: Some(vec!["USA".to_string(), "MEX".to_string()]),
         product_id: "com.example.productId".to_string(),
     };
 
@@ -176,9 +176,9 @@ async fn test_extend_subscription_renewal_date() {
     );
 
     let extend_renewal_date_request = ExtendRenewalDateRequest {
-        extend_by_days: Some(45),
-        extend_reason_code: Some(ExtendReasonCode::CustomerSatisfaction),
-        request_identifier: Some("fdf964a4-233b-486c-aac1-97d8d52688ac".to_string()),
+        extend_by_days: 45,
+        extend_reason_code: ExtendReasonCode::CustomerSatisfaction,
+        request_identifier: "fdf964a4-233b-486c-aac1-97d8d52688ac".to_string(),
     };
 
     let response = client
@@ -231,7 +231,13 @@ async fn test_get_all_subscription_statuses() {
         .unwrap();
 
     assert_eq!(Environment::LocalTesting, response.environment.unwrap());
-    assert_eq!("com.example", response.bundle_id.as_str());
+    assert_eq!(
+        "com.example",
+        response
+            .bundle_id
+            .as_deref()
+            .expect("Expect bundle_id")
+    );
     assert_eq!(5454545, response.app_apple_id.unwrap());
 
     let item = SubscriptionGroupIdentifierItem {
@@ -271,7 +277,7 @@ async fn test_get_all_subscription_statuses() {
         .into(),
     };
 
-    assert_eq!(vec![item, second_item], response.data);
+    assert_eq!(Some(vec![item, second_item]), response.data);
 }
 
 #[tokio::test]
@@ -296,10 +302,19 @@ async fn test_get_refund_history() {
 
     assert_eq!(
         vec!["signed_transaction_one", "signed_transaction_two"],
-        response.signed_transactions
+        response
+            .signed_transactions
+            .as_deref()
+            .expect("Expect signed_transactions")
     );
-    assert_eq!("revision_output", response.revision);
-    assert!(response.has_more);
+    assert_eq!(
+        "revision_output",
+        response
+            .revision
+            .as_deref()
+            .expect("Expect revision")
+    );
+    assert_eq!(Some(true), response.has_more);
 }
 
 #[tokio::test]
@@ -428,8 +443,8 @@ async fn test_get_notification_history() {
     );
 
     let notification_history_request = NotificationHistoryRequest {
-        start_date: DateTime::from_timestamp(1698148900, 0),
-        end_date: DateTime::from_timestamp(1698148950, 0),
+        start_date: DateTime::from_timestamp(1698148900, 0).unwrap(),
+        end_date: DateTime::from_timestamp(1698148950, 0).unwrap(),
         notification_type: NotificationTypeV2::Subscribed.into(),
         notification_subtype: Subtype::InitialBuy.into(),
         transaction_id: "999733843".to_string().into(),
@@ -755,10 +770,13 @@ async fn test_look_up_order_id() {
         .look_up_order_id("W002182")
         .await
         .unwrap();
-    assert_eq!(OrderLookupStatus::Invalid, response.status);
+    assert_eq!(Some(OrderLookupStatus::Invalid), response.status);
     assert_eq!(
         vec!["signed_transaction_one", "signed_transaction_two"],
-        response.signed_transactions
+        response
+            .signed_transactions
+            .as_deref()
+            .expect("Expect signed_transactions")
     );
 }
 
@@ -1431,8 +1449,8 @@ async fn test_get_notification_history_with_microsecond_values() {
     );
 
     let notification_history_request = NotificationHistoryRequest {
-        start_date: DateTime::from_timestamp(1698148900, 900_000), // 900_000 nanoseconds = 0.9 milliseconds
-        end_date: DateTime::from_timestamp(1698148950, 1_000_000), // 1_000_000 nanoseconds = 1 millisecond
+        start_date: DateTime::from_timestamp(1698148900, 900_000).unwrap(), // 900_000 nanoseconds = 0.9 milliseconds
+        end_date: DateTime::from_timestamp(1698148950, 1_000_000).unwrap(), // 1_000_000 nanoseconds = 1 millisecond
         notification_type: NotificationTypeV2::Subscribed.into(),
         notification_subtype: Subtype::InitialBuy.into(),
         transaction_id: Some("999733843".to_string()),
@@ -2080,7 +2098,7 @@ async fn test_get_performance_test_results() {
     assert_eq!(500, response.config.response_time_threshold);
     assert_eq!(95, response.config.success_rate_threshold);
     assert_eq!("https://example.com/retention", response.target);
-    assert_eq!(PerformanceTestStatus::Pass, response.result);
+    assert_eq!(Some(PerformanceTestStatus::Pass), response.result);
     assert_eq!(98, response.success_rate);
     assert_eq!(0, response.num_pending);
     assert_eq!(120, response.response_times.average);
@@ -2088,18 +2106,12 @@ async fn test_get_performance_test_results() {
     assert_eq!(200, response.response_times.p90);
     assert_eq!(250, response.response_times.p95);
     assert_eq!(400, response.response_times.p99);
-    assert_eq!(
-        Some(&1),
-        response
-            .failures
-            .get(&SendAttemptResult::TimedOut)
-    );
-    assert_eq!(
-        Some(&1),
-        response
-            .failures
-            .get(&SendAttemptResult::NoResponse)
-    );
+    let failures = response
+        .failures
+        .as_ref()
+        .expect("Expect failures");
+    assert_eq!(Some(&1), failures.get(&SendAttemptResult::TimedOut));
+    assert_eq!(Some(&1), failures.get(&SendAttemptResult::NoResponse));
 }
 
 fn app_store_server_api_client_with_body_from_file(

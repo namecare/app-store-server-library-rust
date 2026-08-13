@@ -20,4 +20,9 @@ pub enum DeliveryStatus {
     /// The app didn't deliver the In-App Purchase for other reasons.
     #[serde(rename = "UNDELIVERED_OTHER")]
     UndeliveredOther,
+
+    /// A value the App Store sent that this version of the
+    /// library does not support, preserved as received.
+    #[serde(untagged)]
+    NotSupported(String),
 }

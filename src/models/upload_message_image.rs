@@ -28,7 +28,7 @@ impl UploadMessageImage {
     ///
     /// Returns `ValidationError::AltTextTooLong` if alt_text exceeds 150 characters.
     pub fn new(image_identifier: Uuid, alt_text: String) -> Result<Self, ValidationError> {
-        if alt_text.len() > MAXIMUM_ALT_TEXT_LENGTH {
+        if alt_text.chars().count() > MAXIMUM_ALT_TEXT_LENGTH {
             return Err(ValidationError::AltTextTooLong);
         }
         Ok(Self {
@@ -58,3 +58,25 @@ impl std::fmt::Display for ValidationError {
 }
 
 impl std::error::Error for ValidationError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_alt_text_length_counts_characters_not_bytes() {
+        // "é" is 2 bytes: a byte-based check would reject this at half the real limit.
+        let alt_text = "é".repeat(MAXIMUM_ALT_TEXT_LENGTH);
+        assert_eq!(alt_text.len(), MAXIMUM_ALT_TEXT_LENGTH * 2);
+        assert!(UploadMessageImage::new(Uuid::new_v4(), alt_text).is_ok());
+    }
+
+    #[test]
+    fn test_alt_text_too_long() {
+        let alt_text = "é".repeat(MAXIMUM_ALT_TEXT_LENGTH + 1);
+        assert_eq!(
+            UploadMessageImage::new(Uuid::new_v4(), alt_text),
+            Err(ValidationError::AltTextTooLong)
+        );
+    }
+}

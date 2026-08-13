@@ -23,6 +23,11 @@ pub enum AdvancedCommerceOfferPeriod {
     P9m,
     #[serde(rename = "P1Y")]
     P1y,
+
+    /// A value the App Store sent that this version of the
+    /// library does not support, preserved as received.
+    #[serde(untagged)]
+    NotSupported(String),
 }
 
 impl AdvancedCommerceOfferPeriod {
@@ -37,6 +42,7 @@ impl AdvancedCommerceOfferPeriod {
             AdvancedCommerceOfferPeriod::P6m => "P6M",
             AdvancedCommerceOfferPeriod::P9m => "P9M",
             AdvancedCommerceOfferPeriod::P1y => "P1Y",
+            AdvancedCommerceOfferPeriod::NotSupported(value) => value.as_str(),
         }
     }
 }

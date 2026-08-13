@@ -451,8 +451,8 @@ fn test_realtime_response_body_with_advanced_commerce_info() {
     let message_id = Uuid::parse_str("a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890").unwrap();
     let ac_data = "eyJhbGciOiJFUzI1NiJ9.base64data".to_string();
     let ac_info = AdvancedCommerceInfo {
-        message_identifier: message_id,
-        advanced_commerce_data: ac_data.clone(),
+        message_identifier: Some(message_id),
+        advanced_commerce_data: Some(ac_data.clone()),
     };
     let response_body = RealtimeResponseBody {
         message: None,
@@ -499,7 +499,7 @@ fn test_realtime_response_body_with_advanced_commerce_info() {
         .advanced_commerce_info
         .is_some());
     assert_eq!(
-        message_id,
+        Some(message_id),
         deserialized
             .advanced_commerce_info
             .as_ref()
@@ -507,7 +507,7 @@ fn test_realtime_response_body_with_advanced_commerce_info() {
             .message_identifier
     );
     assert_eq!(
-        ac_data,
+        Some(ac_data),
         deserialized
             .advanced_commerce_info
             .as_ref()

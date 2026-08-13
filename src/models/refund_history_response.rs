@@ -9,16 +9,16 @@ pub struct RefundHistoryResponse {
     ///
     /// [JWSTransaction](https://developer.apple.com/documentation/appstoreserverapi/jwstransaction)
     #[serde(rename = "signedTransactions")]
-    pub signed_transactions: Vec<String>,
+    pub signed_transactions: Option<Vec<String>>,
 
     /// A token you use in a query to request the next set of transactions for the customer.
     ///
     /// [revision](https://developer.apple.com/documentation/appstoreserverapi/revision)
-    pub revision: String,
+    pub revision: Option<String>,
 
     /// A Boolean value indicating whether the App Store has more transaction data.
     ///
     /// [hasMore](https://developer.apple.com/documentation/appstoreserverapi/hasmore)
     #[serde(rename = "hasMore")]
-    pub has_more: bool,
+    pub has_more: Option<bool>,
 }

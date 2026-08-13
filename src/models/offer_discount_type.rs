@@ -13,4 +13,9 @@ pub enum OfferDiscountType {
     PayUpFront,
     #[serde(rename = "ONE_TIME")]
     OneTime,
+
+    /// A value the App Store sent that this version of the
+    /// library does not support, preserved as received.
+    #[serde(untagged)]
+    NotSupported(String),
 }

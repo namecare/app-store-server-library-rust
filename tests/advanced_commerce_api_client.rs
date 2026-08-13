@@ -11,6 +11,7 @@ use app_store_server_library::models::advanced_commerce_request_refund_item::Adv
 use app_store_server_library::models::advanced_commerce_request_refund_request::AdvancedCommerceRequestRefundRequest;
 use app_store_server_library::models::advanced_commerce_subscription_cancel_request::AdvancedCommerceSubscriptionCancelRequest;
 use app_store_server_library::models::advanced_commerce_subscription_change_metadata_request::AdvancedCommerceSubscriptionChangeMetadataRequest;
+use app_store_server_library::models::advanced_commerce_subscription_migrate_descriptors::AdvancedCommerceSubscriptionMigrateDescriptors;
 use app_store_server_library::models::advanced_commerce_subscription_migrate_item::AdvancedCommerceSubscriptionMigrateItem;
 use app_store_server_library::models::advanced_commerce_subscription_migrate_request::AdvancedCommerceSubscriptionMigrateRequest;
 use app_store_server_library::models::advanced_commerce_subscription_price_change_item::AdvancedCommerceSubscriptionPriceChangeItem;
@@ -213,11 +214,13 @@ async fn test_migrate_subscription() {
             let decoded_json: HashMap<&str, Value> = serde_json::from_slice(body).unwrap();
             assert!(decoded_json.contains_key("requestInfo"));
             assert!(decoded_json.contains_key("items"));
+            assert!(decoded_json.contains_key("descriptors"));
         })),
     );
 
     let request = AdvancedCommerceSubscriptionMigrateRequest::new(
         Uuid::new_v4(),
+        AdvancedCommerceSubscriptionMigrateDescriptors::new("description".to_string(), "display_name".to_string()),
         vec![AdvancedCommerceSubscriptionMigrateItem::new(
             "sku".to_string(),
             "description".to_string(),

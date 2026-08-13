@@ -20,7 +20,7 @@ pub struct ResponseBodyV2DecodedPayload {
     ///
     /// [notificationType](https://developer.apple.com/documentation/appstoreservernotifications/notificationtype)
     #[serde(rename = "notificationType")]
-    pub notification_type: NotificationTypeV2,
+    pub notification_type: Option<NotificationTypeV2>,
 
     /// Additional information that identifies the notification event.
     /// The subtype field is present only for specific version 2 notifications.
@@ -32,7 +32,7 @@ pub struct ResponseBodyV2DecodedPayload {
     ///
     /// [notificationUUID](https://developer.apple.com/documentation/appstoreservernotifications/notificationuuid)
     #[serde(rename = "notificationUUID")]
-    pub notification_uuid: String,
+    pub notification_uuid: Option<String>,
 
     /// The object that contains the app metadata and signed renewal and transaction information.
     /// The data, summary, and externalPurchaseToken fields are mutually exclusive. The payload contains only one of these fields.

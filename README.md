@@ -17,7 +17,7 @@ Specify `app-store-server-library` in your project's `Cargo.toml` file, under th
 
 ```toml
 [dependencies]
-app-store-server-library = { version = "6.0.0", features = ["rust_crypto", "receipt-utility", "api-client-reqwest"] }
+app-store-server-library = { version = "6.0.0", features = ["aws_lc", "receipt-utility", "api-client-reqwest"] }
 ```
 
 ### Feature Flags
@@ -26,11 +26,11 @@ There are no default features.
 
 #### Crypto backends (pick one)
 
-- `rust_crypto` - Pure-Rust backend (`p256`, `p384`, `rsa`, `sha2`). No C toolchain required.
 - `aws_lc` - [aws-lc-rs](https://github.com/aws/aws-lc-rs) backend. FIPS-friendly, needs a C build toolchain.
 - `ring` - [ring](https://github.com/briansmith/ring) backend.
+- `rust_crypto` - Pure-Rust backend (`p256`, `p384`, `rsa`, `sha2`). No C toolchain required.
 
-The backend is also forwarded to the `x509-validator` dependency used for certificate chain verification, so the whole crate ends up on a single crypto stack.
+The backend is also forwarded to the [`x509-validator`](https://crates.io/crates/x509-validator) dependency used for certificate chain verification, so the whole crate ends up on a single crypto stack.
 
 #### API client
 
@@ -270,10 +270,10 @@ let signature: String = creator.create_signature(
 
 ## Benchmarks
 
-Two crates, in [x509-validator-bench]:
+Two crates, in [`bench/`](bench):
 
-- [`measure`][bench-measure] — Regression benchmarks.
-- [`compare`][bench-compare] — Compare backends and parsers ([results][bench-results]).
+- [`measure`](bench/measure) — Regression benchmarks.
+- [`compare`](bench/compare) — Compare backends and parsers (results: [backends](bench/compare/backend/RESULTS.md), [rust-vs-others](bench/compare/rust-vs-others/RESULTS.md)).
 
 
 ## License

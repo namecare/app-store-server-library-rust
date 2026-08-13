@@ -16,7 +16,7 @@ pub struct PerformanceTestResultResponse {
 
     /// A Failures object that represents a map of server-to-server notification failure reasons
     /// and counts that represent the number of failures encountered during the performance test.
-    pub failures: Failures,
+    pub failures: Option<Failures>,
 
     /// An integer that describes the number of pending requests in the performance test.
     pub num_pending: i32,
@@ -25,7 +25,7 @@ pub struct PerformanceTestResultResponse {
     pub response_times: PerformanceTestResponseTimes,
 
     /// A PerformanceTestStatus object that describes the overall result of the test.
-    pub result: PerformanceTestStatus,
+    pub result: Option<PerformanceTestStatus>,
 
     /// An integer that describes the success rate percentage of the performance test.
     pub success_rate: i32,

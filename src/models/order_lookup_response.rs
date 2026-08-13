@@ -11,11 +11,11 @@ pub struct OrderLookupResponse {
     ///
     /// [OrderLookupStatus](https://developer.apple.com/documentation/appstoreserverapi/orderlookupstatus)
     #[serde(rename = "status")]
-    pub status: OrderLookupStatus,
+    pub status: Option<OrderLookupStatus>,
 
     /// An array of in-app purchase transactions that are part of the order, signed by Apple, in JSON Web Signature format.
     ///
     /// [JWSTransaction](https://developer.apple.com/documentation/appstoreserverapi/jwstransaction)
     #[serde(rename = "signedTransactions")]
-    pub signed_transactions: Vec<String>,
+    pub signed_transactions: Option<Vec<String>>,
 }

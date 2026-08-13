@@ -10,12 +10,12 @@ use crate::models::advanced_commerce_refund_type::AdvancedCommerceRefundType;
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
 pub struct AdvancedCommerceRefund {
-    pub refund_amount: i64,
+    pub refund_amount: Option<i64>,
 
-    #[serde_as(as = "TimestampMilliSeconds<String, Flexible>")]
-    pub refund_date: DateTime<Utc>,
+    #[serde_as(as = "Option<TimestampMilliSeconds<String, Flexible>>")]
+    pub refund_date: Option<DateTime<Utc>>,
 
-    pub refund_reason: AdvancedCommerceRefundReason,
+    pub refund_reason: Option<AdvancedCommerceRefundReason>,
 
-    pub refund_type: AdvancedCommerceRefundType,
+    pub refund_type: Option<AdvancedCommerceRefundType>,
 }

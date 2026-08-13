@@ -66,4 +66,9 @@ pub enum NotificationTypeV2 {
     /// [RESCIND_CONSENT](https://developer.apple.com/documentation/appstoreservernotifications/notificationtype)
     #[serde(rename = "RESCIND_CONSENT")]
     RescindConsent,
+
+    /// A value the App Store sent that this version of the
+    /// library does not support, preserved as received.
+    #[serde(untagged)]
+    NotSupported(String),
 }
