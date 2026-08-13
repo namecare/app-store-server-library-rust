@@ -543,7 +543,8 @@ fn advanced_commerce_subscription_change_metadata_response() {
 fn advanced_commerce_subscription_migrate_request() {
     let request: AdvancedCommerceSubscriptionMigrateRequest =
         serde_json::from_str(&fixture("advancedCommerceSubscriptionMigrateRequest.json")).unwrap();
-    assert!(request.descriptors.is_some());
+    assert_eq!(request.descriptors.description, "description");
+    assert_eq!(request.descriptors.display_name, "display name");
     assert_eq!(request.items.len(), 1);
     assert_eq!(request.tax_code, "taxCode");
     assert_eq!(request.target_product_id, "targetProductId");

@@ -202,8 +202,9 @@ pub fn validate_price(price: i64) -> Result<i64, ValidationError> {
 /// * `Ok(String)` - The validated description
 /// * `Err(ValidationError)` - If validation fails
 pub fn validate_description(description: &str) -> Result<String, ValidationError> {
-    if description.len() > MAXIMUM_DESCRIPTION_LENGTH {
-        return Err(ValidationError::DescriptionTooLong(description.len()));
+    let length = description.chars().count();
+    if length > MAXIMUM_DESCRIPTION_LENGTH {
+        return Err(ValidationError::DescriptionTooLong(length));
     }
     Ok(description.to_string())
 }
@@ -217,8 +218,9 @@ pub fn validate_description(description: &str) -> Result<String, ValidationError
 /// * `Ok(String)` - The validated display name
 /// * `Err(ValidationError)` - If validation fails
 pub fn validate_display_name(display_name: &str) -> Result<String, ValidationError> {
-    if display_name.len() > MAXIMUM_DISPLAY_NAME_LENGTH {
-        return Err(ValidationError::DisplayNameTooLong(display_name.len()));
+    let length = display_name.chars().count();
+    if length > MAXIMUM_DISPLAY_NAME_LENGTH {
+        return Err(ValidationError::DisplayNameTooLong(length));
     }
     Ok(display_name.to_string())
 }
@@ -232,8 +234,9 @@ pub fn validate_display_name(display_name: &str) -> Result<String, ValidationErr
 /// * `Ok(String)` - The validated SKU
 /// * `Err(ValidationError)` - If validation fails
 pub fn validate_sku(sku: &str) -> Result<String, ValidationError> {
-    if sku.len() > MAXIMUM_SKU_LENGTH {
-        return Err(ValidationError::SkuTooLong(sku.len()));
+    let length = sku.chars().count();
+    if length > MAXIMUM_SKU_LENGTH {
+        return Err(ValidationError::SkuTooLong(length));
     }
     Ok(sku.to_string())
 }
@@ -363,6 +366,41 @@ mod tests {
 
         let ok_sku = "a".repeat(128);
         assert!(validate_sku(&ok_sku).is_ok());
+    }
+
+    #[test]
+    fn test_validate_lengths_counts_characters_not_bytes() {
+        // Multi-byte characters must count as one each, matching Swift's String.count.
+        // "é" is 2 bytes, "日" is 3 bytes: a byte-based check would reject all of these.
+        let description = "é".repeat(MAXIMUM_DESCRIPTION_LENGTH);
+        assert_eq!(description.len(), MAXIMUM_DESCRIPTION_LENGTH * 2);
+        assert!(validate_description(&description).is_ok());
+
+        let display_name = "日".repeat(MAXIMUM_DISPLAY_NAME_LENGTH);
+        assert_eq!(display_name.len(), MAXIMUM_DISPLAY_NAME_LENGTH * 3);
+        assert!(validate_display_name(&display_name).is_ok());
+
+        let sku = "é".repeat(MAXIMUM_SKU_LENGTH);
+        assert!(validate_sku(&sku).is_ok());
+
+        // One character past the limit still fails, and reports the character count.
+        let long_description = "é".repeat(MAXIMUM_DESCRIPTION_LENGTH + 1);
+        assert!(matches!(
+            validate_description(&long_description),
+            Err(ValidationError::DescriptionTooLong(46))
+        ));
+
+        let long_display_name = "日".repeat(MAXIMUM_DISPLAY_NAME_LENGTH + 1);
+        assert!(matches!(
+            validate_display_name(&long_display_name),
+            Err(ValidationError::DisplayNameTooLong(31))
+        ));
+
+        let long_sku = "é".repeat(MAXIMUM_SKU_LENGTH + 1);
+        assert!(matches!(
+            validate_sku(&long_sku),
+            Err(ValidationError::SkuTooLong(129))
+        ));
     }
 
     #[test]

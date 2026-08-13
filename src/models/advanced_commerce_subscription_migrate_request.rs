@@ -21,8 +21,7 @@ pub struct AdvancedCommerceSubscriptionMigrateRequest {
     /// The descriptors for the subscription migration request
     ///
     /// [AdvancedCommerceSubscriptionMigrateDescriptors](https://developer.apple.com/documentation/advancedcommerceapi/subscriptionmigratedescriptors)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub descriptors: Option<AdvancedCommerceSubscriptionMigrateDescriptors>,
+    pub descriptors: AdvancedCommerceSubscriptionMigrateDescriptors,
 
     /// An array of one or more SKUs, along with descriptions and display names, that are included in the subscription.
     ///
@@ -49,13 +48,14 @@ pub struct AdvancedCommerceSubscriptionMigrateRequest {
 impl AdvancedCommerceSubscriptionMigrateRequest {
     pub fn new(
         request_reference_id: Uuid,
+        descriptors: AdvancedCommerceSubscriptionMigrateDescriptors,
         items: Vec<AdvancedCommerceSubscriptionMigrateItem>,
         target_product_id: String,
         tax_code: String,
     ) -> Result<Self, ValidationError> {
         Ok(Self {
             request_info: AdvancedCommerceRequestInfo::new(request_reference_id),
-            descriptors: None,
+            descriptors,
             items: validate_items(items)?,
             renewal_items: None,
             storefront: None,
@@ -65,7 +65,7 @@ impl AdvancedCommerceSubscriptionMigrateRequest {
     }
 
     pub fn with_descriptors(mut self, descriptors: AdvancedCommerceSubscriptionMigrateDescriptors) -> Self {
-        self.descriptors = Some(descriptors);
+        self.descriptors = descriptors;
         self
     }
 
