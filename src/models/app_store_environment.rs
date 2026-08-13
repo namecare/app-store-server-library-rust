@@ -9,7 +9,12 @@ pub enum Environment {
     #[serde(rename = "Xcode")]
     Xcode,
     #[serde(rename = "LocalTesting")]
-    LocalTesting, // Used for unit testing
+    LocalTesting, // Used for unit testing,
+
+    /// A value the App Store sent that this version of the
+    /// library does not support, preserved as received.
+    #[serde(untagged)]
+    NotSupported(String),
 }
 
 impl Environment {

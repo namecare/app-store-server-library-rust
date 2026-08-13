@@ -628,7 +628,10 @@ fn test_decoded_payloads_transaction_decoding() {
             );
             assert_eq!(
                 AdvancedCommercePeriod::P1M,
-                ac_info.period.expect("Expect period")
+                ac_info
+                    .period
+                    .clone()
+                    .expect("Expect period")
             );
             assert_eq!(
                 "ref-12345",
@@ -695,7 +698,10 @@ fn test_decoded_payloads_transaction_decoding() {
             assert_eq!(Some(5000), refund.refund_amount);
             assert_eq!(
                 1698149100,
-                refund.refund_date.expect("Expect refundDate").timestamp()
+                refund
+                    .refund_date
+                    .expect("Expect refundDate")
+                    .timestamp()
             );
             assert_eq!(
                 Some(AdvancedCommerceRefundReason::FulfillmentIssue),
@@ -911,7 +917,10 @@ fn test_decoded_payloads_renewal_info_decoding() {
             assert_eq!("Premium", descriptors.display_name);
             assert_eq!(
                 AdvancedCommercePeriod::P1M,
-                ac_info.period.expect("Expect period")
+                ac_info
+                    .period
+                    .clone()
+                    .expect("Expect period")
             );
             assert_eq!(
                 "ref-12345",
@@ -997,6 +1006,7 @@ fn test_decoded_payloads_renewal_info_decoding() {
                 RenewalBillingPlanType::Monthly,
                 commitment_info
                     .commitment_renewal_billing_plan_type
+                    .clone()
                     .expect("Expect commitment_renewal_billing_plan_type")
             );
             assert_eq!(

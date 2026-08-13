@@ -14,4 +14,9 @@ pub enum RevocationType {
     /// The transaction is revoked from Family Sharing.
     #[serde(rename = "FAMILY_REVOKE")]
     FamilyRevoke,
+
+    /// A value the App Store sent that this version of the
+    /// library does not support, preserved as received.
+    #[serde(untagged)]
+    NotSupported(String),
 }

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 /// The size of an image you upload for use in retention messages.
 ///
 /// [imageSize](https://developer.apple.com/documentation/retentionmessaging/imagesize)
-#[derive(Debug, Clone, Copy, Deserialize, Serialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
 pub enum ImageSize {
     /// A full-size image for use as a message's main image.
     #[serde(rename = "FULL_SIZE")]
@@ -12,6 +12,11 @@ pub enum ImageSize {
     /// A small image for use as a bullet point.
     #[serde(rename = "BULLET_POINT")]
     BulletPoint,
+
+    /// A value the App Store sent that this version of the
+    /// library does not support, preserved as received.
+    #[serde(untagged)]
+    NotSupported(String),
 }
 
 impl ImageSize {
@@ -19,6 +24,7 @@ impl ImageSize {
         match self {
             ImageSize::FullSize => "FULL_SIZE",
             ImageSize::BulletPoint => "BULLET_POINT",
+            ImageSize::NotSupported(value) => value.as_str(),
         }
     }
 }

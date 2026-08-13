@@ -9,6 +9,11 @@ pub enum InAppOwnershipType {
     FamilyShared,
     #[serde(rename = "PURCHASED")]
     Purchased,
+
+    /// A value the App Store sent that this version of the
+    /// library does not support, preserved as received.
+    #[serde(untagged)]
+    NotSupported(String),
 }
 
 impl InAppOwnershipType {
@@ -16,6 +21,7 @@ impl InAppOwnershipType {
         match self {
             InAppOwnershipType::FamilyShared => "FAMILY_SHARED",
             InAppOwnershipType::Purchased => "PURCHASED",
+            InAppOwnershipType::NotSupported(value) => value.as_str(),
         }
     }
 }

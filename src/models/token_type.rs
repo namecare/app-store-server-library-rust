@@ -14,4 +14,9 @@ pub enum TokenType {
     /// A token type that indicates usage of App Store services.
     #[serde(rename = "SERVICES")]
     Services,
+
+    /// A value the App Store sent that this version of the
+    /// library does not support, preserved as received.
+    #[serde(untagged)]
+    NotSupported(String),
 }

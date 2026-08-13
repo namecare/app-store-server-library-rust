@@ -108,10 +108,18 @@ fn advanced_commerce_period() {
     assert_enum_raw_value("P6M", AdvancedCommercePeriod::P6M);
     assert_enum_raw_value("P1Y", AdvancedCommercePeriod::P1Y);
 
-    // Swift: XCTAssertNil(AdvancedCommercePeriod(rawValue: "INVALID"))
-    assert!(serde_json::from_str::<AdvancedCommercePeriod>("\"INVALID\"").is_err());
-    // A guard against a SCREAMING_SNAKE_CASE regression, which would emit "P1_M".
-    assert!(serde_json::from_str::<AdvancedCommercePeriod>("\"P1_M\"").is_err());
+    // Swift returns nil for an unrecognized raw value; Rust preserves it
+    // in NotSupported so the surrounding payload still decodes.
+    assert_eq!(
+        serde_json::from_str::<AdvancedCommercePeriod>("\"INVALID\"").expect("decodes leniently"),
+        AdvancedCommercePeriod::NotSupported("INVALID".to_string())
+    );
+    // A guard against a SCREAMING_SNAKE_CASE regression, which would emit "P1_M":
+    // it must not resolve to the real P1M variant.
+    assert_eq!(
+        serde_json::from_str::<AdvancedCommercePeriod>("\"P1_M\"").expect("decodes leniently"),
+        AdvancedCommercePeriod::NotSupported("P1_M".to_string())
+    );
 }
 
 #[test]
@@ -120,7 +128,10 @@ fn advanced_commerce_reason() {
     assert_enum_raw_value("DOWNGRADE", AdvancedCommerceReason::Downgrade);
     assert_enum_raw_value("APPLY_OFFER", AdvancedCommerceReason::ApplyOffer);
 
-    assert!(serde_json::from_str::<AdvancedCommerceReason>("\"INVALID\"").is_err());
+    assert_eq!(
+        serde_json::from_str::<AdvancedCommerceReason>("\"INVALID\"").expect("decodes leniently"),
+        AdvancedCommerceReason::NotSupported("INVALID".to_string())
+    );
 }
 
 #[test]
@@ -148,7 +159,10 @@ fn advanced_commerce_refund_reason() {
         AdvancedCommerceRefundReason::SimulateRefundDecline,
     );
 
-    assert!(serde_json::from_str::<AdvancedCommerceRefundReason>("\"INVALID\"").is_err());
+    assert_eq!(
+        serde_json::from_str::<AdvancedCommerceRefundReason>("\"INVALID\"").expect("decodes leniently"),
+        AdvancedCommerceRefundReason::NotSupported("INVALID".to_string())
+    );
 }
 
 #[test]
@@ -157,7 +171,10 @@ fn advanced_commerce_refund_type() {
     assert_enum_raw_value("PRORATED", AdvancedCommerceRefundType::Prorated);
     assert_enum_raw_value("CUSTOM", AdvancedCommerceRefundType::Custom);
 
-    assert!(serde_json::from_str::<AdvancedCommerceRefundType>("\"INVALID\"").is_err());
+    assert_eq!(
+        serde_json::from_str::<AdvancedCommerceRefundType>("\"INVALID\"").expect("decodes leniently"),
+        AdvancedCommerceRefundType::NotSupported("INVALID".to_string())
+    );
 }
 
 #[test]
@@ -172,7 +189,10 @@ fn advanced_commerce_offer_period() {
     assert_enum_raw_value("P9M", AdvancedCommerceOfferPeriod::P9m);
     assert_enum_raw_value("P1Y", AdvancedCommerceOfferPeriod::P1y);
 
-    assert!(serde_json::from_str::<AdvancedCommerceOfferPeriod>("\"INVALID\"").is_err());
+    assert_eq!(
+        serde_json::from_str::<AdvancedCommerceOfferPeriod>("\"INVALID\"").expect("decodes leniently"),
+        AdvancedCommerceOfferPeriod::NotSupported("INVALID".to_string())
+    );
 }
 
 #[test]
@@ -181,7 +201,10 @@ fn advanced_commerce_offer_reason() {
     assert_enum_raw_value("WIN_BACK", AdvancedCommerceOfferReason::WinBack);
     assert_enum_raw_value("RETENTION", AdvancedCommerceOfferReason::Retention);
 
-    assert!(serde_json::from_str::<AdvancedCommerceOfferReason>("\"INVALID\"").is_err());
+    assert_eq!(
+        serde_json::from_str::<AdvancedCommerceOfferReason>("\"INVALID\"").expect("decodes leniently"),
+        AdvancedCommerceOfferReason::NotSupported("INVALID".to_string())
+    );
 }
 
 #[test]
@@ -189,7 +212,10 @@ fn advanced_commerce_effective() {
     assert_enum_raw_value("IMMEDIATELY", AdvancedCommerceEffective::Immediately);
     assert_enum_raw_value("NEXT_BILL_CYCLE", AdvancedCommerceEffective::NextBillCycle);
 
-    assert!(serde_json::from_str::<AdvancedCommerceEffective>("\"INVALID\"").is_err());
+    assert_eq!(
+        serde_json::from_str::<AdvancedCommerceEffective>("\"INVALID\"").expect("decodes leniently"),
+        AdvancedCommerceEffective::NotSupported("INVALID".to_string())
+    );
 }
 
 #[test]
@@ -204,7 +230,10 @@ fn advanced_commerce_price_increase_info_status() {
         AdvancedCommercePriceIncreaseInfoStatus::Accepted,
     );
 
-    assert!(serde_json::from_str::<AdvancedCommercePriceIncreaseInfoStatus>("\"INVALID\"").is_err());
+    assert_eq!(
+        serde_json::from_str::<AdvancedCommercePriceIncreaseInfoStatus>("\"INVALID\"").expect("decodes leniently"),
+        AdvancedCommercePriceIncreaseInfoStatus::NotSupported("INVALID".to_string())
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -887,7 +916,10 @@ fn test_billing_plan_type() {
         serde_json::from_str::<BillingPlanType>(r#""MONTHLY""#).unwrap(),
         BillingPlanType::Monthly
     );
-    assert!(serde_json::from_str::<BillingPlanType>(r#""INVALID""#).is_err());
+    assert_eq!(
+        serde_json::from_str::<BillingPlanType>(r#""INVALID""#).expect("decodes leniently"),
+        BillingPlanType::NotSupported("INVALID".to_string())
+    );
 }
 
 #[test]
@@ -909,7 +941,10 @@ fn test_renewal_billing_plan_type() {
         serde_json::from_str::<RenewalBillingPlanType>(r#""MONTHLY""#).unwrap(),
         RenewalBillingPlanType::Monthly
     );
-    assert!(serde_json::from_str::<RenewalBillingPlanType>(r#""INVALID""#).is_err());
+    assert_eq!(
+        serde_json::from_str::<RenewalBillingPlanType>(r#""INVALID""#).expect("decodes leniently"),
+        RenewalBillingPlanType::NotSupported("INVALID".to_string())
+    );
 }
 
 fn commitment_with_billing_period(billing_period_number: Option<i32>) -> TransactionCommitmentInfo {

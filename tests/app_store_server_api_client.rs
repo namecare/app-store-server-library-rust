@@ -233,7 +233,10 @@ async fn test_get_all_subscription_statuses() {
     assert_eq!(Environment::LocalTesting, response.environment.unwrap());
     assert_eq!(
         "com.example",
-        response.bundle_id.as_deref().expect("Expect bundle_id")
+        response
+            .bundle_id
+            .as_deref()
+            .expect("Expect bundle_id")
     );
     assert_eq!(5454545, response.app_apple_id.unwrap());
 
@@ -306,7 +309,10 @@ async fn test_get_refund_history() {
     );
     assert_eq!(
         "revision_output",
-        response.revision.as_deref().expect("Expect revision")
+        response
+            .revision
+            .as_deref()
+            .expect("Expect revision")
     );
     assert_eq!(Some(true), response.has_more);
 }
@@ -2100,7 +2106,10 @@ async fn test_get_performance_test_results() {
     assert_eq!(200, response.response_times.p90);
     assert_eq!(250, response.response_times.p95);
     assert_eq!(400, response.response_times.p99);
-    let failures = response.failures.as_ref().expect("Expect failures");
+    let failures = response
+        .failures
+        .as_ref()
+        .expect("Expect failures");
     assert_eq!(Some(&1), failures.get(&SendAttemptResult::TimedOut));
     assert_eq!(Some(&1), failures.get(&SendAttemptResult::NoResponse));
 }

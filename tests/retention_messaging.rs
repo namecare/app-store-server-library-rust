@@ -158,7 +158,13 @@ fn performance_test_result_response_parses_fixture() {
     assert_eq!(parsed.response_times.p90, 200);
     assert_eq!(parsed.response_times.p95, 250);
     assert_eq!(parsed.response_times.p99, 400);
-    assert_eq!(parsed.failures.expect("Expect failures").len(), 2);
+    assert_eq!(
+        parsed
+            .failures
+            .expect("Expect failures")
+            .len(),
+        2
+    );
 }
 
 #[test]
