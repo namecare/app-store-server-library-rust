@@ -7,7 +7,7 @@ license = "MIT"
 description = "Runnable examples for app-store-server-library"
 
 [dependencies]
-app-store-server-library = { path = "..", features = ["rust_crypto"] }
+app-store-server-library = { path = "..", features = ["aws_lc"] }
 
 axum = "0.8"
 actix-web = "4"
