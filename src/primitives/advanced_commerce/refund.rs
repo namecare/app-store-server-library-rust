@@ -1,10 +1,13 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use serde_with::formats::Flexible;
+use serde_with::TimestampMilliSeconds;
 use crate::primitives::advanced_commerce::refund_reason::RefundReason;
 use crate::primitives::advanced_commerce::refund_type::RefundType;
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
+/// [AdvancedCommerceRefund](https://developer.apple.com/documentation/appstoreserverapi/advancedcommercerefund)
 #[serde_with::serde_as]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
 pub struct Refund {
     pub refund_amount: i64,

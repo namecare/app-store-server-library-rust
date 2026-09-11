@@ -1,41 +1,46 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use serde_with::formats::Flexible;
+use serde_with::TimestampMilliSeconds;
 use crate::primitives::advanced_commerce::offer::Offer;
 use crate::primitives::advanced_commerce::refund::Refund;
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
-#[serde_with::serde_as]
-#[serde(rename_all = "camelCase")]
 /// [AdvancedCommerceTransactionItem](https://developer.apple.com/documentation/appstoreserverapi/advancedcommercetransactionitem)
+///
+/// Every property is optional in Apple's schema: `offer` is present only when an offer
+/// applied, `refunds` and `revocationDate` only after a refund or revocation.
+#[serde_with::serde_as]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
 pub struct AdvancedCommerceTransactionItem {
     /// The SKU of the item.
     ///
     /// [SKU](https://developer.apple.com/documentation/advancedcommerceapi/sku)
     #[serde(rename = "SKU")]
-    pub sku: String,
+    pub sku: Option<String>,
 
     /// The new description for the item.
     ///
     /// [Description](https://developer.apple.com/documentation/advancedcommerceapi/description)
-    pub description: String,
+    pub description: Option<String>,
 
     /// The display name for the item.
     ///
     /// [Display Name](https://developer.apple.com/documentation/advancedcommerceapi/displayname)
-    pub display_name: String,
+    pub display_name: Option<String>,
 
     /// An offer for the item.
     ///
     /// [Offer](https://developer.apple.com/documentation/advancedcommerceapi/offer)
-    pub offer: Offer,
+    pub offer: Option<Offer>,
 
     /// The price in milliunits.
     ///
     /// [Price](https://developer.apple.com/documentation/advancedcommerceapi/price)
-    pub price: i64,
+    pub price: Option<i64>,
 
-    pub refunds: Vec<Refund>,
+    pub refunds: Option<Vec<Refund>>,
 
-    #[serde_as(as = "TimestampMilliSeconds<String, Flexible>")]
-    pub revocation_date: DateTime<Utc>,
+    #[serde_as(as = "Option<TimestampMilliSeconds<String, Flexible>>")]
+    pub revocation_date: Option<DateTime<Utc>>,
 }
