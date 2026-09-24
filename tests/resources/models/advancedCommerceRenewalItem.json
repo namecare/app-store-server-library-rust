@@ -1,0 +1,12 @@
+{
+  "SKU": "com.example.sku.premium",
+  "description": "Premium feature",
+  "displayName": "Premium Feature",
+  "offer": {
+    "period": "P1W",
+    "periodCount": 3,
+    "price": 5000,
+    "reason": "WIN_BACK"
+  },
+  "price": 9990
+}
