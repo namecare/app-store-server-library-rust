@@ -20,7 +20,7 @@ jobs:
     name: Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -35,7 +35,7 @@ jobs:
     name: Format (unstable)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install rust nightly toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
@@ -53,7 +53,7 @@ jobs:
     name: Format (TOML)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: taiki-e/install-action@v2
         with:
           tool: taplo-cli
@@ -63,7 +63,7 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -75,7 +75,7 @@ jobs:
     name: Clippy (Nightly)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
@@ -88,7 +88,7 @@ jobs:
     name: Spelling
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: crate-ci/typos@master
         with:
           config: .github/typos.toml
@@ -97,7 +97,7 @@ jobs:
     name: Advisories and licenses
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check
