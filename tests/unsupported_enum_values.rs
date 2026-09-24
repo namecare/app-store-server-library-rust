@@ -1,10 +1,4 @@
-//! Decoding must survive enumeration values Apple adds after this release.
-//!
-//! Apple introduces new enumeration values without notice. Before this
-//! behavior existed, one unrecognized value aborted the whole payload and the
-//! caller lost every other field. Each Apple enumeration now carries a
-//! `NotSupported` variant holding the original wire value, mirroring the
-//! `raw*` properties the Swift, Java, Python, and Node ports expose.
+//! Decoding must survive enumeration values Apple adds.
 
 use app_store_server_library::models::auto_renew_status::AutoRenewStatus;
 use app_store_server_library::models::jws_renewal_info_decoded_payload::JWSRenewalInfoDecodedPayload;

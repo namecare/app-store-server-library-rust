@@ -1396,7 +1396,6 @@ async fn test_send_consumption_data_with_null_app_account_token() {
                     .as_i64()
                     .unwrap()
             );
-            // refund_preference is also omitted in Swift test when None
         })),
     );
 

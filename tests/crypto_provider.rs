@@ -39,8 +39,7 @@ fn signature_is_der_encoded() {
         .signature(b"message to sign")
         .expect("signing should succeed");
 
-    // DER SEQUENCE of two INTEGERs. Both backends must agree on this framing,
-    // which is what `signature.derRepresentation` produces in the Swift library.
+    // DER SEQUENCE of two INTEGERs. Both backends must agree on this framing
     assert_eq!(sig[0], 0x30, "expected DER SEQUENCE tag");
     assert_eq!(
         sig[1] as usize,
