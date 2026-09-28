@@ -1,3 +1,4 @@
+mod common;
 use app_store_server_library::models::advanced_commerce_descriptors::AdvancedCommerceDescriptors;
 use app_store_server_library::models::advanced_commerce_effective::AdvancedCommerceEffective;
 use app_store_server_library::models::advanced_commerce_offer::AdvancedCommerceOffer;
@@ -50,23 +51,12 @@ use app_store_server_library::models::helper_validation_utils::{
 };
 use app_store_server_library::models::renewal_billing_plan_type::RenewalBillingPlanType;
 use app_store_server_library::models::transaction_commitment_info::TransactionCommitmentInfo;
+use common::assert_codable_round_trips;
 use uuid::Uuid;
 
 fn fixture(name: &str) -> String {
     std::fs::read_to_string(format!("tests/resources/models/{}", name))
         .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", name, e))
-}
-
-fn assert_codable_round_trips<T>(value: &T)
-where
-    T: serde::Serialize + serde::de::DeserializeOwned + PartialEq + std::fmt::Debug,
-{
-    let json = serde_json::to_string(value).expect("serialize");
-    let parsed: T = serde_json::from_str(&json).expect("deserialize");
-    assert_eq!(
-        &parsed, value,
-        "value changed across a serialize/deserialize round trip"
-    );
 }
 
 /// Asserts a raw wire string maps to the expected variant and back again.
