@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## [6.0.1]
+
+### Added
+
+- `NotificationTypeV2::raw_value()`, returning the string Apple sends in `notificationType`.
+
+### Changed
+
+- Updated `x509-validator` to 0.3.1.
+- Updated dependencies: `aws-lc-rs`, `serde_with`, `uuid`, `reqwest` and `thiserror`.
+
+### Removed
+
+- The unused `serde_repr` dependency.
+
 ## [6.0.0]
 
 A major release that restructures the crate to mirror the Swift reference library, makes the crypto backend pluggable, and updates the models to the latest Apple API versions.

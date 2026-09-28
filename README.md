@@ -3,7 +3,7 @@
 [![Build+test](https://github.com/namecare/app-store-server-library-rust/actions/workflows/build_test.yml/badge.svg?branch=master)](https://github.com/namecare/app-store-server-library-rust/actions/workflows/build_test.yml?query=branch%3Amaster)
 [![Documentation](https://docs.rs/app-store-server-library/badge.svg)](https://docs.rs/app-store-server-library/)
 [![Crates.io](https://img.shields.io/crates/v/app-store-server-library.svg)](https://crates.io/crates/app-store-server-library)
-[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fnamecare%2Fapp-store-server-library-rust%2Fmaster%2F.local%2Fcoverage.json)](https://github.com/namecare/app-store-server-library-rust/actions/workflows/build_test.yml?query=branch%3Amaster)
+[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fnamecare%2Fapp-store-server-library-rust%2Fbadges%2Fcoverage.json)](https://github.com/namecare/app-store-server-library-rust/actions/workflows/build_test.yml?query=branch%3Amaster)
 
 The Rust server library for the [App Store Server API](https://developer.apple.com/documentation/appstoreserverapi), [App Store Server Notifications](https://developer.apple.com/documentation/appstoreservernotifications), the [Retention Messaging API](https://developer.apple.com/documentation/retentionmessaging), and [Advanced Commerce API](https://developer.apple.com/documentation/AdvancedCommerceAPI).
 
@@ -17,7 +17,7 @@ Specify `app-store-server-library` in your project's `Cargo.toml` file, under th
 
 ```toml
 [dependencies]
-app-store-server-library = { version = "6.0.0", features = ["aws_lc", "receipt-utility", "api-client-reqwest"] }
+app-store-server-library = { version = "6.0.1", features = ["aws_lc", "receipt-utility", "api-client-reqwest"] }
 ```
 
 ### Feature Flags
@@ -26,9 +26,9 @@ There are no default features.
 
 #### Crypto backends (pick one)
 
-- `aws_lc` - [aws-lc-rs](https://github.com/aws/aws-lc-rs) backend. FIPS-friendly, needs a C build toolchain.
+- `aws_lc` - [aws-lc-rs](https://github.com/aws/aws-lc-rs) backend.
 - `ring` - [ring](https://github.com/briansmith/ring) backend.
-- `rust_crypto` - Pure-Rust backend (`p256`, `p384`, `rsa`, `sha2`). No C toolchain required.
+- `rust_crypto` - Pure-Rust backend.
 
 The backend is also forwarded to the [`x509-validator`](https://crates.io/crates/x509-validator) dependency used for certificate chain verification, so the whole crate ends up on a single crypto stack.
 
