@@ -1,0 +1,6 @@
+name: Apple App Store Server Rust Library CodeQL config
+
+paths:
+  - src
+  - tests
+  - examples
