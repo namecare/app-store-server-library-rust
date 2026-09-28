@@ -248,32 +248,46 @@ jobs:
           header: coverage
           path: report.md
 
+      # The badge JSON lives on its own unprotected `badges` branch, which
+      # shares no history with master. Pushing to master itself is blocked by
+      # branch protection, and should be.
       - name: Update the coverage badge
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        env:
+          PCT: ${{ steps.cov.outputs.pct }}
         run: |
-          pct=${{ steps.cov.outputs.pct }}
-          if   [ "$pct" -ge 90 ]; then color=brightgreen
-          elif [ "$pct" -ge 80 ]; then color=green
-          elif [ "$pct" -ge 70 ]; then color=yellowgreen
-          elif [ "$pct" -ge 60 ]; then color=yellow
+          if   [ "$PCT" -ge 90 ]; then color=brightgreen
+          elif [ "$PCT" -ge 80 ]; then color=green
+          elif [ "$PCT" -ge 70 ]; then color=yellowgreen
+          elif [ "$PCT" -ge 60 ]; then color=yellow
           else                         color=red
           fi
-          jq -n --arg m "$pct%" --arg c "$color" \
+          jq -n --arg m "$PCT%" --arg c "$color" \
             '{schemaVersion: 1, label: "coverage", message: $m, color: $c}' \
-            > .local/coverage.json
-          # No change on a commit that did not move the number, and nothing to
-          # push; `git commit` would otherwise exit non-zero and fail the job.
-          if git diff --quiet .local/coverage.json; then
-            echo "Coverage unchanged at $pct%."
+            > badge.json
+
+          # Built with plumbing rather than a checkout, so the master working
+          # tree is left alone. On the first run the branch does not exist
+          # yet and the commit below becomes its parentless root.
+          parent=
+          if git ls-remote --exit-code --heads origin badges > /dev/null; then
+            git fetch --quiet --depth=1 origin badges
+            parent=$(git rev-parse FETCH_HEAD)
+          fi
+          blob=$(git hash-object -w badge.json)
+
+          # Nothing to push on a commit that did not move the number.
+          if [ -n "$parent" ] && [ "$(git rev-parse -q --verify "$parent:coverage.json")" = "$blob" ]; then
+            echo "Coverage unchanged at $PCT%."
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .local/coverage.json
-          # [skip ci] because this push would otherwise start another run of
-          # this same workflow, which would push again.
-          git commit -m "chore: Update coverage badge to $pct% [skip ci]"
-          git push
+
+          tree=$(printf '100644 blob %s\tcoverage.json\n' "$blob" | git mktree)
+          commit=$(git -c user.name="github-actions[bot]" \
+                       -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+                       commit-tree "$tree" ${parent:+-p "$parent"} \
+                       -m "chore: Update coverage badge to $PCT% [skip ci]")
+          git push origin "$commit:refs/heads/badges"
 
   minver:
     name: Check minimum versions of direct dependencies
