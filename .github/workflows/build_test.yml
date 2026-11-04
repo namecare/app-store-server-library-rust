@@ -108,13 +108,9 @@ jobs:
 
       # Pinned to the `rust-version` in Cargo.toml. Bump both together, or the
       # manifest starts making a promise CI never checks.
-      #
-      # 1.88 rather than something older because `time` (reached transitively
-      # via asn1-rs) requires it. The crate's own source builds on less; the
-      # floor comes entirely from that dependency.
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.88"
+          toolchain: "1.89"
 
       - uses: Swatinem/rust-cache@v2
 

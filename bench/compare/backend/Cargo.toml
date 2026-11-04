@@ -7,7 +7,7 @@ publish = false
 
 [dependencies]
 app-store-server-library = { path = "../../..", default-features = false }
-uuid = { version = "1.24.0", features = ["v4"] }
+uuid = { version = "1.29.0", features = ["v4"] }
 
 [dev-dependencies]
 divan = "0.1.21"

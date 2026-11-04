@@ -19,10 +19,4 @@ allow = [
 private = { ignore = true }
 
 [advisories]
-# RUSTSEC-2023-0071 — Marvin Attack, a timing sidechannel in `rsa`'s private
-# key operations. No fixed release exists upstream, so there is nothing to
-# upgrade to. It does not apply to this crate's use: `rsa` is reached only
-# through the `rust_crypto` backend, which uses it to *verify* Apple's
-# signatures with public keys. The attack recovers private keys from
-# decryption/signing timings, and this library performs neither.
 ignore = ["RUSTSEC-2023-0071"]

@@ -10,31 +10,31 @@ readme = "README.md"
 documentation = "https://docs.rs/app-store-server-library"
 keywords = ["apple", "appstore", "appstore-server-api", "appstore-receipt", "advanced-commerce"]
 edition = "2021"
-rust-version = "1.88"
+rust-version = "1.89.0"
 
 [dependencies]
 
-x509-validator = { version = "0.3.1", default-features = false }
+x509-validator = { version = "0.3.2", default-features = false }
 
 # Cryptography - RustCrypto backend (optional)
 p256 = { version = "0.14.0", features = ["ecdsa", "pkcs8"], optional = true }
 p384 = { version = "0.14.0", features = ["ecdsa"], optional = true }
-rsa = { version = "0.10.0-rc.18", optional = true }
-sha2 = { version = "0.11.0", features = ["oid"], optional = true }
+rsa = { version = "0.10.0-rc.20", optional = true }
+sha2 = { version = "0.11.1", features = ["oid"], optional = true }
 pem-rfc7468 = { version = "1.0.0", optional = true }
 signature = { version = "3.0.0", optional = true }
 
 # Cryptography - AWS-LC backend (optional)
-aws-lc-rs = { version = "1.18.1", optional = true }
+aws-lc-rs = { version = "1.19.0", optional = true }
 
 # Cryptography - ring backend (optional)
 ring = { version = "0.17.14", optional = true }
 
 # Serialization
 serde = { version = "1.0.229", features = ["derive"] }
-serde_json = { version = "1.0.151" }
+serde_json = { version = "1.0.154" }
 serde_with = { version = "3.24.0", features = ["chrono"] }
-uuid = { version = "1.26.1", features = ["serde", "v4"] }
+uuid = { version = "1.29.0", features = ["serde", "v4"] }
 chrono = { version = "0.4.45", features = ["serde"] }
 base64 = "0.23.1"
 asn1-rs = { version = "0.7.2", optional = true }
@@ -54,7 +54,7 @@ thiserror = "2.0.21"
 regex = { version = "1.13.1", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.53.1", features = ["test-util", "macros"] }
+tokio = { version = "1.54.1", features = ["test-util", "macros"] }
 
 [features]
 default = []
