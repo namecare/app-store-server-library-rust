@@ -17,7 +17,7 @@ Specify `app-store-server-library` in your project's `Cargo.toml` file, under th
 
 ```toml
 [dependencies]
-app-store-server-library = { version = "6.0.1", features = ["aws_lc", "receipt-utility", "api-client-reqwest"] }
+app-store-server-library = { version = "6.0.2", features = ["aws_lc", "receipt-utility", "api-client-reqwest"] }
 ```
 
 ### Feature Flags
