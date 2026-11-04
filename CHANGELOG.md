@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## [6.0.2]
+
+### Changed
+
+- Raised the minimum supported Rust version to 1.89.0.
+- Updated `x509-validator` to 0.3.2.
+- Updated dependencies: `aws-lc-rs`, `rsa`, `sha2`, `serde_json`, `uuid` and `tokio`.
+
 ## [6.0.1]
 
 ### Added
