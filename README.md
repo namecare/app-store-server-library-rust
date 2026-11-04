@@ -9,7 +9,7 @@ The Rust server library for the [App Store Server API](https://developer.apple.c
 
 ## Requirements
 
-- Rust 1.88.0 or later
+- Rust 1.89.0 or later
 
 ## Installation
 
